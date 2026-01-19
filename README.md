@@ -1,7 +1,7 @@
 # YinwuChat 说明文档
 
-###关于YinwuChat
-###前言
+### 关于YinwuChat
+#### 前言
 [YinwuChat]为中国正版Minecraft公益服务器[YinwuRealm](www.yinwurealm.org)插件，开发者为服务器运维团队前辈[LinTx]
 
 随着游戏版本变更，沧海桑田，前任服务器维护团队逐渐由于各类原因停止了维护，其中包括该项目
