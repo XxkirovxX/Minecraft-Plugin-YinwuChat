@@ -3,7 +3,6 @@ package org.lintx.plugins.yinwuchat.bungee;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.plugin.Plugin;
 import net.md_5.bungee.api.scheduler.ScheduledTask;
-import org.bstats.bungeecord.Metrics;
 import org.lintx.plugins.yinwuchat.Const;
 import org.lintx.plugins.yinwuchat.bungee.announcement.Task;
 import org.lintx.plugins.yinwuchat.bungee.config.Config;
@@ -102,7 +101,12 @@ public class YinwuChat extends Plugin {
 
         redisBungee();
 
-        Metrics metrics = new Metrics(this);
+        // Metrics disabled for BungeeCord version (use Velocity instead)
+        // try {
+        //     Metrics metrics = new Metrics(this, 10357); // Plugin ID for bStats
+        // } catch (Exception e) {
+        //     getLogger().warning("Failed to initialize bStats metrics: " + e.getMessage());
+        // }
     }
 
     private void redisBungee(){
@@ -192,7 +196,10 @@ public class YinwuChat extends Plugin {
             file.mkdirs();
         }else {
             if (file.exists()){
-                return;
+                String lower = file.getName().toLowerCase();
+                if (!lower.equals("index.html") && !lower.equals("avater.png") && !lower.equals("forge.min.js") && !lower.equals("logo.png")) {
+                    return;
+                }
             }
             if (file.getParentFile().isDirectory()){
                 file.getParentFile().mkdir();
@@ -211,12 +218,16 @@ public class YinwuChat extends Plugin {
 
             } finally {
                 try {
-                    outputStream.close();
+                    if (outputStream != null) {
+                        outputStream.close();
+                    }
                 } catch (IOException ignored) {
 
                 }
                 try {
-                    inputStream.close();
+                    if (inputStream != null) {
+                        inputStream.close();
+                    }
                 } catch (IOException ignored) {
 
                 }

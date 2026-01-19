@@ -28,7 +28,7 @@ public class ShieldedManage {
     }
 
     private String formatMessage(String string){
-        string = string.replaceAll("&([0-9a-fklmnor])","§$1");
+        string = string.replaceAll("&([0-9a-fA-FklmnorKLMNOR])","§$1");
         return string;
     }
 
@@ -37,6 +37,7 @@ public class ShieldedManage {
         if (result.kick){
             NettyChannelMessageHelper.send(channel, OutputServerMessage.errorJSON(formatMessage(Config.getInstance().tipsConfig.shieldedKickTip)).getJSON());
             channel.close();
+            YinwuChat.getPlugin().getLogger().info("[屏蔽词] Web 玩家 " + uuid + " 因多次发送违禁词被断开连接");
         }
         else if (result.shielded){
             NettyChannelMessageHelper.send(channel, OutputServerMessage.errorJSON(formatMessage(Config.getInstance().tipsConfig.shieldedTip)).getJSON());
@@ -48,6 +49,7 @@ public class ShieldedManage {
         Result result = checkShielded(player.getUniqueId().toString(),message);
         if (result.kick){
             player.disconnect(MessageUtil.newTextComponent(formatMessage(Config.getInstance().tipsConfig.shieldedKickTip)));
+            YinwuChat.getPlugin().getLogger().info("[屏蔽词] 玩家 " + player.getName() + " 因多次发送违禁词被踢出");
         }
         else if (result.shielded){
             player.sendMessage(MessageUtil.newTextComponent(formatMessage(Config.getInstance().tipsConfig.shieldedTip)));
@@ -56,10 +58,28 @@ public class ShieldedManage {
     }
 
     private Result checkShielded(String uuid,String message){
-        String string = message.replaceAll("&([0-9a-fklmnor])","").replaceAll(" ","").toLowerCase(Locale.ROOT);
+        String cleanMessage = message
+                .replaceAll("&([0-9a-fA-FklmnorKLMNOR])", "")
+                .replaceAll("§([0-9a-fA-FklmnorKLMNOR])", "")
+                .replaceAll(" ", "")
+                .toLowerCase(Locale.ROOT);
+        
         Result result = new Result();
         Config config = Config.getInstance();
-        if (config.shieldeds.parallelStream().anyMatch(string::contains)){
+        
+        // 检查是否包含屏蔽词
+        if (config.shieldeds == null || config.shieldeds.isEmpty()) {
+            return result;
+        }
+        
+        // 检查消息是否包含任何屏蔽词（清理关键词以匹配 cleaned 消息）
+        boolean containsShielded = config.shieldeds.parallelStream()
+                .anyMatch(keyword -> {
+                    String cleanKeyword = keyword.toLowerCase(Locale.ROOT).replaceAll(" ", "");
+                    return !cleanKeyword.isEmpty() && cleanMessage.contains(cleanKeyword);
+                });
+        
+        if (containsShielded){
             YinwuChat.getPlugin().getLogger().info(uuid + " send a shielded word: " + message);
             result.shielded = true;
             if (!users.containsKey(uuid)){
@@ -78,6 +98,7 @@ public class ShieldedManage {
             users.put(uuid,man);
             if (man.count>=config.shieldedKickCount){
                 result.kick = true;
+                users.remove(uuid);
                 return result;
             }
 

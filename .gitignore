@@ -1,0 +1,22 @@
+# Build artifacts
+target/
+**/build/
+**/.gradle/
+
+# Node
+**/node_modules/
+
+# IDE
+**/.idea/
+
+# Local configs
+mobile-app/android/local.properties
+
+# Generated files
+dependency-reduced-pom.xml
+
+# Logs
+*.log
+
+# OS
+.DS_Store
