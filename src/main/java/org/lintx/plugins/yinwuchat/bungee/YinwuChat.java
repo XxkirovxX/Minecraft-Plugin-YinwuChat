@@ -91,6 +91,8 @@ public class YinwuChat extends Plugin {
         getProxy().registerChannel(Const.PLUGIN_CHANNEL);
         getProxy().getPluginManager().registerListener(this,new Listeners(this));
         getProxy().getPluginManager().registerCommand(this, new Commands(plugin,"yinwuchat"));
+        getProxy().getPluginManager().registerCommand(this, new Commands(plugin,"chatban"));
+        getProxy().getPluginManager().registerCommand(this, new Commands(plugin,"chatunban"));
         getProxy().getPluginManager().registerCommand(this,new IgnoreCommand(this,"ignore"));
 
         org.lintx.plugins.yinwuchat.bungee.announcement.Config.getInstance().load(this);

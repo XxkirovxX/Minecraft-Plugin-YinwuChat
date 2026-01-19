@@ -34,6 +34,9 @@ public class InputBase {
                     else if (action.equalsIgnoreCase("command")) {
                         return new InputCommand(object.get("command").getAsString());
                     }
+                    else if (action.equalsIgnoreCase("bind_account")) {
+                        return new InputBindAccount(object.get("account").getAsString());
+                    }
                 }else {
                     JsonElement postTypeElement = object.get("post_type");
                     if (postTypeElement!=null){

@@ -76,9 +76,10 @@
     <div id="app" v-cloak>
         <!-- 欢迎页面 -->
         <transition name="fade">
-            <div v-if="!isConnected" class="fixed inset-0 z-50 flex items-center justify-center bg-beige-100 dark:bg-gray-900 p-6">
-                    <div class="w-full max-w-md text-center">
-                    <div :class="['mb-8 flex flex-col items-center hero-shift', authStep === 'connect' ? 'hero-top' : 'hero-center']">
+            <div v-if="!isConnected" class="fixed inset-0 z-50 overflow-y-auto bg-beige-100 dark:bg-gray-900 scroll-smooth">
+                <div class="min-h-full w-full flex items-center justify-center p-6">
+                    <div class="w-full max-w-md text-center py-8">
+                        <div :class="['mb-8 flex flex-col items-center hero-shift', authStep === 'connect' ? 'hero-top' : 'hero-center']">
                         <div class="w-20 h-20 rounded-2xl flex items-center justify-center shadow-lg mb-4 animate-bounce overflow-hidden"
                             style="background-color: #FBD26A; box-shadow: 0 10px 25px rgba(251, 210, 106, 0.4);">
                             <img src="./logo.png" class="w-full h-full object-cover">
@@ -307,87 +308,215 @@
                                         清空本地历史记录
                                     </button>
                                 </div>
-                                <div class="mt-4 border-t border-beige-200 dark:border-gray-800 pt-3">
-                                    <button @click="showDeleteAccount = true" class="text-[11px] text-red-500 hover:text-red-600 font-medium flex items-center gap-1">
-                                        <i data-lucide="user-x" class="w-3 h-3"></i>
-                                        注销指定账户
-                                    </button>
-                                </div>
                             </div>
                         </transition>
                     </div>
 
                     <div :class="['mt-8 flex justify-center gap-4 btn-shift', authStep === 'connect' ? 'btn-row-top' : 'btn-row-bottom']">
                         <button @click="toggleDarkMode" class="p-3 rounded-full bg-beige-200 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:scale-110 transition-transform">
-                            <i :data-lucide="isDark ? 'sun' : 'moon'" class="w-6 h-6"></i>
+                            <span :key="isDark" class="flex items-center justify-center">
+                                <i :data-lucide="isDark ? 'moon' : 'sun'" class="w-6 h-6"></i>
+                            </span>
                         </button>
+                    </div>
                     </div>
                 </div>
             </div>
         </transition>
 
         <!-- 注销账户弹窗 -->
-        <div v-if="showDeleteAccount" class="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-            <div class="w-full max-w-sm bg-beige-100 dark:bg-gray-900 rounded-2xl shadow-2xl border border-beige-200 dark:border-gray-700 p-6 space-y-4 animate-in zoom-in-95 duration-200">
-                <div class="flex items-center justify-between">
-                    <h3 class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                        <i data-lucide="alert-triangle" class="w-5 h-5 text-red-500"></i>
-                        注销账户
-                    </h3>
-                    <button @click="showDeleteAccount = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-                        <i data-lucide="x" class="w-5 h-5"></i>
-                    </button>
-                </div>
-                <p class="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
-                    此操作将永久删除该 Web 账户的信息，并使绑定的游戏 Token 失效。你需要提供账户名、密码以及绑定的玩家名以确认。
-                </p>
-                <div class="space-y-3">
-                    <div class="relative group">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-                            <i data-lucide="user" class="w-4 h-4"></i>
-                        </div>
-                        <input v-model="deleteAccountForm.username" type="text" placeholder="Web 账户名" 
-                            class="w-full pl-10 pr-4 py-3 bg-beige-50 dark:bg-gray-800 border-none rounded-xl text-sm focus:ring-2 focus:ring-red-500 text-gray-900 dark:text-white transition-all outline-none">
+        <transition name="fade">
+            <div v-if="showDeleteAccount" class="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+                <div class="w-full max-w-sm bg-beige-100 dark:bg-gray-900 rounded-2xl shadow-2xl border border-beige-200 dark:border-gray-700 p-6 space-y-4 animate-in zoom-in-95 duration-200">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                            <i data-lucide="alert-triangle" class="w-5 h-5 text-red-500"></i>
+                            注销账户
+                        </h3>
+                        <button @click="showDeleteAccount = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                            <i data-lucide="x" class="w-5 h-5"></i>
+                        </button>
                     </div>
-                    <div class="relative group">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-                            <i data-lucide="lock" class="w-4 h-4"></i>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                        此操作将永久删除该 Web 账户的信息，并使绑定的游戏 Token 失效。你需要提供账户名、密码以及绑定的玩家名以确认。
+                    </p>
+                    <div class="space-y-3">
+                        <div class="relative group">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                                <i data-lucide="user" class="w-4 h-4"></i>
+                            </div>
+                            <input v-model="deleteAccountForm.username" type="text" placeholder="Web 账户名" 
+                                class="w-full pl-10 pr-4 py-3 bg-beige-50 dark:bg-gray-800 border-none rounded-xl text-sm focus:ring-2 focus:ring-red-500 text-gray-900 dark:text-white transition-all outline-none">
                         </div>
-                        <input v-model="deleteAccountForm.password" type="password" placeholder="Web 账户密码" 
-                            class="w-full pl-10 pr-4 py-3 bg-beige-50 dark:bg-gray-800 border-none rounded-xl text-sm focus:ring-2 focus:ring-red-500 text-gray-900 dark:text-white transition-all outline-none">
-                    </div>
-                    <div class="relative group">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-                            <i data-lucide="gamepad-2" class="w-4 h-4"></i>
+                        <div class="relative group">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                                <i data-lucide="lock" class="w-4 h-4"></i>
+                            </div>
+                            <input v-model="deleteAccountForm.password" type="password" placeholder="Web 账户密码" 
+                                class="w-full pl-10 pr-4 py-3 bg-beige-50 dark:bg-gray-800 border-none rounded-xl text-sm focus:ring-2 focus:ring-red-500 text-gray-900 dark:text-white transition-all outline-none">
                         </div>
-                        <input v-model="deleteAccountForm.playerName" type="text" placeholder="绑定的 Minecraft 玩家名" 
-                            class="w-full pl-10 pr-4 py-3 bg-beige-50 dark:bg-gray-800 border-none rounded-xl text-sm focus:ring-2 focus:ring-red-500 text-gray-900 dark:text-white transition-all outline-none">
-                    </div>
-                </div>
-                    <div class="space-y-2">
-                        <label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">后台保持运行 (App)</label>
-                        <div class="text-[11px] text-gray-500 dark:text-gray-400 bg-amber-50 dark:bg-amber-900/20 p-3 rounded-lg border border-amber-100 dark:border-amber-800">
-                            <p class="font-bold mb-1"><i data-lucide="alert-circle" class="w-3 h-3 inline mr-1"></i> 提示：</p>
-                            <p>由于移动系统限制，为确保能持续接收消息，请：</p>
-                            <ul class="list-disc ml-4 mt-1 space-y-1">
-                                <li>在手机设置中将本 App 设为“不限制电池使用”</li>
-                                <li>在任务管理器中将本 App “加锁”锁定</li>
-                                <li>开启“允许后台活动”权限</li>
-                            </ul>
+                        <div class="relative group">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                                <i data-lucide="gamepad-2" class="w-4 h-4"></i>
+                            </div>
+                            <input v-model="deleteAccountForm.playerName" type="text" placeholder="绑定的 Minecraft 玩家名" 
+                                class="w-full pl-10 pr-4 py-3 bg-beige-50 dark:bg-gray-800 border-none rounded-xl text-sm focus:ring-2 focus:ring-red-500 text-gray-900 dark:text-white transition-all outline-none">
                         </div>
                     </div>
-                    
                     <div class="flex items-center gap-3 pt-2">
-                    <button @click="submitDeleteAccount" :disabled="authLoading"
-                        class="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-xl transition-all shadow-lg shadow-red-500/30 active:scale-95 disabled:opacity-50">
-                        {{ authLoading ? '注销中...' : '确认注销' }}
-                    </button>
-                    <button @click="showDeleteAccount = false" class="flex-1 py-3 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 text-sm font-bold rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all">
-                        取消
+                        <button @click="submitDeleteAccount" :disabled="authLoading"
+                            class="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-xl transition-all shadow-lg shadow-red-500/30 active:scale-95 disabled:opacity-50">
+                            {{ authLoading ? '注销中...' : '确认注销' }}
+                        </button>
+                        <button @click="showDeleteAccount = false" class="flex-1 py-3 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 text-sm font-bold rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all">
+                            取消
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </transition>
+
+        <!-- App 后台保持运行提示弹窗 -->
+        <transition name="fade">
+            <div v-if="showAppKeepAliveTips" class="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+                <div class="w-full max-w-sm bg-beige-100 dark:bg-gray-900 rounded-2xl shadow-2xl border border-beige-200 dark:border-gray-700 p-6 space-y-4 animate-in zoom-in-95 duration-200">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                            <i data-lucide="alert-circle" class="w-5 h-5 text-amber-500"></i>
+                            后台保持运行 (App)
+                        </h3>
+                        <button @click="showAppKeepAliveTips = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                            <i data-lucide="x" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                    <div class="text-[11px] text-gray-500 dark:text-gray-400 bg-amber-50 dark:bg-amber-900/20 p-3 rounded-lg border border-amber-100 dark:border-amber-800">
+                        <p class="font-bold mb-1"><i data-lucide="alert-circle" class="w-3 h-3 inline mr-1"></i> 提示：</p>
+                        <p>由于移动系统限制，为确保能持续接收消息，请：</p>
+                        <ul class="list-disc ml-4 mt-1 space-y-1">
+                            <li>在手机设置中将本 App 设为“不限制电池使用”</li>
+                            <li>在任务管理器中将本 App “加锁”锁定</li>
+                            <li>开启“允许后台活动”权限</li>
+                        </ul>
+                    </div>
+                    <button @click="showAppKeepAliveTips = false"
+                        class="w-full py-3 bg-beige-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-sm font-bold rounded-xl hover:bg-beige-300 dark:hover:bg-gray-700 transition-all">
+                        知道了
                     </button>
                 </div>
             </div>
-        </div>
+        </transition>
+
+        <!-- 清除缓存确认弹窗 -->
+        <transition name="fade">
+            <div v-if="showClearCacheConfirm" class="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+                <div class="w-full max-w-sm bg-beige-100 dark:bg-gray-900 rounded-2xl shadow-2xl border border-beige-200 dark:border-gray-700 p-6 space-y-4 animate-in zoom-in-95 duration-200">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                            <i data-lucide="trash-2" class="w-5 h-5 text-red-500"></i>
+                            清除缓存
+                        </h3>
+                        <button @click="showClearCacheConfirm = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                            <i data-lucide="x" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
+                        确定要清除缓存的消息和设置吗？此操作将清空本地聊天记录和部分个性化配置。
+                    </p>
+                    <div class="flex items-center gap-3 pt-2">
+                        <button @click="confirmClearCache"
+                            class="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-xl transition-all shadow-lg shadow-red-500/30 active:scale-95">
+                            确认清除
+                        </button>
+                        <button @click="showClearCacheConfirm = false" class="flex-1 py-3 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 text-sm font-bold rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all">
+                            取消
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </transition>
+
+        <!-- Web 封禁确认弹窗 -->
+        <transition name="fade">
+            <div v-if="banNotice" class="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+                <div class="w-full max-w-sm bg-beige-100 dark:bg-gray-900 rounded-2xl shadow-2xl border border-beige-200 dark:border-gray-700 p-6 space-y-4 animate-in zoom-in-95 duration-200">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                            <i data-lucide="shield-alert" class="w-5 h-5 text-red-500"></i>
+                            Web 封禁确认
+                        </h3>
+                        <button @click="closeBanNotice" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                            <i data-lucide="x" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                    <div class="text-sm text-gray-600 dark:text-gray-300 space-y-2">
+                        <div v-if="banNotice.player">玩家：<span class="font-semibold text-gray-900 dark:text-white">{{ banNotice.player }}</span></div>
+                        <div>账号：<span class="font-semibold text-gray-900 dark:text-white">{{ banNotice.target || '-' }}</span></div>
+                        <div>时长：<span class="font-semibold text-gray-900 dark:text-white">{{ banNotice.duration || '永久' }}</span></div>
+                        <div v-if="banNotice.reason">理由：<span class="font-semibold text-gray-900 dark:text-white">{{ banNotice.reason }}</span></div>
+                        <div v-if="banNotice.by">操作人：<span class="font-semibold text-gray-900 dark:text-white">{{ banNotice.by }}</span></div>
+                    </div>
+                    <button @click="closeBanNotice"
+                        class="w-full py-3 bg-beige-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-sm font-bold rounded-xl hover:bg-beige-300 dark:hover:bg-gray-700 transition-all">
+                        知道了
+                    </button>
+                </div>
+            </div>
+        </transition>
+
+        <!-- atalladmin 确认弹窗 -->
+        <transition name="fade">
+            <div v-if="atAllAdminConfirm" class="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+                <div class="w-full max-w-sm bg-beige-100 dark:bg-gray-900 rounded-2xl shadow-2xl border border-beige-200 dark:border-gray-700 p-6 space-y-4 animate-in zoom-in-95 duration-200">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                            <i data-lucide="alert-triangle" class="w-5 h-5 text-amber-500"></i>
+                            突发事件提醒确认
+                        </h3>
+                        <button @click="closeAtAllAdminConfirm" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                            <i data-lucide="x" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                    <p class="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+                        {{ atAllAdminConfirm.message || '请确认是否提醒所有管理员' }}
+                    </p>
+                    <div class="flex items-center gap-3 pt-2">
+                        <button @click="sendAtAllAdminExecute"
+                            class="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-xl transition-all shadow-lg shadow-red-500/30 active:scale-95">
+                            确认发送
+                        </button>
+                        <button @click="closeAtAllAdminConfirm"
+                            class="flex-1 py-3 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 text-sm font-bold rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all">
+                            取消
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </transition>
+
+        <!-- 管理员紧急提醒弹窗 -->
+        <transition name="fade">
+            <div v-if="adminAlert" class="fixed inset-0 z-[110] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+                <div class="w-full max-w-sm bg-red-50 dark:bg-red-950 rounded-2xl shadow-2xl border border-red-200 dark:border-red-800 p-6 space-y-4 animate-in zoom-in-95 duration-200">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-lg font-bold text-red-700 dark:text-red-200 flex items-center gap-2">
+                            <i data-lucide="siren" class="w-5 h-5 text-red-500"></i>
+                            管理员紧急提醒
+                        </h3>
+                        <button @click="closeAdminAlert" class="text-red-400 hover:text-red-600 dark:hover:text-red-300">
+                            <i data-lucide="x" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                    <div class="text-sm text-red-700 dark:text-red-200 space-y-2">
+                        <div>发起人：<span class="font-semibold">{{ adminAlert.player || '-' }}</span></div>
+                        <div>内容：<span class="font-semibold">{{ adminAlert.message || '存在需要立即处理的服务器风险' }}</span></div>
+                    </div>
+                    <button @click="closeAdminAlert"
+                        class="w-full py-3 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-xl transition-all shadow-lg shadow-red-500/30 active:scale-95">
+                        知道了
+                    </button>
+                </div>
+            </div>
+        </transition>
 
                 <!-- 主聊天界面 -->
         <div v-if="isConnected" class="flex h-screen w-full overflow-hidden">
@@ -434,7 +563,7 @@
                         ]">
                         <div class="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center font-bold text-sm overflow-hidden shrink-0 border-2 transition-colors"
                             :class="currentChat === player.name ? 'border-white/30' : 'border-transparent'">
-                            <img v-if="player.name" :src="'https://minotar.net/avatar/' + player.name + '/40'" class="w-full h-full" loading="lazy">
+                            <img v-if="player.name" :src="'https://minotar.net/helm/' + player.name + '/40'" class="w-full h-full" loading="lazy">
                             <span v-else>{{ player.name[0].toUpperCase() }}</span>
                         </div>
                         <div class="flex-1 min-w-0">
@@ -454,19 +583,27 @@
 
                 <!-- 底部操作栏 -->
                 <div class="p-4 border-t border-beige-200 dark:border-gray-700 space-y-2">
-                    <div class="grid grid-cols-2 gap-2">
-                        <button @click="toggleDarkMode" class="w-full py-2.5 flex items-center justify-center gap-2 bg-beige-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl text-xs font-bold transition-all active:scale-95">
-                            <i :data-lucide="isDark ? 'sun' : 'moon'" class="w-4 h-4"></i>
-                            {{ isDark ? '日间' : '夜间' }}
-                        </button>
-                        <button @click="clearCache" class="w-full py-2.5 flex items-center justify-center gap-2 bg-beige-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl text-xs font-bold transition-all active:scale-95">
-                            <i data-lucide="trash-2" class="w-4 h-4"></i>
-                            清除缓存
-                        </button>
-                    </div>
-                    <button @click="logout" class="w-full py-2.5 flex items-center justify-center gap-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl text-xs font-bold transition-all active:scale-95">
+                    <button @click="toggleDarkMode" class="w-full py-2.5 flex items-center justify-center gap-2 bg-beige-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl text-xs font-bold transition-all active:scale-95">
+                        <span :key="isDark" class="flex items-center gap-2">
+                            <i :data-lucide="isDark ? 'moon' : 'sun'" class="w-4 h-4"></i>
+                            {{ isDark ? '夜间' : '日间' }}
+                        </span>
+                    </button>
+                    <button @click="clearCache" class="w-full py-2.5 flex items-center justify-center gap-2 bg-beige-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl text-xs font-bold transition-all active:scale-95">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        清除缓存
+                    </button>
+                    <button @click="showAppKeepAliveTips = true" class="w-full py-2.5 flex items-center justify-center gap-2 bg-beige-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl text-xs font-bold transition-all active:scale-95">
+                        <i data-lucide="alert-circle" class="w-4 h-4 text-amber-500"></i>
+                        后台保持运行
+                    </button>
+                    <button @click="showDeleteAccount = true" class="w-full py-2.5 flex items-center justify-center gap-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/40 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-xl text-xs font-bold transition-all active:scale-95">
+                        <i data-lucide="user-x" class="w-4 h-4"></i>
+                        注销指定账户
+                    </button>
+                    <button @click="logout" class="w-full py-2.5 flex items-center justify-center gap-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/40 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-xl text-xs font-bold transition-all active:scale-95">
                         <i data-lucide="log-out" class="w-4 h-4"></i>
-                        退出连接
+                        断开连接
                     </button>
                 </div>
             </div>
@@ -613,30 +750,32 @@
         </div>
 
         <!-- 配置页 -->
-        <div v-if="showSettings" class="fixed inset-0 z-[90] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-            <div class="w-full max-w-sm bg-beige-100 dark:bg-gray-900 rounded-2xl shadow-2xl border border-beige-200 dark:border-gray-700 p-5 space-y-4">
-                <div class="flex items-center justify-between">
-                    <h3 class="text-base font-bold text-gray-900 dark:text-white">配置</h3>
-                    <button @click="showSettings = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-                        <i data-lucide="x" class="w-4 h-4"></i>
-                    </button>
-                </div>
-                <div class="space-y-2">
-                    <label class="text-xs font-medium text-gray-500 dark:text-gray-400">默认域名</label>
-                    <input v-model="defaultDomain" type="text" placeholder="server.yinwurealm.org"
-                        class="w-full px-4 py-3 bg-beige-50 dark:bg-gray-800 border-none rounded-xl focus:ring-2 focus:ring-primary-500 text-gray-900 dark:text-white transition-all outline-none">
-                    <p class="text-[11px] text-gray-400">用于 App 在本地环境下自动发现 WS 端口。</p>
-                </div>
-                <div class="flex items-center gap-2">
-                    <button @click="saveDefaultDomain" class="flex-1 py-2.5 bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold rounded-xl transition-all">
-                        保存
-                    </button>
-                    <button @click="showSettings = false" class="flex-1 py-2.5 bg-beige-200 dark:bg-gray-800 text-gray-600 dark:text-gray-300 text-sm font-semibold rounded-xl transition-all">
-                        取消
-                    </button>
+        <transition name="fade">
+            <div v-if="showSettings" class="fixed inset-0 z-[90] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+                <div class="w-full max-w-sm bg-beige-100 dark:bg-gray-900 rounded-2xl shadow-2xl border border-beige-200 dark:border-gray-700 p-5 space-y-4">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-base font-bold text-gray-900 dark:text-white">配置</h3>
+                        <button @click="showSettings = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                            <i data-lucide="x" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-xs font-medium text-gray-500 dark:text-gray-400">默认域名</label>
+                        <input v-model="defaultDomain" type="text" placeholder="server.yinwurealm.org"
+                            class="w-full px-4 py-3 bg-beige-50 dark:bg-gray-800 border-none rounded-xl focus:ring-2 focus:ring-primary-500 text-gray-900 dark:text-white transition-all outline-none">
+                        <p class="text-[11px] text-gray-400">用于 App 在本地环境下自动发现 WS 端口。</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button @click="saveDefaultDomain" class="flex-1 py-2.5 bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold rounded-xl transition-all">
+                            保存
+                        </button>
+                        <button @click="showSettings = false" class="flex-1 py-2.5 bg-beige-200 dark:bg-gray-800 text-gray-600 dark:text-gray-300 text-sm font-semibold rounded-xl transition-all">
+                            取消
+                        </button>
+                    </div>
                 </div>
             </div>
-        </div>
+        </transition>
 
         <!-- 弹窗提示 -->
         <div class="fixed top-6 left-1/2 -translate-x-1/2 z-[100] space-y-3 pointer-events-none w-[90%] max-w-sm">
@@ -768,6 +907,12 @@
                 const authStep = ref('login');
                 const authLoading = ref(false);
                 const showDeleteAccount = ref(false);
+                const showAppKeepAliveTips = ref(false);
+                const showClearCacheConfirm = ref(false);
+                const banNotice = ref(null);
+                const adminAlert = ref(null);
+                const atAllAdminConfirm = ref(null);
+                const bindAccountSent = ref(false);
                 const deleteAccountForm = ref({
                     username: '',
                     password: '',
@@ -797,6 +942,7 @@
                 const captchaId = ref('');
                 const currentUser = ref(localStorage.getItem('yinwuchat_username') || '');
                 const isConnected = ref(false);
+                const isManualDisconnect = ref(false);
                 const connecting = ref(false);
                 const isAdmin = ref(false);
                 const isDark = ref(localStorage.getItem('yinwuchat_dark') === 'true');
@@ -921,19 +1067,21 @@
                     isDark.value = !isDark.value;
                     localStorage.setItem('yinwuchat_dark', isDark.value);
                     document.documentElement.classList.toggle('dark', isDark.value);
-                    nextTick(() => lucide.createIcons());
                 };
 
                 const clearCache = () => {
-                    if (confirm('确定要清除缓存的消息和设置吗？')) {
-                        const dark = localStorage.getItem('yinwuchat_dark');
-                        const domain = localStorage.getItem('yinwuchat_default_domain');
-                        localStorage.clear();
-                        if (dark) localStorage.setItem('yinwuchat_dark', dark);
-                        if (domain) localStorage.setItem('yinwuchat_default_domain', domain);
-                        messages.value = [];
-                        showToast('缓存已清除', 'info');
-                    }
+                    showClearCacheConfirm.value = true;
+                };
+
+                const confirmClearCache = () => {
+                    const dark = localStorage.getItem('yinwuchat_dark');
+                    const domain = localStorage.getItem('yinwuchat_default_domain');
+                    localStorage.clear();
+                    if (dark) localStorage.setItem('yinwuchat_dark', dark);
+                    if (domain) localStorage.setItem('yinwuchat_default_domain', domain);
+                    messages.value = [];
+                    showClearCacheConfirm.value = false;
+                    showToast('缓存已清除', 'info');
                 };
 
                 const saveDefaultDomain = () => {
@@ -954,6 +1102,35 @@
                     setTimeout(() => {
                         toasts.value = toasts.value.filter(t => t.id !== id);
                     }, 3500);
+                };
+
+                const closeBanNotice = () => {
+                    banNotice.value = null;
+                };
+
+                const closeAdminAlert = () => {
+                    adminAlert.value = null;
+                };
+
+                const closeAtAllAdminConfirm = () => {
+                    atAllAdminConfirm.value = null;
+                };
+
+                const sendAtAllAdminExecute = () => {
+                    if (!ws || wsStatus.value !== 'open') return;
+                    ws.send(JSON.stringify({ action: 'command', command: 'yinwuchat atalladmin_execute' }));
+                    closeAtAllAdminConfirm();
+                };
+
+                const sendBindAccount = () => {
+                    if (!ws || wsStatus.value !== 'open') return;
+                    if (bindAccountSent.value) return;
+                    if (!currentUser.value) return;
+                    ws.send(JSON.stringify({
+                        action: 'bind_account',
+                        account: currentUser.value
+                    }));
+                    bindAccountSent.value = true;
                 };
 
                 const toggleWsProtocol = (url) => {
@@ -997,6 +1174,7 @@
                         wsStatus.value = 'closed';
                         isConnected.value = false;
                         connecting.value = false;
+                        bindAccountSent.value = false;
                         if (!opened && allowFallback) {
                             const altUrl = toggleWsProtocol(url);
                             if (altUrl && altUrl !== url) {
@@ -1009,14 +1187,15 @@
                         const reason = evt && evt.reason ? evt.reason : '';
                         const detail = code ? `（code=${code}${reason ? `, reason=${reason}` : ''}）` : '';
                         
-                        if (opened) {
-                            // 只有曾经连接成功的才尝试自动重连
+                        if (opened && !isManualDisconnect.value) {
+                            // 只有曾经连接成功且不是手动断开的才尝试自动重连
                             showToast(`连接已断开，5秒后尝试自动重连...`, 'error');
                             setTimeout(() => {
-                                if (!isConnected.value) connect();
+                                if (!isConnected.value && !isManualDisconnect.value) connect();
                             }, 5000);
                         } else {
-                            showToast(`WebSocket 连接已断开${detail}`, 'error');
+                            const msg = isManualDisconnect.value ? '已成功断开连接' : `WebSocket 连接已断开${detail}`;
+                            showToast(msg, isManualDisconnect.value ? 'info' : 'error');
                         }
                     };
 
@@ -1028,6 +1207,8 @@
                 };
 
                 const connect = async () => {
+                    isManualDisconnect.value = false;
+                    bindAccountSent.value = false;
                     autoWsUrl.value = getAutoWsUrl();
                     let resolvedWsUrl = manualWsUrl.value.trim() ? buildWsUrlFromBase(manualWsUrl.value.trim()) : autoWsUrl.value;
                     if (!resolvedWsUrl && isLocalHostEnv()) {
@@ -1420,7 +1601,18 @@
                             nextTick(() => lucide.createIcons());
                             showToast('登录成功');
                         } else {
-                            showToast(data.message || '登录失败', 'error');
+                            if (data.action === 'ban_notice') {
+                                banNotice.value = {
+                                    target: data.target || '',
+                                    duration: data.duration || '永久',
+                                    reason: data.reason || '',
+                                    by: data.by || ''
+                                };
+                                isManualDisconnect.value = true; // 封禁时不尝试重连
+                                showToast('该账号已被封禁', 'error');
+                            } else {
+                                showToast(data.message || '登录失败', 'error');
+                            }
                         }
                     } catch (err) {
                         showToast('登录失败，请稍后重试', 'error');
@@ -1614,8 +1806,10 @@
                 };
 
                 const handleWsMessage = (data) => {
+                    console.log('WS Message:', data);
                     if (data.action === 'check_token') {
-                        const statusOk = data.status === 0 || data.status === true || data.status === '0';
+                        // 兼容多种可能的成功状态码：true, 0, '0', 1000, "1000"
+                        const statusOk = data.status === 0 || data.status === true || data.status === '0' || data.status === 1000 || data.status === '1000';
                         if (statusOk) {
                             isConnected.value = true;
                             connecting.value = false;
@@ -1623,6 +1817,8 @@
                             nextTick(() => lucide.createIcons());
                             if (data.isbind === false) {
                                 showToast('Token 未绑定，请在游戏内绑定后再发送消息', 'error');
+                            } else {
+                                sendBindAccount();
                             }
                         } else {
                             connecting.value = false;
@@ -1655,6 +1851,7 @@
                             isVanished.value = data.vanished;
                             localStorage.setItem('yinwuchat_vanished', String(!!data.vanished));
                         }
+                        sendBindAccount();
                     } else if (data.action === 'send_message' || data.action === 'private_message') {
                         const text = data.message || data.chat || '';
                         if (!text) return;
@@ -1728,6 +1925,43 @@
                     } else if (data.action === 'web_player_list') {
                         const list = Array.isArray(data.player_list) ? data.player_list : [];
                         webPlayers.value = list.map(name => ({ name, server: 'Web' }));
+                    } else if (data.action === 'ban_notice') {
+                        banNotice.value = {
+                            target: data.target || '',
+                            player: data.player || '',
+                            duration: data.durationText || '永久',
+                            reason: data.reason || '',
+                            by: data.by || ''
+                        };
+                        nextTick(() => lucide.createIcons());
+                    } else if (data.action === 'ban_kick') {
+                        banNotice.value = {
+                            target: data.account || data.target || '',
+                            player: data.player || '',
+                            duration: data.durationText || '永久',
+                            reason: data.reason || '',
+                            by: data.by || ''
+                        };
+                        showToast('账号已被封禁，已退出登录', 'error');
+                        sendNativeNotification('账号已被封禁', banNotice.value.reason || '请联系管理员');
+                        isManualDisconnect.value = true;
+                        if (ws) ws.close();
+                        isConnected.value = false;
+                        authStep.value = 'login';
+                        nextTick(() => lucide.createIcons());
+                    } else if (data.action === 'admin_alert') {
+                        adminAlert.value = {
+                            player: data.player || '管理员',
+                            message: data.message || '存在需要立即处理的服务器风险'
+                        };
+                        showToast('收到管理员紧急提醒', 'error');
+                        sendNativeNotification('管理员紧急提醒', `${adminAlert.value.player}: ${adminAlert.value.message}`);
+                        nextTick(() => lucide.createIcons());
+                    } else if (data.action === 'atalladmin_confirm') {
+                        atAllAdminConfirm.value = {
+                            message: data.message || '请确认是否提醒所有管理员'
+                        };
+                        nextTick(() => lucide.createIcons());
                     } else if (data.action === 'server_message') {
                         const level = data.type || (data.status === 1 ? 'error' : 'info');
                         showToast(data.message || '服务器提示', level === 'error' ? 'error' : 'info');
@@ -1772,9 +2006,9 @@
                 };
 
                 const quickCommands = computed(() => {
-                    const base = ['/yinwuchat', '/ignore', '/noat'];
+                    const base = ['/yinwuchat', '/ignore', '/noat', '/yinwuchat atalladmin'];
                     if (isAdmin.value) {
-                        return [...base, '/vanish', '/mute', '/unmute'];
+                        return [...base, '/vanish', '/chatban', '/chatunban', '/mute', '/unmute'];
                     }
                     return base;
                 });
@@ -1820,7 +2054,7 @@
                         return './avater.png';
                     }
                     const name = getAvatarName(msg);
-                    return name ? `https://minotar.net/avatar/${encodeURIComponent(name)}/40` : '';
+                    return name ? `https://minotar.net/helm/${encodeURIComponent(name)}/40` : '';
                 };
 
                 const getTargetStatus = (playerName) => {
@@ -1840,8 +2074,10 @@
                 };
 
                 const logout = () => {
+                    isManualDisconnect.value = true;
                     if (ws) ws.close();
                     isConnected.value = false;
+                    bindAccountSent.value = false;
                 };
 
                 const scrollToBottom = () => {
@@ -1920,15 +2156,16 @@
                     const dy = touch.clientY - sidebarStartY.value;
                     
                     if (!sidebarDragging.value) {
-                        // 大幅放宽识别规则：只要水平位移超过阈值，且水平趋势明显（大于垂直位移的一半）即识别为侧滑
-                        if (Math.abs(dx) > 5 && Math.abs(dx) > Math.abs(dy) * 0.5) {
+                        // 判定是否是水平滑动
+                        if (Math.abs(dx) > Math.abs(dy) + 10) {
                             // 左侧抽屉逻辑：
-                            // 只要是向右滑且菜单未显示，或者向左滑且菜单已显示，即触发拖动
-                            if ((!showSidebar.value && dx > 0) || (showSidebar.value && dx < 0)) {
-                                sidebarDragging.value = true;
-                            } else {
-                                return;
+                            // 1. 如果侧边栏已关闭，只有从左侧边缘向右滑才触发
+                            if (!showSidebar.value) {
+                                const fromLeftEdge = sidebarStartX.value < 60;
+                                if (!fromLeftEdge || dx < 0) return;
                             }
+                            // 2. 如果侧边栏已打开，向左滑即触发关闭拖动
+                            sidebarDragging.value = true;
                         } else {
                             return;
                         }
@@ -1942,21 +2179,8 @@
 
                 const onSidebarTouchEnd = () => {
                     if (!isMobile.value || !sidebarDragging.value) return;
-                    
-                    // 30% 面积触发逻辑
-                    let shouldOpen = showSidebar.value;
-                    if (!showSidebar.value) {
-                        // 初始关闭状态，显示超过 30% (即偏移大于 -70% 宽度) 则打开
-                        if (sidebarTranslateX.value > -sidebarWidth * 0.7) {
-                            shouldOpen = true;
-                        }
-                    } else {
-                        // 初始打开状态，隐藏超过 30% (即偏移小于 -30% 宽度) 则关闭
-                        if (sidebarTranslateX.value < -sidebarWidth * 0.3) {
-                            shouldOpen = false;
-                        }
-                    }
-                    
+                    // 如果偏移量大于负宽度的一半，则视为打开
+                    const shouldOpen = sidebarTranslateX.value > -sidebarWidth / 2;
                     showSidebar.value = shouldOpen;
                     sidebarTranslateX.value = shouldOpen ? 0 : -sidebarWidth;
                     sidebarDragging.value = false;
@@ -1976,7 +2200,7 @@
 
                 const closeSidebar = () => {
                     showSidebar.value = false;
-                    syncSidebarPosition();
+                    // 不需要在这里调用 syncSidebarPosition，交给 watch 处理以保持动画逻辑统一
                 };
 
                 const startToastDrag = (toast, event) => {
@@ -2065,16 +2289,52 @@
                 });
 
                 watch(showSidebar, (val) => {
+                    if (val) {
+                        nextTick(() => lucide.createIcons());
+                        sidebarAnimationActive.value = true;
+                        // 展开动画关键：
+                        // 1. 确保 sidebarTranslateX 初始处于关闭状态
+                        sidebarTranslateX.value = -sidebarWidth;
+                        // 2. 在两次 requestAnimationFrame 后触发，确保浏览器已应用初始位置并渲染一帧
+                        requestAnimationFrame(() => {
+                            requestAnimationFrame(() => {
+                                sidebarTranslateX.value = 0;
+                            });
+                        });
+                    } else {
+                        // 收回动画
+                        sidebarAnimationActive.value = true;
+                        sidebarTranslateX.value = -sidebarWidth;
+                        setTimeout(() => {
+                            if (!showSidebar.value) {
+                                sidebarAnimationActive.value = false;
+                            }
+                        }, 400);
+                    }
+                });
+
+                watch(showAppKeepAliveTips, (val) => {
                     if (val) nextTick(() => lucide.createIcons());
-                    // 当切换侧边栏时，激活过渡动画标志，确保动画完成前元素不被销毁/隐藏
-                    sidebarAnimationActive.value = true;
-                    // 使用 nextTick 确保 v-show 已应用，元素已在 DOM 中显示，然后再触发位移动画
-                    nextTick(() => {
-                        syncSidebarPosition();
-                    });
-                    setTimeout(() => {
-                        sidebarAnimationActive.value = false;
-                    }, 450); // 略长于 0.4s 的 transition 时间
+                });
+
+                watch(showClearCacheConfirm, (val) => {
+                    if (val) nextTick(() => lucide.createIcons());
+                });
+
+                watch(banNotice, (val) => {
+                    if (val) nextTick(() => lucide.createIcons());
+                });
+
+                watch(adminAlert, (val) => {
+                    if (val) nextTick(() => lucide.createIcons());
+                });
+
+                watch(atAllAdminConfirm, (val) => {
+                    if (val) nextTick(() => lucide.createIcons());
+                });
+
+                watch(isDark, () => {
+                    nextTick(() => lucide.createIcons());
                 });
 
                 return {
@@ -2083,10 +2343,10 @@
                     isConnected, connecting, isDark, showSidebar, currentChat, inputMsg, 
                     isMobile, messages, playerRoster, unreadCount, toasts, wsStatus, currentMessages,
                     isAdmin, quickCommands, isVanished,
-                    showDeleteAccount, deleteAccountForm, submitDeleteAccount,
+                    showDeleteAccount, showAppKeepAliveTips, showClearCacheConfirm, banNotice, closeBanNotice, adminAlert, closeAdminAlert, atAllAdminConfirm, closeAtAllAdminConfirm, sendAtAllAdminExecute, deleteAccountForm, submitDeleteAccount,
                     forgotForm, resetPasswordForm, resetCode, goToForgot, submitForgotRequest, submitResetPassword,
                     connect, submitLogin, submitRegister, goToRegister, goToLogin, refreshCaptcha,
-                    sendMessage, selectChat, mentionPlayer, logout, toggleDarkMode, clearCache, formatMessage,
+                    sendMessage, selectChat, mentionPlayer, logout, toggleDarkMode, clearCache, confirmClearCache, formatMessage,
                     handleTouchStart, handleTouchEnd, getAvatarName, getAvatarUrl, getTargetStatus,
                     showSettings, defaultDomain, saveDefaultDomain,
                     sidebarTranslateX, sidebarDragging, sidebarOverlayOpacity, sidebarOverlayVisible, sidebarBlur, sidebarAnimationActive,

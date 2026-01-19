@@ -27,6 +27,8 @@ public class InputBase {
                         return new InputCommand(object.get("command").getAsString());
                     } else if (action.equalsIgnoreCase("private_message")) {
                         return new InputPrivateMessage(object.get("to").getAsString(), object.get("message").getAsString());
+                    } else if (action.equalsIgnoreCase("bind_account")) {
+                        return new InputBindAccount(object.get("account").getAsString());
                     }
                 } else {
                     JsonElement postTypeElement = object.get("post_type");

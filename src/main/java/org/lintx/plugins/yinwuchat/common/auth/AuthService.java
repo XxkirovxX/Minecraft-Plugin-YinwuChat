@@ -129,6 +129,19 @@ public class AuthService {
             if (!userStore.verify(auth.username, auth.passwordHash)) {
                 return error("用户名或密码错误");
             }
+            AuthUserStore.BanInfo banInfo = userStore.getBanInfo(auth.username);
+            if (banInfo.banned) {
+                String durationText = formatDuration(banInfo.permanent ? -1L : banInfo.remainingMillis);
+                JsonObject res = new JsonObject();
+                res.addProperty("ok", false);
+                res.addProperty("action", "ban_notice");
+                res.addProperty("message", "该账号已被封禁");
+                res.addProperty("duration", durationText.isEmpty() ? "永久" : durationText);
+                res.addProperty("reason", banInfo.reason == null ? "" : banInfo.reason);
+                res.addProperty("by", banInfo.bannedBy == null ? "" : banInfo.bannedBy);
+                res.addProperty("target", auth.username);
+                return res;
+            }
             JsonObject res = new JsonObject();
             res.addProperty("ok", true);
             res.addProperty("message", "登录成功");
@@ -255,6 +268,60 @@ public class AuthService {
         return resetManager.verifyCode(accountName, playerName, code);
     }
 
+    public AuthUserStore.BanInfo getBanInfo(String username) {
+        return userStore.getBanInfo(username);
+    }
+
+    public boolean accountExists(String username) {
+        return userStore.exists(username);
+    }
+
+    public boolean bindAccountPlayerName(String username, String playerName) {
+        return userStore.bindPlayerName(username, playerName);
+    }
+
+    public boolean unbindAccountPlayerName(String username) {
+        return userStore.unbindPlayerName(username);
+    }
+
+    public String unbindAccountByPlayerName(String playerName) {
+        return userStore.unbindByPlayerName(playerName);
+    }
+
+    public String resolveAccountByPlayerName(String playerName) {
+        return userStore.getAccountByPlayerName(playerName);
+    }
+
+    public String getBoundPlayerName(String username) {
+        return userStore.getBoundPlayerName(username);
+    }
+
+    public BanResult banUser(String username, long durationMillis, String reason, String bannedBy) {
+        if (!userStore.exists(username)) {
+            return BanResult.notFound();
+        }
+        boolean ok = userStore.ban(username, durationMillis, reason, bannedBy);
+        if (!ok) {
+            return BanResult.failed();
+        }
+        AuthUserStore.BanInfo info = userStore.getBanInfo(username);
+        BanResult result = BanResult.success();
+        result.accountName = userStore.getDisplayName(username);
+        result.remainingMillis = info.remainingMillis;
+        result.permanent = info.permanent;
+        return result;
+    }
+
+    public BanResult unbanUser(String username) {
+        if (!userStore.exists(username)) {
+            return BanResult.notFound();
+        }
+        userStore.unban(username);
+        BanResult result = BanResult.success();
+        result.accountName = userStore.getDisplayName(username);
+        return result;
+    }
+
     public interface PlayerVerifier {
         boolean isBound(String accountName, String playerName);
     }
@@ -378,6 +445,97 @@ public class AuthService {
         String captchaId;
         String captchaText;
         String playerName;
+    }
+
+    public static class BanResult {
+        public boolean ok = false;
+        public boolean notFound = false;
+        public boolean failed = false;
+        public boolean permanent = false;
+        public long remainingMillis = 0L;
+        public String accountName = "";
+
+        static BanResult success() {
+            BanResult res = new BanResult();
+            res.ok = true;
+            return res;
+        }
+
+        static BanResult notFound() {
+            BanResult res = new BanResult();
+            res.notFound = true;
+            return res;
+        }
+
+        static BanResult failed() {
+            BanResult res = new BanResult();
+            res.failed = true;
+            return res;
+        }
+    }
+
+    public static long parseDurationMillis(String raw) {
+        if (raw == null || raw.trim().isEmpty()) {
+            return 0L;
+        }
+        String text = raw.trim().toLowerCase();
+        
+        // 支持中文单位：秒、分、分钟、时、小时、天
+        text = text.replace("秒钟", "s").replace("秒", "s")
+                   .replace("分钟", "m").replace("分", "m")
+                   .replace("小时", "h").replace("时", "h")
+                   .replace("天", "d");
+        
+        java.util.regex.Matcher matcher = java.util.regex.Pattern.compile("^(\\d+)([smhd])?$").matcher(text);
+        if (!matcher.matches()) {
+            return 0L;
+        }
+        long value = 0L;
+        try {
+            value = Long.parseLong(matcher.group(1));
+        } catch (NumberFormatException ignored) {
+        }
+        if (value <= 0L) {
+            return 0L;
+        }
+        String unit = matcher.group(2);
+        if (unit == null || unit.isEmpty()) {
+            return value * 1000L; // 默认秒
+        }
+        switch (unit) {
+            case "s":
+                return value * 1000L;
+            case "m":
+                return value * 60_000L;
+            case "h":
+                return value * 60_000L * 60L;
+            case "d":
+                return value * 60_000L * 60L * 24L;
+            default:
+                return 0L;
+        }
+    }
+
+    public static String formatDuration(long millis) {
+        if (millis < 0L) {
+            return "永久";
+        }
+        if (millis <= 0L) {
+            return "";
+        }
+        long seconds = millis / 1000L;
+        long days = seconds / 86400L;
+        seconds %= 86400L;
+        long hours = seconds / 3600L;
+        seconds %= 3600L;
+        long minutes = seconds / 60L;
+        long secs = seconds % 60L;
+        StringBuilder sb = new StringBuilder();
+        if (days > 0) sb.append(days).append("天");
+        if (hours > 0) sb.append(hours).append("小时");
+        if (minutes > 0) sb.append(minutes).append("分钟");
+        if (days == 0 && hours == 0 && minutes == 0 && secs > 0) sb.append(secs).append("秒");
+        return sb.toString();
     }
 
     private static class MessageDigestUtil {

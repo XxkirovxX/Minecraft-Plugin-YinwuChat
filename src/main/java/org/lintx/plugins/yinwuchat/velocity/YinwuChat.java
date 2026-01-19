@@ -95,6 +95,18 @@ public class YinwuChat {
                 .build(),
             yinwuChatCommand
         );
+        commandManager.register(
+            commandManager.metaBuilder("chatban")
+                .plugin(this)
+                .build(),
+            yinwuChatCommand
+        );
+        commandManager.register(
+            commandManager.metaBuilder("chatunban")
+                .plugin(this)
+                .build(),
+            yinwuChatCommand
+        );
         
         PrivateMessageCommand msgCommand = new PrivateMessageCommand(proxy);
         commandManager.register(

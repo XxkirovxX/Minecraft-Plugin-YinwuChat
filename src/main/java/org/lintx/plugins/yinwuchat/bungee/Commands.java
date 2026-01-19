@@ -1,6 +1,7 @@
 package org.lintx.plugins.yinwuchat.bungee;
 
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelFutureListener;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
@@ -10,10 +11,12 @@ import org.lintx.plugins.yinwuchat.Const;
 import org.lintx.plugins.yinwuchat.Util.MessageUtil;
 import org.lintx.plugins.yinwuchat.bungee.config.Config;
 import org.lintx.plugins.yinwuchat.bungee.config.PlayerConfig;
-import org.lintx.plugins.yinwuchat.bungee.json.*;
+import org.lintx.plugins.yinwuchat.bungee.json.OutputServerMessage;
 import org.lintx.plugins.yinwuchat.bungee.httpserver.NettyChannelMessageHelper;
 import org.lintx.plugins.yinwuchat.bungee.httpserver.WsClientHelper;
 import org.lintx.plugins.yinwuchat.bungee.httpserver.WsClientUtil;
+import org.lintx.plugins.yinwuchat.bungee.manage.MuteManage;
+import org.lintx.plugins.yinwuchat.common.auth.AuthService;
 
 import java.util.*;
 
@@ -27,6 +30,20 @@ public class Commands extends Command {
 
     @Override
     public void execute(CommandSender sender, String[] args) {
+        String label = getName().toLowerCase();
+        if (label.equals("chatban")) {
+            String[] newArgs = new String[args.length + 1];
+            newArgs[0] = "ban";
+            System.arraycopy(args, 0, newArgs, 1, args.length);
+            args = newArgs;
+        }
+        if (label.equals("chatunban")) {
+            String[] newArgs = new String[args.length + 1];
+            newArgs[0] = "unban";
+            System.arraycopy(args, 0, newArgs, 1, args.length);
+            args = newArgs;
+        }
+
         if (args.length>=1 && args[0].equalsIgnoreCase("reload")) {
             if (sender instanceof ProxiedPlayer) {
                 ProxiedPlayer player = (ProxiedPlayer) sender;
@@ -90,6 +107,161 @@ public class Commands extends Command {
                     return;
                 }
             }
+            else if (first.equalsIgnoreCase("ban") || first.equalsIgnoreCase("chatban")) {
+                if (player.hasPermission(Const.PERMISSION_ADMIN) || isAdmin) {
+                    if (args.length < 2) {
+                        sender.sendMessage(MessageUtil.newTextComponent(ChatColor.RED + "命令格式：/chatban <账号名/玩家名> [时长] [理由]"));
+                        sender.sendMessage(MessageUtil.newTextComponent(ChatColor.GRAY + "时长支持: 10s/10秒、30m/30分钟、2h/2小时、1d/1天，纯数字默认秒，缺省为永久"));
+                        return;
+                    }
+                    String target = args[1];
+                    String durationArg = args.length >= 3 ? args[2] : "";
+                    long durationMillis = AuthService.parseDurationMillis(durationArg);
+                    int reasonStart = 3;
+                    if (durationMillis == 0L && args.length >= 3) {
+                        reasonStart = 2;
+                    }
+                    String reason = "";
+                    if (args.length > reasonStart) {
+                        reason = String.join(" ", Arrays.copyOfRange(args, reasonStart, args.length));
+                    }
+                    AuthService authService = AuthService.getInstance(plugin.getDataFolder());
+                    String accountName = target;
+                    String playerName = "";
+                    if (!authService.accountExists(target)) {
+                        String mapped = authService.resolveAccountByPlayerName(target);
+                        if (mapped == null || mapped.isEmpty()) {
+                            sender.sendMessage(MessageUtil.newTextComponent(ChatColor.RED + "未找到对应的 Web 账户"));
+                            return;
+                        }
+                        accountName = mapped;
+                        playerName = target;
+                    } else {
+                        playerName = authService.getBoundPlayerName(accountName);
+                    }
+                    AuthService.BanResult result = authService.banUser(accountName, durationMillis, reason, player.getName());
+                    if (result.notFound) {
+                        sender.sendMessage(MessageUtil.newTextComponent(ChatColor.RED + "未找到该 Web 账户"));
+                        return;
+                    }
+                    if (!result.ok) {
+                        sender.sendMessage(MessageUtil.newTextComponent(ChatColor.RED + "封禁失败，请稍后重试"));
+                        return;
+                    }
+                    if (playerName != null && !playerName.isEmpty()) {
+                        long muteSeconds = durationMillis <= 0L ? 0L : Math.max(1L, durationMillis / 1000L);
+                        MuteManage.getInstance().mutePlayer(playerName, muteSeconds, player.getName(), reason);
+                    }
+                    String durationText = AuthService.formatDuration(durationMillis <= 0L ? -1L : durationMillis);
+                    String tip = ChatColor.GREEN + "已封禁账号 " + ChatColor.YELLOW + accountName + ChatColor.GREEN
+                        + "，时长: " + ChatColor.AQUA + (durationText.isEmpty() ? "永久" : durationText)
+                        + ChatColor.GREEN + (reason == null || reason.isEmpty() ? "" : "，理由: " + ChatColor.YELLOW + reason);
+                    if (playerName != null && !playerName.isEmpty()) {
+                        tip += ChatColor.GREEN + "（玩家: " + ChatColor.YELLOW + playerName + ChatColor.GREEN + "）";
+                    }
+                    sender.sendMessage(MessageUtil.newTextComponent(tip));
+                    notifyBanToAdmins(accountName, playerName, durationText, reason, player.getName());
+                    kickWebPlayerByName(playerName, accountName, durationText, reason);
+                } else {
+                    sender.sendMessage(MessageUtil.newTextComponent(ChatColor.RED + "权限不足"));
+                }
+                return;
+            }
+            else if (first.equalsIgnoreCase("unban") || first.equalsIgnoreCase("chatunban")) {
+                if (player.hasPermission(Const.PERMISSION_ADMIN) || isAdmin) {
+                    if (args.length < 2) {
+                        sender.sendMessage(MessageUtil.newTextComponent(ChatColor.RED + "命令格式：/chatunban <账号名/玩家名>"));
+                        return;
+                    }
+                    String target = args[1];
+                    AuthService authService = AuthService.getInstance(plugin.getDataFolder());
+                    String accountName = target;
+                    String playerName = "";
+                    if (!authService.accountExists(target)) {
+                        String mapped = authService.resolveAccountByPlayerName(target);
+                        if (mapped == null || mapped.isEmpty()) {
+                            sender.sendMessage(MessageUtil.newTextComponent(ChatColor.RED + "未找到对应的 Web 账户"));
+                            return;
+                        }
+                        accountName = mapped;
+                        playerName = target;
+                    } else {
+                        playerName = authService.getBoundPlayerName(accountName);
+                    }
+                    AuthService.BanResult result = authService.unbanUser(accountName);
+                    if (result.notFound) {
+                        sender.sendMessage(MessageUtil.newTextComponent(ChatColor.RED + "未找到该 Web 账户"));
+                        return;
+                    }
+                    if (!result.ok) {
+                        sender.sendMessage(MessageUtil.newTextComponent(ChatColor.RED + "解封失败，请稍后重试"));
+                        return;
+                    }
+                    // 同时解除游戏内禁言
+                    if (playerName != null && !playerName.isEmpty()) {
+                        MuteManage.getInstance().unmutePlayer(playerName, player.getName());
+                    }
+                    String tip = ChatColor.GREEN + "已解封账号 " + ChatColor.YELLOW + accountName;
+                    if (playerName != null && !playerName.isEmpty()) {
+                        tip += ChatColor.GREEN + "（玩家: " + ChatColor.YELLOW + playerName + ChatColor.GREEN + "）";
+                    }
+                    sender.sendMessage(MessageUtil.newTextComponent(tip));
+                    notifyUnbanToAdmins(accountName, playerName, player.getName());
+                } else {
+                    sender.sendMessage(MessageUtil.newTextComponent(ChatColor.RED + "权限不足"));
+                }
+                return;
+            }
+            else if (first.equalsIgnoreCase("webbind")) {
+                if (player.hasPermission(Const.PERMISSION_ADMIN) || isAdmin) {
+                    if (args.length < 3) {
+                        sender.sendMessage(MessageUtil.newTextComponent(ChatColor.RED + "命令格式：/yinwuchat webbind <query|unbind> <账号名/玩家名>"));
+                        return;
+                    }
+                    String action = args[1].toLowerCase(Locale.ROOT);
+                    String target = args[2];
+                    AuthService authService = AuthService.getInstance(plugin.getDataFolder());
+                    if ("query".equals(action)) {
+                        if (authService.accountExists(target)) {
+                            String bound = authService.getBoundPlayerName(target);
+                            String msg = bound == null || bound.isEmpty()
+                                ? "账号 " + target + " 未绑定玩家名"
+                                : "账号 " + target + " 绑定玩家名: " + bound;
+                            sender.sendMessage(MessageUtil.newTextComponent(ChatColor.GREEN + msg));
+                            return;
+                        }
+                        String account = authService.resolveAccountByPlayerName(target);
+                        if (account == null || account.isEmpty()) {
+                            sender.sendMessage(MessageUtil.newTextComponent(ChatColor.RED + "未找到对应的绑定信息"));
+                            return;
+                        }
+                        sender.sendMessage(MessageUtil.newTextComponent(ChatColor.GREEN + "玩家 " + target + " 绑定账号: " + account));
+                        return;
+                    }
+                    if ("unbind".equals(action)) {
+                        if (authService.accountExists(target)) {
+                            boolean ok = authService.unbindAccountPlayerName(target);
+                            if (ok) {
+                                sender.sendMessage(MessageUtil.newTextComponent(ChatColor.GREEN + "已解绑账号 " + target + " 的玩家名"));
+                            } else {
+                                sender.sendMessage(MessageUtil.newTextComponent(ChatColor.RED + "解绑失败"));
+                            }
+                            return;
+                        }
+                        String account = authService.unbindAccountByPlayerName(target);
+                        if (account == null || account.isEmpty()) {
+                            sender.sendMessage(MessageUtil.newTextComponent(ChatColor.RED + "未找到对应的绑定信息"));
+                            return;
+                        }
+                        sender.sendMessage(MessageUtil.newTextComponent(ChatColor.GREEN + "已解绑玩家 " + target + " 的账号 " + account));
+                        return;
+                    }
+                    sender.sendMessage(MessageUtil.newTextComponent(ChatColor.RED + "命令格式：/yinwuchat webbind <query|unbind> <账号名/玩家名>"));
+                } else {
+                    sender.sendMessage(MessageUtil.newTextComponent(ChatColor.RED + "权限不足"));
+                }
+                return;
+            }
             else if (first.equalsIgnoreCase("bind")) {
                 if (player.hasPermission(Const.PERMISSION_BIND) || isDefault) {
                     if (args.length>=2) {
@@ -102,7 +274,10 @@ public class Commands extends Command {
                             if (channel != null) {
                                 WsClientHelper.get(channel).setUUID(playerUUID);
                                 NettyChannelMessageHelper.send(channel,(new org.lintx.plugins.yinwuchat.bungee.json.InputCheckToken(token,false)).getJSON());
-                                WsClientHelper.kickOtherWS(channel, playerUUID);
+                                // 发送绑定成功的系统消息到 Web 客户端
+                                NettyChannelMessageHelper.send(channel, OutputServerMessage.infoJSON("✓ 已绑定 Web 账户与玩家名").getJSON());
+                                // 允许多端同时在线，不再踢出其他连接
+                                // WsClientHelper.kickOtherWS(channel, playerUUID);
                             }
                             org.lintx.plugins.yinwuchat.bungee.json.OutputPlayerList.sendWebPlayerList();
                         }
@@ -530,6 +705,9 @@ public class Commands extends Command {
         }
         if (isAdmin) {
             sender.sendMessage(MessageUtil.newTextComponent(ChatColor.GOLD + "同步权限节点：&b/yinwuchat permsync"));
+            sender.sendMessage(MessageUtil.newTextComponent(ChatColor.GOLD + "Web账号绑定查询/解绑：&b/yinwuchat webbind <query|unbind> <账号名/玩家名>"));
+            sender.sendMessage(MessageUtil.newTextComponent(ChatColor.GOLD + "封禁Web账号：&b/chatban <账号名/玩家名> [时长] [理由]"));
+            sender.sendMessage(MessageUtil.newTextComponent(ChatColor.GOLD + "解封Web账号：&b/chatunban <账号名/玩家名>"));
         }
     }
 
@@ -571,6 +749,99 @@ public class Commands extends Command {
         dispatchPermissionCommands(commands);
         
         sender.sendMessage(MessageUtil.newTextComponent(ChatColor.GREEN + "✓ 已同步权限节点到组: " + adminGroup + ", " + defaultGroup));
+    }
+
+    private void notifyBanToAdmins(String accountName, String playerName, String durationText, String reason, String operator) {
+        String message = "账号 " + accountName + " 已被封禁"
+            + (playerName != null && !playerName.isEmpty() ? "（玩家: " + playerName + "）" : "")
+            + "，时长: " + (durationText == null || durationText.isEmpty() ? "永久" : durationText)
+            + (reason == null || reason.isEmpty() ? "" : "，理由: " + reason);
+
+        // 游戏内管理员
+        for (ProxiedPlayer p : plugin.getProxy().getPlayers()) {
+            if (Config.getInstance().isAdmin(p)) {
+                p.sendMessage(MessageUtil.newTextComponent(ChatColor.YELLOW + message));
+            }
+        }
+
+        // Web 端管理员
+        if (Config.getInstance().openwsserver && YinwuChat.getWSServer() != null) {
+            String json = OutputServerMessage.infoJSON(message).getJSON();
+            for (Channel channel : WsClientHelper.channels()) {
+                WsClientUtil util = WsClientHelper.get(channel);
+                if (util == null || util.getUuid() == null) continue;
+                String name = util.getAccount();
+                if (name == null || name.isEmpty()) {
+                    PlayerConfig.Player pc = PlayerConfig.getConfig(util.getUuid());
+                    if (pc != null) name = pc.name;
+                }
+                if (name != null && Config.getInstance().isAdmin(name)) {
+                    NettyChannelMessageHelper.send(channel, json);
+                }
+            }
+        }
+    }
+
+    private void notifyUnbanToAdmins(String accountName, String playerName, String operator) {
+        String message = "账号 " + accountName + " 已被解封"
+            + (playerName != null && !playerName.isEmpty() ? "（玩家: " + playerName + "）" : "")
+            + "，操作人: " + operator;
+
+        // 游戏内管理员
+        for (ProxiedPlayer p : plugin.getProxy().getPlayers()) {
+            if (Config.getInstance().isAdmin(p)) {
+                p.sendMessage(MessageUtil.newTextComponent(ChatColor.GREEN + message));
+            }
+        }
+
+        // Web 端管理员
+        if (Config.getInstance().openwsserver && YinwuChat.getWSServer() != null) {
+            String json = OutputServerMessage.infoJSON(message).getJSON();
+            for (Channel channel : WsClientHelper.channels()) {
+                WsClientUtil util = WsClientHelper.get(channel);
+                if (util == null || util.getUuid() == null) continue;
+                String name = util.getAccount();
+                if (name == null || name.isEmpty()) {
+                    PlayerConfig.Player pc = PlayerConfig.getConfig(util.getUuid());
+                    if (pc != null) name = pc.name;
+                }
+                if (name != null && Config.getInstance().isAdmin(name)) {
+                    NettyChannelMessageHelper.send(channel, json);
+                }
+            }
+        }
+    }
+
+    private void kickWebPlayerByName(String playerName, String accountName, String durationText, String reason) {
+        if (!Config.getInstance().openwsserver || YinwuChat.getWSServer() == null) return;
+        com.google.gson.JsonObject json = new com.google.gson.JsonObject();
+        json.addProperty("action", "ban_kick");
+        json.addProperty("player", playerName == null ? "" : playerName);
+        json.addProperty("account", accountName == null ? "" : accountName);
+        json.addProperty("durationText", durationText == null || durationText.isEmpty() ? "永久" : durationText);
+        json.addProperty("reason", reason == null ? "" : reason);
+        String payload = json.toString();
+
+        for (Channel channel : WsClientHelper.channels()) {
+            WsClientUtil util = WsClientHelper.get(channel);
+            if (util == null) continue;
+            boolean matched = false;
+            if (accountName != null && !accountName.isEmpty()) {
+                String utilAccount = util.getAccount();
+                if (utilAccount != null && utilAccount.equalsIgnoreCase(accountName)) {
+                    matched = true;
+                }
+            }
+            if (!matched && util.getUuid() != null && playerName != null && !playerName.isEmpty()) {
+                PlayerConfig.Player pc = PlayerConfig.getConfig(util.getUuid());
+                if (pc != null && pc.name != null && pc.name.equalsIgnoreCase(playerName)) {
+                    matched = true;
+                }
+            }
+            if (matched) {
+                channel.writeAndFlush(new io.netty.handler.codec.http.websocketx.TextWebSocketFrame(payload)).addListener(ChannelFutureListener.CLOSE);
+            }
+        }
     }
 
     private void dispatchPermissionCommands(List<String> commands) {

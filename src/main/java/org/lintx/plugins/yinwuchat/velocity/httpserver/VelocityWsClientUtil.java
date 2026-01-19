@@ -9,6 +9,7 @@ import java.util.UUID;
 public class VelocityWsClientUtil {
     private UUID uuid = null;
     private String token;
+    private String account = "";
     private LocalDateTime lastDate;
     
     private VelocityWsClientUtil(String token, UUID uuid) {
@@ -27,6 +28,14 @@ public class VelocityWsClientUtil {
     
     public UUID getUuid() {
         return uuid;
+    }
+
+    public void setAccount(String account) {
+        this.account = account == null ? "" : account;
+    }
+
+    public String getAccount() {
+        return account;
     }
     
     public String getToken() {

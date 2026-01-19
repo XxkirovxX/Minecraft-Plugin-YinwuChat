@@ -1,25 +1,33 @@
 package org.lintx.plugins.yinwuchat.bungee.httpserver;
 
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.WebSocketFrame;
 import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
+import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import org.lintx.plugins.yinwuchat.Const;
+import com.google.gson.JsonObject;
+import org.lintx.plugins.yinwuchat.Util.MessageUtil;
 import org.lintx.plugins.yinwuchat.bungee.config.Config;
 import org.lintx.plugins.yinwuchat.bungee.MessageManage;
 import org.lintx.plugins.yinwuchat.bungee.YinwuChat;
 import org.lintx.plugins.yinwuchat.bungee.json.*;
 import org.lintx.plugins.yinwuchat.bungee.config.PlayerConfig;
+import org.lintx.plugins.yinwuchat.bungee.manage.MuteManage;
+import org.lintx.plugins.yinwuchat.common.auth.AuthService;
+import org.lintx.plugins.yinwuchat.common.auth.AuthUserStore;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
 public class NettyWebSocketFrameHandler extends SimpleChannelInboundHandler<WebSocketFrame> {
@@ -50,7 +58,12 @@ public class NettyWebSocketFrameHandler extends SimpleChannelInboundHandler<WebS
                     else{
                         if (o.getIsbind()) {
                             clientUtil.setUUID(o.getUuid());
-                            WsClientHelper.kickOtherWS(channel, o.getUuid());
+                            // 允许多端同时在线，不再踢出其他连接
+                            // WsClientHelper.kickOtherWS(channel, o.getUuid());
+
+                            if (enforceAccountBan(channel, clientUtil)) {
+                                return;
+                            }
 
                             sendSelfInfo(channel, o.getUuid());
                             OutputPlayerList.sendGamePlayerList(channel);
@@ -67,6 +80,9 @@ public class NettyWebSocketFrameHandler extends SimpleChannelInboundHandler<WebS
                 else if (object instanceof InputCommand) {
                     InputCommand o = (InputCommand)object;
                     handleCommandAction(channel, o);
+                }
+                else if (object instanceof InputBindAccount) {
+                    handleBindAccount(channel, (InputBindAccount) object);
                 }
                 else if (object instanceof InputCoolQ){
                     InputCoolQ coolMessage = (InputCoolQ)object;
@@ -151,6 +167,18 @@ public class NettyWebSocketFrameHandler extends SimpleChannelInboundHandler<WebS
     private void handleCommand(Channel channel, WsClientUtil util, String message) {
         String[] commandArgs = message.replaceFirst("^/", "").split("\\s+");
         String label = commandArgs[0].toLowerCase();
+        if (label.equals("chatban")) {
+            commandArgs[0] = "ban";
+            label = "ban";
+        }
+        if (label.equals("chatunban")) {
+            commandArgs[0] = "unban";
+            label = "unban";
+        }
+
+        if (enforceAccountBan(channel, util)) {
+            return;
+        }
 
         if (label.equals("msg") || label.equals("tell") || label.equals("whisper") || label.equals("w") || label.equals("t")) {
             if (commandArgs.length >= 3) {
@@ -159,7 +187,7 @@ public class NettyWebSocketFrameHandler extends SimpleChannelInboundHandler<WebS
                 String msg = String.join(" ", tmpList);
                 MessageManage.getInstance().handleWebPrivateMessage(channel, util, toPlayerName, msg);
             }
-        } else if (label.equals("yinwuchat") || label.equals("ignore") || label.equals("noat") || label.equals("vanish")) {
+        } else if (label.equals("yinwuchat") || label.equals("ignore") || label.equals("noat") || label.equals("vanish") || label.equals("ban") || label.equals("unban")) {
             // 对于插件自身指令，无论玩家是否在线都允许执行
             String[] args;
             if (label.equals("yinwuchat")) {
@@ -177,6 +205,36 @@ public class NettyWebSocketFrameHandler extends SimpleChannelInboundHandler<WebS
                 NettyChannelMessageHelper.send(channel, OutputServerMessage.errorJSON("✗ 你必须在游戏内在线才能执行此指令").getJSON());
             }
         }
+    }
+
+    private void handleBindAccount(Channel channel, InputBindAccount input) {
+        WsClientUtil util = WsClientHelper.get(channel);
+        if (util == null || util.getUuid() == null) {
+            NettyChannelMessageHelper.send(channel, OutputServerMessage.errorJSON("请先绑定账号").getJSON());
+            return;
+        }
+        String account = input.getAccount();
+        if (account == null || account.trim().isEmpty()) {
+            NettyChannelMessageHelper.send(channel, OutputServerMessage.errorJSON("Web 账户名不能为空").getJSON());
+            return;
+        }
+        PlayerConfig.Player playerConfig = PlayerConfig.getConfig(util.getUuid());
+        if (playerConfig == null || playerConfig.name == null || playerConfig.name.isEmpty()) {
+            NettyChannelMessageHelper.send(channel, OutputServerMessage.errorJSON("无法获取玩家名称").getJSON());
+            return;
+        }
+        org.lintx.plugins.yinwuchat.common.auth.AuthService authService =
+            org.lintx.plugins.yinwuchat.common.auth.AuthService.getInstance(plugin.getDataFolder());
+        if (!authService.accountExists(account)) {
+            NettyChannelMessageHelper.send(channel, OutputServerMessage.errorJSON("Web 账户不存在").getJSON());
+            return;
+        }
+        authService.bindAccountPlayerName(account, playerConfig.name);
+        util.setAccount(account);
+        if (enforceAccountBan(channel, util)) {
+            return;
+        }
+        // 绑定成功，但不发送消息（消息只在游戏内bind指令成功时发送）
     }
 
     /**
@@ -267,6 +325,28 @@ public class NettyWebSocketFrameHandler extends SimpleChannelInboundHandler<WebS
             }
             // 广播更新后的玩家列表
             OutputPlayerList.sendPlayerStatusList();
+        } else if (cmd.equals("ban") || cmd.equals("chatban")) {
+            if (!isAdmin) {
+                NettyChannelMessageHelper.send(channel, OutputServerMessage.errorJSON("✗ 权限不足").getJSON());
+                return;
+            }
+            handleWebBanCommand(channel, playerName, args);
+        } else if (cmd.equals("unban") || cmd.equals("chatunban")) {
+            if (!isAdmin) {
+                NettyChannelMessageHelper.send(channel, OutputServerMessage.errorJSON("✗ 权限不足").getJSON());
+                return;
+            }
+            handleWebUnbanCommand(channel, playerName, args);
+        } else if (cmd.equals("atalladmin")) {
+            handleWebAtAllAdminCommand(channel, util, playerName, isAdmin, args);
+        } else if (cmd.equals("atalladmin_execute")) {
+            handleWebAtAllAdminExecute(channel, util, playerName, isAdmin);
+        } else if (cmd.equals("webbind")) {
+            if (!isAdmin) {
+                NettyChannelMessageHelper.send(channel, OutputServerMessage.errorJSON("✗ 权限不足").getJSON());
+                return;
+            }
+            handleWebBindCommand(channel, args);
         } else if (cmd.equals("mute") || cmd.equals("unmute") || cmd.equals("muteinfo")) {
             if (!isAdmin) {
                 NettyChannelMessageHelper.send(channel, OutputServerMessage.errorJSON("✗ 权限不足").getJSON());
@@ -324,7 +404,366 @@ public class NettyWebSocketFrameHandler extends SimpleChannelInboundHandler<WebS
                 }
             }
         } else {
-            NettyChannelMessageHelper.send(channel, OutputServerMessage.infoJSON("可用指令: /yinwuchat [ws|ignore|muteat|vanish|mute|unmute|muteinfo]").getJSON());
+            NettyChannelMessageHelper.send(channel, OutputServerMessage.infoJSON("可用指令: /yinwuchat [ws|ignore|muteat|vanish|chatban|chatunban|webbind|atalladmin|mute|unmute|muteinfo]").getJSON());
+        }
+    }
+
+    private void handleWebAtAllAdminCommand(Channel channel, WsClientUtil util, String playerName, boolean isAdmin, String[] args) {
+        ProxiedPlayer player = util != null && util.getUuid() != null ? plugin.getProxy().getPlayer(util.getUuid()) : null;
+        boolean hasPermission = (player != null && player.hasPermission(Const.PERMISSION_AT_ALL_ADMIN)) || isAdmin;
+        if (!hasPermission) {
+            NettyChannelMessageHelper.send(channel, OutputServerMessage.errorJSON("✗ 权限不足").getJSON());
+            return;
+        }
+        if (args.length >= 2 && args[1].equalsIgnoreCase("confirm")) {
+            boolean canReset = (player != null && player.hasPermission(Const.PERMISSION_AT_ALL_ADMIN_RESET)) || isAdmin;
+            if (!canReset) {
+                NettyChannelMessageHelper.send(channel, OutputServerMessage.errorJSON("✗ 权限不足").getJSON());
+                return;
+            }
+            if (args.length < 3) {
+                NettyChannelMessageHelper.send(channel, OutputServerMessage.errorJSON("用法: /yinwuchat atalladmin confirm <玩家名>").getJSON());
+                return;
+            }
+            String targetName = args[2];
+            PlayerConfig.Player targetConfig = PlayerConfig.getPlayerConfigByName(targetName);
+            if (targetConfig != null) {
+                targetConfig.lastAtAllAdmin = 0;
+                targetConfig.save();
+                NettyChannelMessageHelper.send(channel, OutputServerMessage.infoJSON("✓ 已重置玩家 " + targetName + " 的突发事件提醒冷却时间").getJSON());
+            } else {
+                NettyChannelMessageHelper.send(channel, OutputServerMessage.errorJSON("✗ 未找到玩家 " + targetName).getJSON());
+            }
+            return;
+        }
+
+        PlayerConfig.Player selfConfig = util != null && util.getUuid() != null ? PlayerConfig.getConfig(util.getUuid()) : null;
+        long last = selfConfig != null ? selfConfig.lastAtAllAdmin : 0L;
+        long now = System.currentTimeMillis();
+        if (last > 0 && now - last < 24 * 60 * 60 * 1000L) {
+            long remaining = 24 * 60 * 60 * 1000L - (now - last);
+            long hours = remaining / (60 * 60 * 1000L);
+            long minutes = (remaining % (60 * 60 * 1000L)) / (60 * 1000L);
+            NettyChannelMessageHelper.send(channel, OutputServerMessage.errorJSON("✗ 你今天已经使用过该功能了，请在 " + hours + " 小时 " + minutes + " 分钟后再试").getJSON());
+            return;
+        }
+
+        com.google.gson.JsonObject confirm = new com.google.gson.JsonObject();
+        confirm.addProperty("action", "atalladmin_confirm");
+        confirm.addProperty("message", "⚠ 请确认目前情况是否需要提醒所有管理员，若情况不属实，将承担被封禁的风险！！");
+        NettyChannelMessageHelper.send(channel, confirm.toString());
+    }
+
+    private void handleWebAtAllAdminExecute(Channel channel, WsClientUtil util, String playerName, boolean isAdmin) {
+        ProxiedPlayer player = util != null && util.getUuid() != null ? plugin.getProxy().getPlayer(util.getUuid()) : null;
+        boolean hasPermission = (player != null && player.hasPermission(Const.PERMISSION_AT_ALL_ADMIN)) || isAdmin;
+        if (!hasPermission) {
+            NettyChannelMessageHelper.send(channel, OutputServerMessage.errorJSON("✗ 权限不足").getJSON());
+            return;
+        }
+        PlayerConfig.Player selfConfig = util != null && util.getUuid() != null ? PlayerConfig.getConfig(util.getUuid()) : null;
+        long last = selfConfig != null ? selfConfig.lastAtAllAdmin : 0L;
+        long now = System.currentTimeMillis();
+        if (last > 0 && now - last < 24 * 60 * 60 * 1000L) {
+            NettyChannelMessageHelper.send(channel, OutputServerMessage.errorJSON("✗ 冷却中").getJSON());
+            return;
+        }
+        if (selfConfig != null) {
+            selfConfig.lastAtAllAdmin = now;
+            selfConfig.save();
+        }
+
+        String senderName = playerName;
+        if (senderName == null || senderName.isEmpty()) {
+            senderName = player != null ? player.getName() : "Web用户";
+        }
+        net.md_5.bungee.api.chat.TextComponent gameAlert = new net.md_5.bungee.api.chat.TextComponent("警告！" + senderName + " 报告服务器存在突发事件，请立即查看");
+        gameAlert.setColor(ChatColor.RED);
+        gameAlert.setBold(true);
+
+        com.google.gson.JsonObject webAlert = new com.google.gson.JsonObject();
+        webAlert.addProperty("action", "admin_alert");
+        webAlert.addProperty("message", "存在需要立即处理的服务器风险");
+        webAlert.addProperty("player", senderName);
+        String webAlertJson = webAlert.toString();
+
+        for (ProxiedPlayer p : plugin.getProxy().getPlayers()) {
+            if (Config.getInstance().isAdmin(p)) {
+                p.sendMessage(gameAlert);
+            }
+        }
+        for (Channel ch : WsClientHelper.channels()) {
+            WsClientUtil u = WsClientHelper.get(ch);
+            if (u != null && u.getUuid() != null) {
+                PlayerConfig.Player pc = PlayerConfig.getConfig(u.getUuid());
+                if (pc.name != null && Config.getInstance().isAdmin(pc.name)) {
+                    NettyChannelMessageHelper.send(ch, webAlertJson);
+                }
+            }
+        }
+        NettyChannelMessageHelper.send(channel, OutputServerMessage.infoJSON("✓ 突发事件报告已发送给所有管理员").getJSON());
+    }
+
+    private void handleWebBindCommand(Channel channel, String[] args) {
+        if (args.length < 3) {
+            NettyChannelMessageHelper.send(channel, OutputServerMessage.errorJSON("用法: /yinwuchat webbind <query|unbind> <账号名/玩家名>").getJSON());
+            return;
+        }
+        String action = args[1].toLowerCase(Locale.ROOT);
+        String target = args[2];
+        AuthService authService = AuthService.getInstance(plugin.getDataFolder());
+        if ("query".equals(action)) {
+            if (authService.accountExists(target)) {
+                String bound = authService.getBoundPlayerName(target);
+                String msg = bound == null || bound.isEmpty()
+                    ? "账号 " + target + " 未绑定玩家名"
+                    : "账号 " + target + " 绑定玩家名: " + bound;
+                NettyChannelMessageHelper.send(channel, OutputServerMessage.infoJSON(msg).getJSON());
+                return;
+            }
+            String account = authService.resolveAccountByPlayerName(target);
+            if (account == null || account.isEmpty()) {
+                NettyChannelMessageHelper.send(channel, OutputServerMessage.errorJSON("未找到对应的绑定信息").getJSON());
+                return;
+            }
+            NettyChannelMessageHelper.send(channel, OutputServerMessage.infoJSON("玩家 " + target + " 绑定账号: " + account).getJSON());
+            return;
+        }
+        if ("unbind".equals(action)) {
+            if (authService.accountExists(target)) {
+                boolean ok = authService.unbindAccountPlayerName(target);
+                NettyChannelMessageHelper.send(channel, OutputServerMessage.infoJSON(ok
+                    ? "已解绑账号 " + target + " 的玩家名"
+                    : "解绑失败").getJSON());
+                return;
+            }
+            String account = authService.unbindAccountByPlayerName(target);
+            if (account == null || account.isEmpty()) {
+                NettyChannelMessageHelper.send(channel, OutputServerMessage.errorJSON("未找到对应的绑定信息").getJSON());
+                return;
+            }
+            NettyChannelMessageHelper.send(channel, OutputServerMessage.infoJSON("已解绑玩家 " + target + " 的账号 " + account).getJSON());
+            return;
+        }
+        NettyChannelMessageHelper.send(channel, OutputServerMessage.errorJSON("用法: /yinwuchat webbind <query|unbind> <账号名/玩家名>").getJSON());
+    }
+
+    private void handleWebBanCommand(Channel channel, String operatorName, String[] args) {
+        if (args.length < 2) {
+            NettyChannelMessageHelper.send(channel, OutputServerMessage.errorJSON("用法: /chatban <账号名/玩家名> [时长] [理由]，时长如10s/10秒/30m/1h/1d，纯数字默认秒").getJSON());
+            return;
+        }
+        String target = args[1];
+        String durationArg = args.length >= 3 ? args[2] : "";
+        long durationMillis = AuthService.parseDurationMillis(durationArg);
+        int reasonStart = 3;
+        if (durationMillis == 0L && args.length >= 3) {
+            reasonStart = 2;
+        }
+        String reason = "";
+        if (args.length > reasonStart) {
+            reason = String.join(" ", Arrays.copyOfRange(args, reasonStart, args.length));
+        }
+        AuthService authService = AuthService.getInstance(plugin.getDataFolder());
+        String accountName = target;
+        String playerName = "";
+        if (!authService.accountExists(target)) {
+            String mapped = authService.resolveAccountByPlayerName(target);
+            if (mapped == null || mapped.isEmpty()) {
+                NettyChannelMessageHelper.send(channel, OutputServerMessage.errorJSON("✗ 未找到对应的 Web 账户").getJSON());
+                return;
+            }
+            accountName = mapped;
+            playerName = target;
+        } else {
+            playerName = authService.getBoundPlayerName(accountName);
+        }
+        AuthService.BanResult result = authService.banUser(accountName, durationMillis, reason, operatorName);
+        if (result.notFound) {
+            NettyChannelMessageHelper.send(channel, OutputServerMessage.errorJSON("✗ 未找到该 Web 账户").getJSON());
+            return;
+        }
+        if (!result.ok) {
+            NettyChannelMessageHelper.send(channel, OutputServerMessage.errorJSON("✗ 封禁失败，请稍后重试").getJSON());
+            return;
+        }
+        if (playerName != null && !playerName.isEmpty()) {
+            long muteSeconds = durationMillis <= 0L ? 0L : Math.max(1L, durationMillis / 1000L);
+            MuteManage.getInstance().mutePlayer(playerName, muteSeconds, operatorName, reason);
+        }
+        String durationText = AuthService.formatDuration(durationMillis <= 0L ? -1L : durationMillis);
+        String info = "✓ 已封禁账号 " + accountName
+            + "，时长: " + (durationText.isEmpty() ? "永久" : durationText)
+            + (reason == null || reason.isEmpty() ? "" : "，理由: " + reason);
+        if (playerName != null && !playerName.isEmpty()) {
+            info += "（玩家: " + playerName + "）";
+        }
+        NettyChannelMessageHelper.send(channel, OutputServerMessage.infoJSON(info).getJSON());
+        notifyBanToAdmins(accountName, playerName, durationText, reason, operatorName, channel);
+        kickWebPlayerByName(playerName, accountName, durationText, reason);
+    }
+
+    private void handleWebUnbanCommand(Channel channel, String operatorName, String[] args) {
+        if (args.length < 2) {
+            NettyChannelMessageHelper.send(channel, OutputServerMessage.errorJSON("用法: /chatunban <账号名/玩家名>").getJSON());
+            return;
+        }
+        String target = args[1];
+        AuthService authService = AuthService.getInstance(plugin.getDataFolder());
+        String accountName = target;
+        String playerName = "";
+        if (!authService.accountExists(target)) {
+            String mapped = authService.resolveAccountByPlayerName(target);
+            if (mapped == null || mapped.isEmpty()) {
+                NettyChannelMessageHelper.send(channel, OutputServerMessage.errorJSON("✗ 未找到对应的 Web 账户").getJSON());
+                return;
+            }
+            accountName = mapped;
+            playerName = target;
+        } else {
+            playerName = authService.getBoundPlayerName(accountName);
+        }
+        AuthService.BanResult result = authService.unbanUser(accountName);
+        if (result.notFound) {
+            NettyChannelMessageHelper.send(channel, OutputServerMessage.errorJSON("✗ 未找到该 Web 账户").getJSON());
+            return;
+        }
+        if (!result.ok) {
+            NettyChannelMessageHelper.send(channel, OutputServerMessage.errorJSON("✗ 解封失败，请稍后重试").getJSON());
+            return;
+        }
+        // 同时解除游戏内禁言
+        if (playerName != null && !playerName.isEmpty()) {
+            MuteManage.getInstance().unmutePlayer(playerName, operatorName);
+        }
+        String info = "✓ 已解封账号 " + accountName;
+        if (playerName != null && !playerName.isEmpty()) {
+            info += "（玩家: " + playerName + "）";
+        }
+        NettyChannelMessageHelper.send(channel, OutputServerMessage.infoJSON(info).getJSON());
+        notifyUnbanToAdmins(accountName, playerName, operatorName, channel);
+    }
+
+    private void notifyUnbanToAdmins(String accountName, String playerName, String operator, Channel excludeChannel) {
+        String message = "账号 " + accountName + " 已被解封"
+            + (playerName != null && !playerName.isEmpty() ? "（玩家: " + playerName + "）" : "")
+            + "，操作人: " + operator;
+
+        // 游戏内管理员
+        for (ProxiedPlayer p : plugin.getProxy().getPlayers()) {
+            if (Config.getInstance().isAdmin(p)) {
+                p.sendMessage(MessageUtil.newTextComponent(ChatColor.GREEN + message));
+            }
+        }
+
+        // Web 端管理员
+        if (Config.getInstance().openwsserver && YinwuChat.getWSServer() != null) {
+            String json = OutputServerMessage.infoJSON(message).getJSON();
+            for (Channel ch : WsClientHelper.channels()) {
+                WsClientUtil util = WsClientHelper.get(ch);
+                if (util == null) continue;
+
+                boolean isAdmin = false;
+                String name = util.getAccount();
+                if (util.getUuid() != null) {
+                    ProxiedPlayer pp = plugin.getProxy().getPlayer(util.getUuid());
+                    if (pp != null) {
+                        isAdmin = Config.getInstance().isAdmin(pp);
+                    }
+                    if (!isAdmin) {
+                        PlayerConfig.Player pc = PlayerConfig.getConfig(util.getUuid());
+                        if (pc != null && pc.name != null) {
+                            if (name == null || name.isEmpty()) name = pc.name;
+                            isAdmin = Config.getInstance().isAdmin(pc.name);
+                        }
+                    }
+                }
+                if (!isAdmin && name != null && !name.isEmpty()) {
+                    isAdmin = Config.getInstance().isAdmin(name);
+                }
+
+                if (isAdmin) {
+                    NettyChannelMessageHelper.send(ch, json);
+                }
+            }
+        }
+    }
+
+    private void notifyBanToAdmins(String accountName, String playerName, String durationText, String reason, String operator, Channel excludeChannel) {
+        String message = "账号 " + accountName + " 已被封禁"
+            + (playerName != null && !playerName.isEmpty() ? "（玩家: " + playerName + "）" : "")
+            + "，时长: " + (durationText == null || durationText.isEmpty() ? "永久" : durationText)
+            + (reason == null || reason.isEmpty() ? "" : "，理由: " + reason);
+
+        // 游戏内管理员
+        for (ProxiedPlayer p : plugin.getProxy().getPlayers()) {
+            if (Config.getInstance().isAdmin(p)) {
+                p.sendMessage(MessageUtil.newTextComponent(ChatColor.YELLOW + message));
+            }
+        }
+
+        // Web 端管理员
+        if (Config.getInstance().openwsserver && YinwuChat.getWSServer() != null) {
+            String json = OutputServerMessage.infoJSON(message).getJSON();
+            for (Channel ch : WsClientHelper.channels()) {
+                WsClientUtil util = WsClientHelper.get(ch);
+                if (util == null) continue;
+
+                boolean isAdmin = false;
+                String name = util.getAccount();
+                if (util.getUuid() != null) {
+                    ProxiedPlayer pp = plugin.getProxy().getPlayer(util.getUuid());
+                    if (pp != null) {
+                        isAdmin = Config.getInstance().isAdmin(pp);
+                    }
+                    if (!isAdmin) {
+                        PlayerConfig.Player pc = PlayerConfig.getConfig(util.getUuid());
+                        if (pc != null && pc.name != null) {
+                            if (name == null || name.isEmpty()) name = pc.name;
+                            isAdmin = Config.getInstance().isAdmin(pc.name);
+                        }
+                    }
+                }
+                if (!isAdmin && name != null && !name.isEmpty()) {
+                    isAdmin = Config.getInstance().isAdmin(name);
+                }
+
+                if (isAdmin) {
+                    NettyChannelMessageHelper.send(ch, json);
+                }
+            }
+        }
+    }
+
+    private void kickWebPlayerByName(String playerName, String accountName, String durationText, String reason) {
+        if (!Config.getInstance().openwsserver || YinwuChat.getWSServer() == null) return;
+        JsonObject json = new JsonObject();
+        json.addProperty("action", "ban_kick");
+        json.addProperty("player", playerName == null ? "" : playerName);
+        json.addProperty("account", accountName == null ? "" : accountName);
+        json.addProperty("durationText", durationText == null || durationText.isEmpty() ? "永久" : durationText);
+        json.addProperty("reason", reason == null ? "" : reason);
+        String payload = json.toString();
+
+        for (Channel ch : WsClientHelper.channels()) {
+            WsClientUtil util = WsClientHelper.get(ch);
+            if (util == null) continue;
+            boolean matched = false;
+            if (accountName != null && !accountName.isEmpty()) {
+                String utilAccount = util.getAccount();
+                if (utilAccount != null && utilAccount.equalsIgnoreCase(accountName)) {
+                    matched = true;
+                }
+            }
+            if (!matched && util.getUuid() != null && playerName != null && !playerName.isEmpty()) {
+                PlayerConfig.Player pc = PlayerConfig.getConfig(util.getUuid());
+                if (pc != null && pc.name != null && pc.name.equalsIgnoreCase(playerName)) {
+                    matched = true;
+                }
+            }
+            if (matched) {
+                ch.writeAndFlush(new io.netty.handler.codec.http.websocketx.TextWebSocketFrame(payload)).addListener(ChannelFutureListener.CLOSE);
+            }
         }
     }
 
@@ -335,6 +774,9 @@ public class NettyWebSocketFrameHandler extends SimpleChannelInboundHandler<WebS
 
         WsClientUtil util = WsClientHelper.get(channel);
         if (util != null && util.getUuid() != null) {
+            if (enforceAccountBan(channel, util)) {
+                return;
+            }
             if (!util.getLastDate().isEqual(LocalDateTime.MIN)) {
                 Duration duration = Duration.between(util.getLastDate(), LocalDateTime.now());
                 if (duration.toMillis() < Config.getInstance().wsCooldown) {
@@ -350,5 +792,45 @@ public class NettyWebSocketFrameHandler extends SimpleChannelInboundHandler<WebS
             }
             MessageManage.getInstance().handleWebPublicMessage(util.getUuid(), o.getMessage(), channel);
         }
+    }
+
+    private boolean enforceAccountBan(Channel channel, WsClientUtil util) {
+        if (util == null) {
+            return false;
+        }
+        String accountName = util.getAccount();
+        String playerName = "";
+        if (util.getUuid() != null) {
+            PlayerConfig.Player pc = PlayerConfig.getConfig(util.getUuid());
+            if (pc != null && pc.name != null) {
+                playerName = pc.name;
+            }
+        }
+        if (accountName == null || accountName.isEmpty()) {
+            if (playerName == null || playerName.isEmpty()) {
+                return false;
+            }
+            AuthService authService = AuthService.getInstance(plugin.getDataFolder());
+            String mapped = authService.resolveAccountByPlayerName(playerName);
+            if (mapped == null || mapped.isEmpty()) {
+                return false;
+            }
+            accountName = mapped;
+        }
+        AuthService authService = AuthService.getInstance(plugin.getDataFolder());
+        AuthUserStore.BanInfo banInfo = authService.getBanInfo(accountName);
+        if (!banInfo.banned) {
+            return false;
+        }
+        String durationText = AuthService.formatDuration(banInfo.permanent ? -1L : banInfo.remainingMillis);
+        JsonObject json = new JsonObject();
+        json.addProperty("action", "ban_kick");
+        json.addProperty("player", playerName == null ? "" : playerName);
+        json.addProperty("account", accountName == null ? "" : accountName);
+        json.addProperty("durationText", durationText == null || durationText.isEmpty() ? "永久" : durationText);
+        json.addProperty("reason", banInfo.reason == null ? "" : banInfo.reason);
+        json.addProperty("by", banInfo.bannedBy == null ? "" : banInfo.bannedBy);
+        channel.writeAndFlush(new io.netty.handler.codec.http.websocketx.TextWebSocketFrame(json.toString())).addListener(ChannelFutureListener.CLOSE);
+        return true;
     }
 }

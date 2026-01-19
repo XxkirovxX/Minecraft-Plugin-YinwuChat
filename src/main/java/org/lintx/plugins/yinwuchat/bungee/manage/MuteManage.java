@@ -52,11 +52,15 @@ public class MuteManage {
 
     public boolean mutePlayer(String targetName, long duration, String operatorName, String reason) {
         ProxiedPlayer player = YinwuChat.getPlugin().getProxy().getPlayer(targetName);
-        PlayerConfig.Player settings;
+        PlayerConfig.Player settings = null;
         if (player != null) {
             settings = PlayerConfig.getConfig(player);
         } else {
-            // 如果离线，目前 Bungee 版插件架构加载配置比较麻烦，暂时只支持在线禁言
+            settings = PlayerConfig.getPlayerConfigByName(targetName);
+        }
+        
+        if (settings == null) {
+            // 如果离线且未找到配置，目前无法禁言
             return false;
         }
 

@@ -442,7 +442,9 @@ public class MessageManage {
         if (config.allowPlayerFormatPrefixSuffix && null!=playerConfig.privatePrefix && !"".equals(playerConfig.privatePrefix)) message = playerConfig.privatePrefix + message;
         if (config.allowPlayerFormatPrefixSuffix && null!=playerConfig.privateSuffix && !"".equals(playerConfig.privateSuffix)) message = message + playerConfig.privateSuffix;
 
-        ShieldedManage.Result result = ShieldedManage.getInstance().checkShielded(channel,util.getUuid().toString(),message);
+        // 屏蔽词检查（带账户名，用于 Web 端封禁）
+        String senderAccount = util.getAccount();
+        ShieldedManage.Result result = ShieldedManage.getInstance().checkShielded(channel,util.getUuid().toString(),senderAccount,message);
         if (result.kick){
             return;
         }
@@ -593,7 +595,15 @@ public class MessageManage {
         if (config.allowPlayerFormatPrefixSuffix && null!=playerConfig.publicPrefix && !"".equals(playerConfig.publicPrefix)) message = playerConfig.publicPrefix + message;
         if (config.allowPlayerFormatPrefixSuffix && null!=playerConfig.publicSuffix && !"".equals(playerConfig.publicSuffix)) message = message + playerConfig.publicSuffix;
 
-        ShieldedManage.Result result = ShieldedManage.getInstance().checkShielded(channel,uuid.toString(),message);
+        // 屏蔽词检查（带账户名，用于 Web 端封禁）
+        String accountName = null;
+        for (WsClientUtil wsUtil : WsClientHelper.utils()) {
+            if (wsUtil != null && uuid.equals(wsUtil.getUuid())) {
+                accountName = wsUtil.getAccount();
+                break;
+            }
+        }
+        ShieldedManage.Result result = ShieldedManage.getInstance().checkShielded(channel,uuid.toString(),accountName,message);
         if (result.kick){
             return;
         }

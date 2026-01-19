@@ -1301,10 +1301,18 @@ public class MessageManage {
             return;
         }
         
-        // 检查屏蔽词
+        // 检查屏蔽词（带账户名，用于 Web 端封禁）
+        String accountName = null;
+        for (io.netty.channel.Channel wsChannel : VelocityWsClientHelper.getChannels()) {
+            VelocityWsClientUtil wsUtil = VelocityWsClientHelper.get(wsChannel);
+            if (wsUtil != null && playerUuid.equals(wsUtil.getUuid())) {
+                accountName = wsUtil.getAccount();
+                break;
+            }
+        }
         org.lintx.plugins.yinwuchat.velocity.manage.ShieldedManage.Result shieldedResult = 
                 org.lintx.plugins.yinwuchat.velocity.manage.ShieldedManage.getInstance()
-                        .checkShielded(channel, playerUuid.toString(), message);
+                        .checkShielded(channel, playerUuid.toString(), accountName, message);
         
         if (shieldedResult.kick) return;
         if (shieldedResult.shielded) {
@@ -1426,9 +1434,10 @@ public class MessageManage {
             return;
         }
         
-        // 屏蔽词检查
+        // 屏蔽词检查（带账户名，用于 Web 端封禁）
+        String senderAccount = util.getAccount();
         org.lintx.plugins.yinwuchat.velocity.manage.ShieldedManage.Result shieldedResult = 
-            org.lintx.plugins.yinwuchat.velocity.manage.ShieldedManage.getInstance().checkShielded(channel, util.getUuid().toString(), message);
+            org.lintx.plugins.yinwuchat.velocity.manage.ShieldedManage.getInstance().checkShielded(channel, util.getUuid().toString(), senderAccount, message);
         if (shieldedResult.kick) {
             return;
         }
