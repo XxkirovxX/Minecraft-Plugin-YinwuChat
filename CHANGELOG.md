@@ -5,6 +5,24 @@
 ## [Unreleased]
 - 尚未整理的改动请先记录在此
 
+## [2.12.71] - 2026-01-20
+### 新功能
+- 支持 Web 端与 APP 同时使用同一账号登录，消息实时同步（多端同时在线）
+- 头像改用 `/helm/` 端点，显示双层皮肤（底层+头盔层）
+- 新增 `/chatunban` 解封指令，支持解除 `/chatban` 的封禁
+- 管理员快捷指令新增 `/chatunban`
+
+### 优化
+- 绑定成功消息只在游戏内 `bind` 指令成功时发送，Web 端连接时不再重复提示
+- Web 端违禁词过多改为封禁1小时（游戏端仍为踢出服务器）
+
+### English Summary
+- Multi-device login: Web and APP can now login simultaneously with same account
+- Avatar uses `/helm/` endpoint for dual-layer skin display
+- Added `/chatunban` command to unban players
+- Bind success message only sent on in-game bind command
+- Web excessive shielded words now results in 1-hour ban instead of kick
+
 ## [2.12.70]
 - web端UI 优化：移除私聊窗口顶部头像图标，精简界面
 - Web 端侧边栏交互优化：支持手机端左侧侧滑呼出/关闭玩家列表，实现平滑跟随效果
