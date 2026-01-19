@@ -14,6 +14,8 @@ mobile-app/android/local.properties
 
 # Generated files
 dependency-reduced-pom.xml
+compile_output.txt
+Minecraft-Plugin-YinwuChat/
 
 # Logs
 *.log
