@@ -85,8 +85,8 @@ public class VelocityWebSocketFrameHandler extends SimpleChannelInboundHandler<W
         } else {
             if (tokenCheck.getIsbind()) {
                 clientUtil.setUUID(tokenCheck.getUuid());
-                // 允许多端同时在线，不再踢出其他连接
-                // VelocityWsClientHelper.kickOtherWS(channel, tokenCheck.getUuid());
+                            // 不再踢掉其他同账号连接，允许多设备同时在线
+                            // VelocityWsClientHelper.kickOtherWS(channel, tokenCheck.getUuid());
                 if (enforceAccountBan(channel, clientUtil)) {
                     return;
                 }
@@ -203,12 +203,19 @@ public class VelocityWebSocketFrameHandler extends SimpleChannelInboundHandler<W
             NettyChannelMessageHelper.send(channel, OutputServerMessage.errorJSON("Web 账户不存在").getJSON());
             return;
         }
+        // 检查账户是否已绑定该玩家，如果已绑定则不发送确认消息
+        String existingBound = authService.getBoundPlayerName(account);
+        boolean alreadyBound = playerName.equalsIgnoreCase(existingBound);
+        
         authService.bindAccountPlayerName(account, playerName);
         util.setAccount(account);
         if (enforceAccountBan(channel, util)) {
             return;
         }
-        // 绑定成功，但不发送消息（消息只在游戏内bind指令成功时发送）
+        // 只在首次绑定时发送确认消息
+        if (!alreadyBound) {
+        NettyChannelMessageHelper.send(channel, OutputServerMessage.infoJSON("✓ 已绑定 Web 账户与玩家名").getJSON());
+        }
     }
     
     /**
@@ -220,10 +227,6 @@ public class VelocityWebSocketFrameHandler extends SimpleChannelInboundHandler<W
         if (label.equals("chatban")) {
             command[0] = "ban";
             label = "ban";
-        }
-        if (label.equals("chatunban")) {
-            command[0] = "unban";
-            label = "unban";
         }
 
         if (enforceAccountBan(channel, util)) {
@@ -237,7 +240,7 @@ public class VelocityWebSocketFrameHandler extends SimpleChannelInboundHandler<W
             
             MessageManage.getInstance().handleWebPrivateMessage(channel, util, toPlayerName, msg);
         } else if (label.equals("yinwuchat") || label.equals("ignore") || label.equals("noat") || label.equals("vanish")
-            || label.equals("ban") || label.equals("unban") || label.equals("atalladmin") || label.equals("atalladmin_execute")
+            || label.equals("ban") || label.equals("atalladmin") || label.equals("atalladmin_execute")
             || label.equals("mute") || label.equals("unmute") || label.equals("muteinfo")) {
             // 对于插件自身指令，无论玩家是否在线都允许执行
             String[] args;
@@ -358,12 +361,6 @@ public class VelocityWebSocketFrameHandler extends SimpleChannelInboundHandler<W
                 return;
             }
             handleWebBanCommand(channel, playerName, args);
-        } else if (cmd.equals("unban") || cmd.equals("chatunban")) {
-            if (!isAdmin) {
-                NettyChannelMessageHelper.send(channel, OutputServerMessage.errorJSON("✗ 权限不足").getJSON());
-                return;
-            }
-            handleWebUnbanCommand(channel, playerName, args);
         } else if (cmd.equals("atalladmin")) {
             handleWebAtAllAdminCommand(channel, util, playerName, isAdmin, args);
         } else if (cmd.equals("atalladmin_execute")) {
@@ -377,7 +374,7 @@ public class VelocityWebSocketFrameHandler extends SimpleChannelInboundHandler<W
             String fullCmd = String.join(" ", args);
             MessageManage.getInstance().handleWebPlayerMuteCommand(channel, playerName, fullCmd);
         } else {
-            NettyChannelMessageHelper.send(channel, OutputServerMessage.infoJSON("可用指令: /yinwuchat [ws|ignore|noat|vanish|chatban|chatunban|atalladmin|mute|unmute|muteinfo]").getJSON());
+            NettyChannelMessageHelper.send(channel, OutputServerMessage.infoJSON("可用指令: /yinwuchat [ws|ignore|noat|vanish|chatban|atalladmin|mute|unmute|muteinfo]").getJSON());
         }
     }
 
@@ -474,7 +471,7 @@ public class VelocityWebSocketFrameHandler extends SimpleChannelInboundHandler<W
 
     private void handleWebBanCommand(Channel channel, String operatorName, String[] args) {
         if (args.length < 2) {
-            NettyChannelMessageHelper.send(channel, OutputServerMessage.errorJSON("用法: /chatban <账号名/玩家名> [时长] [理由]，时长如10s/10秒/30m/1h/1d，纯数字默认秒").getJSON());
+            NettyChannelMessageHelper.send(channel, OutputServerMessage.errorJSON("用法: /yinwuchat ban <账号名/玩家名> [时长] [理由]").getJSON());
             return;
         }
         String target = args[1];
@@ -525,77 +522,6 @@ public class VelocityWebSocketFrameHandler extends SimpleChannelInboundHandler<W
         NettyChannelMessageHelper.send(channel, OutputServerMessage.infoJSON(info).getJSON());
         notifyBanToAdmins(accountName, playerName, durationText, reason, channel);
         kickWebPlayerByName(playerName, accountName, durationText, reason);
-    }
-
-    private void handleWebUnbanCommand(Channel channel, String operatorName, String[] args) {
-        if (args.length < 2) {
-            NettyChannelMessageHelper.send(channel, OutputServerMessage.errorJSON("用法: /chatunban <账号名/玩家名>").getJSON());
-            return;
-        }
-        String target = args[1];
-        AuthService authService = AuthService.getInstance(plugin.getDataFolder().toFile());
-        String accountName = target;
-        String playerName = "";
-        if (!authService.accountExists(target)) {
-            String mapped = authService.resolveAccountByPlayerName(target);
-            if (mapped == null || mapped.isEmpty()) {
-                NettyChannelMessageHelper.send(channel, OutputServerMessage.errorJSON("✗ 未找到对应的 Web 账户").getJSON());
-                return;
-            }
-            accountName = mapped;
-            playerName = target;
-        } else {
-            playerName = authService.getBoundPlayerName(accountName);
-        }
-        AuthService.BanResult result = authService.unbanUser(accountName);
-        if (result.notFound) {
-            NettyChannelMessageHelper.send(channel, OutputServerMessage.errorJSON("✗ 未找到该 Web 账户").getJSON());
-            return;
-        }
-        if (!result.ok) {
-            NettyChannelMessageHelper.send(channel, OutputServerMessage.errorJSON("✗ 解封失败，请稍后重试").getJSON());
-            return;
-        }
-        // 同时解除游戏内禁言
-        if (playerName != null && !playerName.isEmpty()) {
-            MuteManage.getInstance().unmutePlayer(playerName, operatorName);
-        }
-        String info = "✓ 已解封账号 " + accountName;
-        if (playerName != null && !playerName.isEmpty()) {
-            info += "（玩家: " + playerName + "）";
-        }
-        NettyChannelMessageHelper.send(channel, OutputServerMessage.infoJSON(info).getJSON());
-        notifyUnbanToAdmins(accountName, playerName, operatorName, channel);
-    }
-
-    private void notifyUnbanToAdmins(String accountName, String playerName, String operator, Channel excludeChannel) {
-        String message = "账号 " + accountName + " 已被解封"
-            + (playerName != null && !playerName.isEmpty() ? "（玩家: " + playerName + "）" : "")
-            + "，操作人: " + operator;
-
-        // 游戏内管理员
-        for (com.velocitypowered.api.proxy.Player p : plugin.getProxy().getAllPlayers()) {
-            if (plugin.getConfig().isAdmin(p)) {
-                p.sendMessage(net.kyori.adventure.text.Component.text(message)
-                    .color(net.kyori.adventure.text.format.NamedTextColor.GREEN));
-            }
-        }
-
-        // Web 端管理员
-        if (plugin.getConfig().openwsserver && YinwuChat.getWSServer() != null) {
-            String json = OutputServerMessage.infoJSON(message).getJSON();
-            for (io.netty.channel.Channel wsChannel : VelocityWsClientHelper.getChannels()) {
-                VelocityWsClientUtil util = VelocityWsClientHelper.get(wsChannel);
-                if (util == null || util.getUuid() == null) continue;
-                String name = util.getAccount();
-                if (name == null || name.isEmpty()) {
-                    name = PlayerConfig.getInstance().getTokenManager().getName(util.getUuid());
-                }
-                if (name != null && plugin.getConfig().isAdmin(name)) {
-                    NettyChannelMessageHelper.send(wsChannel, json);
-                }
-            }
-        }
     }
 
     private void notifyBanToAdmins(String accountName, String playerName, String durationText, String reason, Channel excludeChannel) {

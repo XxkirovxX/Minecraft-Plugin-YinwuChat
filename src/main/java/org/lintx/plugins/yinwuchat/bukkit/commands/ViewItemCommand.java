@@ -145,11 +145,155 @@ public class ViewItemCommand implements CommandExecutor {
     
     /**
      * 从 JSON 反序列化物品
+     * 优先使用完整的序列化数据（fullItemData），如果不存在则使用简化数据重建
      */
     private static ItemStack deserializeItem(String itemJson) {
         try {
             com.google.gson.JsonObject json = com.google.gson.JsonParser.parseString(itemJson).getAsJsonObject();
             
+            // 优先尝试使用完整的序列化数据反序列化（支持插件自定义物品）
+            if (json.has("fullItemData")) {
+                ItemStack fullItem = deserializeFromFullData(json.get("fullItemData").getAsString());
+                if (fullItem != null) {
+                    return fullItem;
+                }
+            }
+            
+            // 尝试使用 NBT 数据反序列化（兼容旧版本）
+            if (json.has("nbt")) {
+                String nbtData = json.get("nbt").getAsString();
+                ItemStack nbtItem = deserializeFromNbt(json, nbtData);
+                if (nbtItem != null) {
+                    return nbtItem;
+                }
+            }
+            
+            // 回退到简化数据重建
+            return deserializeFromSimpleData(json);
+            
+        } catch (Exception e) {
+            return null;
+        }
+    }
+    
+    /**
+     * 从完整序列化数据反序列化物品
+     */
+    private static ItemStack deserializeFromFullData(String fullData) {
+        try {
+            // 尝试使用 Bukkit 的序列化 API
+            byte[] bytes = java.util.Base64.getDecoder().decode(fullData);
+            try (java.io.ByteArrayInputStream inputStream = new java.io.ByteArrayInputStream(bytes);
+                 org.bukkit.util.io.BukkitObjectInputStream dataInput = new org.bukkit.util.io.BukkitObjectInputStream(inputStream)) {
+                return (ItemStack) dataInput.readObject();
+            }
+        } catch (Exception e) {
+            return null;
+        }
+    }
+    
+    /**
+     * 使用 NBT 数据反序列化物品
+     */
+    private static ItemStack deserializeFromNbt(com.google.gson.JsonObject json, String nbtData) {
+        try {
+            // 获取物品 ID
+            String id = json.has("id") ? json.get("id").getAsString() : null;
+            if (id == null) {
+                return null;
+            }
+            
+            // 移除 minecraft: 前缀
+            if (id.startsWith("minecraft:")) {
+                id = id.substring(10);
+            }
+            
+            // 获取物品类型
+            org.bukkit.Material material;
+            try {
+                material = org.bukkit.Material.valueOf(id.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                return null;
+            }
+            
+            // 获取数量
+            int count = json.has("count") ? json.get("count").getAsInt() : 1;
+            
+            // 创建物品
+            ItemStack item = new ItemStack(material, count);
+            
+            // 尝试应用 NBT 数据（使用反射，因为不同版本 API 不同）
+            if (applyNbtData(item, nbtData)) {
+                return item;
+            }
+            
+            // 如果 NBT 应用失败，回退到简化数据
+            return null;
+            
+        } catch (Exception e) {
+            return null;
+        }
+    }
+    
+    /**
+     * 尝试将 NBT 数据应用到物品（使用反射兼容多版本）
+     */
+    private static boolean applyNbtData(ItemStack item, String nbtData) {
+        try {
+            // 方法1: 尝试使用 Paper 的 API (1.20.5+)
+            try {
+                Class<?> itemStackClass = item.getClass();
+                java.lang.reflect.Method setItemMeta = itemStackClass.getMethod("setItemMeta", org.bukkit.inventory.meta.ItemMeta.class);
+                
+                // 尝试解析 NBT 数据并应用
+                // Paper 1.20.5+ 有 setData 方法
+                // 这里我们尝试通过反射调用
+                Class<?> craftItemStackClass = org.lintx.plugins.yinwuchat.Util.ReflectionUtil.getOBCClass("inventory.CraftItemStack");
+                if (craftItemStackClass != null) {
+                    java.lang.reflect.Method asNMSCopy = craftItemStackClass.getMethod("asNMSCopy", ItemStack.class);
+                    Object nmsItem = asNMSCopy.invoke(null, item);
+                    
+                    // 获取 NBTTagCompound 类
+                    Class<?> nbtTagCompoundClass = org.lintx.plugins.yinwuchat.Util.ReflectionUtil.getNMSClass("NBTTagCompound");
+                    if (nbtTagCompoundClass != null) {
+                        // 尝试解析 SNBT
+                        Class<?> mojangsonParserClass = org.lintx.plugins.yinwuchat.Util.ReflectionUtil.getNMSClass("MojangsonParser");
+                        if (mojangsonParserClass != null) {
+                            java.lang.reflect.Method parseMethod = mojangsonParserClass.getMethod("parse", String.class);
+                            Object nbtTag = parseMethod.invoke(null, nbtData);
+                            
+                            // 应用到物品
+                            java.lang.reflect.Method setTagMethod = nmsItem.getClass().getMethod("setTag", nbtTagCompoundClass);
+                            setTagMethod.invoke(nmsItem, nbtTag);
+                            
+                            // 转换回 Bukkit ItemStack
+                            java.lang.reflect.Method asBukkitCopy = craftItemStackClass.getMethod("asBukkitCopy", nmsItem.getClass());
+                            ItemStack result = (ItemStack) asBukkitCopy.invoke(null, nmsItem);
+                            
+                            // 复制结果到原物品
+                            item.setType(result.getType());
+                            item.setAmount(result.getAmount());
+                            item.setItemMeta(result.getItemMeta());
+                            
+                            return true;
+                        }
+                    }
+                }
+            } catch (Exception ignored) {
+                // 反射方法失败，继续尝试其他方法
+            }
+            
+            return false;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+    
+    /**
+     * 从简化数据重建物品（基本属性）
+     */
+    private static ItemStack deserializeFromSimpleData(com.google.gson.JsonObject json) {
+        try {
             // 获取物品 ID
             String id = json.has("id") ? json.get("id").getAsString() : null;
             if (id == null) {

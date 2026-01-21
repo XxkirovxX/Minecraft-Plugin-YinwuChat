@@ -1,10 +1,11 @@
 package org.lintx.plugins.yinwuchat.velocity.util;
 
+import net.kyori.adventure.key.Key;
+import net.kyori.adventure.nbt.api.BinaryTagHolder;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 
 /**
@@ -36,11 +37,12 @@ public class VelocityItemUtil {
                 .color(NamedTextColor.YELLOW));
         }
 
-        // 创建悬停事件 - 显示物品详细信息
+        // 创建悬停事件 - 优先使用原版物品展示格式
+        HoverEvent<?> hoverEvent = createVanillaHoverEvent(itemJson, amount);
+        if (hoverEvent == null) {
         Component hoverText = createItemHoverText(itemJson, itemName, amount);
-        HoverEvent<Component> hoverEvent = HoverEvent.showText(hoverText);
-
-        // 设置悬停效果
+            hoverEvent = HoverEvent.showText(hoverText);
+        }
         itemText = itemText.hoverEvent(hoverEvent);
         
         // 尝试提取物品展示ID并添加点击事件
@@ -76,68 +78,267 @@ public class VelocityItemUtil {
     }
 
     /**
+     * 创建原版风格的物品 Hover 展示
+     * 注意：原版 ShowItem 需要正确格式的 SNBT 数据，而我们的数据可能是 JSON 格式
+     * 如果有自定义名称、lore 或附魔，优先使用文本悬停以确保正确显示
+     */
+    private static HoverEvent<?> createVanillaHoverEvent(String itemJson, int amount) {
+        if (itemJson == null || itemJson.isEmpty()) {
+            return null;
+        }
+        
+        try {
+            com.google.gson.JsonObject json = com.google.gson.JsonParser.parseString(itemJson).getAsJsonObject();
+            
+            // 如果有自定义显示名称、lore 或附魔，优先使用文本悬停以正确显示
+            // 因为原版 ShowItem 的 NBT 解析在跨版本时可能不稳定
+            boolean hasCustomData = json.has("displayName") || json.has("lore") || json.has("enchantments");
+            if (hasCustomData) {
+                // 返回 null 让调用者使用文本悬停
+                return null;
+            }
+            
+            // 对于普通物品（无自定义数据），尝试使用原版 ShowItem
+            String itemId = extractItemId(itemJson);
+            if (itemId == null || itemId.isEmpty()) {
+                return null;
+            }
+            
+            String itemTag = extractItemTag(itemJson);
+            HoverEvent.ShowItem showItem;
+            if (itemTag != null && !itemTag.isEmpty()) {
+                @SuppressWarnings("deprecation")
+                BinaryTagHolder tagHolder = BinaryTagHolder.of(itemTag);
+                @SuppressWarnings("deprecation")
+                HoverEvent.ShowItem tempShowItem = HoverEvent.ShowItem.of(Key.key(itemId), amount, tagHolder);
+                showItem = tempShowItem;
+            } else {
+                @SuppressWarnings("deprecation")
+                HoverEvent.ShowItem tempShowItem = HoverEvent.ShowItem.of(Key.key(itemId), amount);
+                showItem = tempShowItem;
+            }
+            return HoverEvent.showItem(showItem);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /**
+     * 从传输 JSON 中提取物品 ID
+     */
+    private static String extractItemId(String itemJson) {
+        if (itemJson == null || itemJson.isEmpty()) {
+            return null;
+        }
+        try {
+            com.google.gson.JsonObject json = com.google.gson.JsonParser.parseString(itemJson).getAsJsonObject();
+            if (json.has("id")) {
+                return json.get("id").getAsString();
+            }
+        } catch (Exception ignored) {}
+        return null;
+    }
+
+    /**
+     * 从传输 JSON 中提取 NBT/组件数据
+     */
+    private static String extractItemTag(String itemJson) {
+        if (itemJson == null || itemJson.isEmpty()) {
+            return null;
+        }
+        try {
+            com.google.gson.JsonObject json = com.google.gson.JsonParser.parseString(itemJson).getAsJsonObject();
+            if (json.has("nbt")) {
+                return json.get("nbt").getAsString();
+            }
+        } catch (Exception ignored) {}
+        return null;
+    }
+
+    /**
      * 创建物品悬停文本
      * 参考 InteractiveChat 的悬停信息显示方式
+     * 支持解析 ModernItemUtil.getItemDataForTransfer 返回的 JSON 格式
      */
     private static Component createItemHoverText(String itemJson, String itemName, int amount) {
-        Component hoverComponent = Component.text("物品信息\n", NamedTextColor.GOLD, TextDecoration.BOLD)
-            .append(Component.text("名称: ", NamedTextColor.GRAY))
-            .append(Component.text(itemName + "\n", NamedTextColor.WHITE))
-            .append(Component.text("数量: ", NamedTextColor.GRAY))
-            .append(Component.text(amount + "\n", NamedTextColor.WHITE));
+        // 先尝试从 JSON 中获取自定义名称
+        String customDisplayName = null;
+        java.util.List<String> loreLines = null;
+        String enchantmentsText = null;
         
-        // 如果有展示ID，添加点击提示
-        String displayId = extractDisplayId(itemJson);
-        if (displayId != null && !displayId.isEmpty()) {
+        if (itemJson != null && !itemJson.isEmpty()) {
+            try {
+                com.google.gson.JsonObject json = com.google.gson.JsonParser.parseString(itemJson).getAsJsonObject();
+                
+                // 提取自定义显示名称
+                if (json.has("displayName")) {
+                    customDisplayName = json.get("displayName").getAsString();
+                }
+                
+                // 提取 Lore
+                if (json.has("lore") && json.get("lore").isJsonArray()) {
+                    loreLines = new java.util.ArrayList<>();
+                    com.google.gson.JsonArray loreArray = json.getAsJsonArray("lore");
+                    for (int i = 0; i < loreArray.size(); i++) {
+                        loreLines.add(loreArray.get(i).getAsString());
+                    }
+                }
+                
+                // 提取附魔
+                enchantmentsText = parseEnchantments(itemJson);
+            } catch (Exception ignored) {}
+        }
+        
+        // 使用自定义名称或传入的物品名称
+        String displayName = customDisplayName != null ? customDisplayName : itemName;
+        
+        // 构建悬停组件 - 模拟原版 Minecraft 物品提示样式
+        Component hoverComponent = Component.empty();
+        
+        // 物品名称 - 使用斜体白色（自定义名称）或普通白色
+        if (customDisplayName != null) {
+            // 自定义名称 - 解析颜色代码并显示
+            hoverComponent = hoverComponent.append(parseColoredText(customDisplayName));
+        } else {
+            hoverComponent = hoverComponent.append(Component.text(displayName, NamedTextColor.WHITE));
+        }
+        
+        // 附魔信息 - 蓝色显示
+        if (enchantmentsText != null && !enchantmentsText.isEmpty()) {
+            String[] enchants = enchantmentsText.split(", ");
+            for (String ench : enchants) {
+                hoverComponent = hoverComponent
+                    .append(Component.text("\n"))
+                    .append(Component.text(ench, NamedTextColor.GRAY));
+            }
+        }
+        
+        // Lore - 紫色斜体显示
+        if (loreLines != null && !loreLines.isEmpty()) {
+            for (String loreLine : loreLines) {
             hoverComponent = hoverComponent
                 .append(Component.text("\n"))
-                .append(Component.text("点击查看物品详情", NamedTextColor.YELLOW, TextDecoration.ITALIC));
+                    .append(parseColoredText(loreLine).color(NamedTextColor.DARK_PURPLE).decorate(TextDecoration.ITALIC));
+            }
         }
 
-        // 尝试解析更多物品信息
+        // 尝试解析更多物品信息（旧格式兼容）
         if (itemJson != null && !itemJson.isEmpty()) {
             try {
                 // 解析耐久度
                 String damage = extractJsonValue(itemJson, "Damage");
                 if (damage != null && !damage.equals("0")) {
                     hoverComponent = hoverComponent
+                        .append(Component.text("\n"))
                         .append(Component.text("耐久度: ", NamedTextColor.GRAY))
-                        .append(Component.text(damage, NamedTextColor.RED))
-                        .append(Component.text("\n"));
-                }
-
-                // 解析附魔
-                String enchantmentsText = parseEnchantments(itemJson);
-                if (enchantmentsText != null && !enchantmentsText.isEmpty()) {
-                    hoverComponent = hoverComponent
-                        .append(Component.text("附魔: ", NamedTextColor.GRAY))
-                        .append(Component.text(enchantmentsText, NamedTextColor.BLUE))
-                        .append(Component.text("\n"));
+                        .append(Component.text(damage, NamedTextColor.RED));
                 }
 
                 // 解析药水效果
                 if (itemJson.contains("\"Potion\"") || itemJson.contains("\"CustomPotionEffects\"")) {
                     hoverComponent = hoverComponent
-                        .append(Component.text("药水效果: ", NamedTextColor.GRAY))
-                        .append(Component.text("有", NamedTextColor.LIGHT_PURPLE))
-                        .append(Component.text("\n"));
+                        .append(Component.text("\n"))
+                        .append(Component.text("药水效果", NamedTextColor.LIGHT_PURPLE));
                 }
 
-                // 解析自定义名称或描述
-                String displayName = extractDisplayName(itemJson);
-                if (displayName != null && !displayName.isEmpty()) {
+            } catch (Exception ignored) {}
+                }
+
+        // 如果有展示ID，添加点击提示
+        String displayId = extractDisplayId(itemJson);
+        if (displayId != null && !displayId.isEmpty()) {
                     hoverComponent = hoverComponent
-                        .append(Component.text("自定义名称: ", NamedTextColor.GRAY))
-                        .append(Component.text(displayName, NamedTextColor.AQUA))
-                        .append(Component.text("\n"));
-                }
-
-            } catch (Exception e) {
-                // 如果解析失败，至少显示基本的物品信息
-            }
+                .append(Component.text("\n"))
+                .append(Component.text("点击查看物品详情", NamedTextColor.YELLOW, TextDecoration.ITALIC));
         }
 
         return hoverComponent;
+    }
+    
+    /**
+     * 解析带有 Minecraft 颜色代码的文本
+     * 支持 § 和 & 颜色代码
+     */
+    private static Component parseColoredText(String text) {
+        if (text == null || text.isEmpty()) {
+            return Component.empty();
+        }
+        
+        // 替换 & 为 §
+        text = text.replace('&', '§');
+        
+        Component result = Component.empty();
+        StringBuilder currentText = new StringBuilder();
+        NamedTextColor currentColor = NamedTextColor.WHITE;
+        boolean bold = false;
+        boolean italic = false;
+        boolean underlined = false;
+        boolean strikethrough = false;
+        boolean obfuscated = false;
+        
+        for (int i = 0; i < text.length(); i++) {
+            char c = text.charAt(i);
+            
+            if (c == '§' && i + 1 < text.length()) {
+                // 先添加当前累积的文本
+                if (currentText.length() > 0) {
+                    Component part = Component.text(currentText.toString()).color(currentColor);
+                    if (bold) part = part.decorate(TextDecoration.BOLD);
+                    if (italic) part = part.decorate(TextDecoration.ITALIC);
+                    if (underlined) part = part.decorate(TextDecoration.UNDERLINED);
+                    if (strikethrough) part = part.decorate(TextDecoration.STRIKETHROUGH);
+                    if (obfuscated) part = part.decorate(TextDecoration.OBFUSCATED);
+                    result = result.append(part);
+                    currentText = new StringBuilder();
+                }
+                
+                char code = text.charAt(i + 1);
+                i++; // 跳过颜色代码字符
+                
+                switch (Character.toLowerCase(code)) {
+                    case '0': currentColor = NamedTextColor.BLACK; break;
+                    case '1': currentColor = NamedTextColor.DARK_BLUE; break;
+                    case '2': currentColor = NamedTextColor.DARK_GREEN; break;
+                    case '3': currentColor = NamedTextColor.DARK_AQUA; break;
+                    case '4': currentColor = NamedTextColor.DARK_RED; break;
+                    case '5': currentColor = NamedTextColor.DARK_PURPLE; break;
+                    case '6': currentColor = NamedTextColor.GOLD; break;
+                    case '7': currentColor = NamedTextColor.GRAY; break;
+                    case '8': currentColor = NamedTextColor.DARK_GRAY; break;
+                    case '9': currentColor = NamedTextColor.BLUE; break;
+                    case 'a': currentColor = NamedTextColor.GREEN; break;
+                    case 'b': currentColor = NamedTextColor.AQUA; break;
+                    case 'c': currentColor = NamedTextColor.RED; break;
+                    case 'd': currentColor = NamedTextColor.LIGHT_PURPLE; break;
+                    case 'e': currentColor = NamedTextColor.YELLOW; break;
+                    case 'f': currentColor = NamedTextColor.WHITE; break;
+                    case 'k': obfuscated = true; break;
+                    case 'l': bold = true; break;
+                    case 'm': strikethrough = true; break;
+                    case 'n': underlined = true; break;
+                    case 'o': italic = true; break;
+                    case 'r':
+                        currentColor = NamedTextColor.WHITE;
+                        bold = italic = underlined = strikethrough = obfuscated = false;
+                        break;
+                }
+            } else {
+                currentText.append(c);
+            }
+        }
+        
+        // 添加剩余的文本
+        if (currentText.length() > 0) {
+            Component part = Component.text(currentText.toString()).color(currentColor);
+            if (bold) part = part.decorate(TextDecoration.BOLD);
+            if (italic) part = part.decorate(TextDecoration.ITALIC);
+            if (underlined) part = part.decorate(TextDecoration.UNDERLINED);
+            if (strikethrough) part = part.decorate(TextDecoration.STRIKETHROUGH);
+            if (obfuscated) part = part.decorate(TextDecoration.OBFUSCATED);
+            result = result.append(part);
+        }
+        
+        return result;
     }
 
     /**

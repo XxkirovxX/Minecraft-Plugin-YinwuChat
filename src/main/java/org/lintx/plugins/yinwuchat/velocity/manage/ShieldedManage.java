@@ -133,10 +133,10 @@ public class ShieldedManage {
                 }
             } else {
                 // 没有账户名时，仍然踢出
-                org.lintx.plugins.yinwuchat.velocity.httpserver.NettyChannelMessageHelper.send(channel, 
-                    org.lintx.plugins.yinwuchat.velocity.json.OutputServerMessage.errorJSON(config.tipsConfig.shieldedKickTip).getJSON());
-                channel.close();
-                YinwuChat.getInstance().getLogger().info("[屏蔽词] Web 玩家 " + uuid + " 因多次发送违禁词被断开连接");
+            org.lintx.plugins.yinwuchat.velocity.httpserver.NettyChannelMessageHelper.send(channel, 
+                org.lintx.plugins.yinwuchat.velocity.json.OutputServerMessage.errorJSON(config.tipsConfig.shieldedKickTip).getJSON());
+            channel.close();
+            YinwuChat.getInstance().getLogger().info("[屏蔽词] Web 玩家 " + uuid + " 因多次发送违禁词被断开连接");
             }
         } else if (result.shielded) {
             // 发送提示消息给 Web 玩家（无论是阻止模式还是替换模式都提示）

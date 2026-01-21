@@ -529,6 +529,9 @@ public class ModernItemUtil {
      * 从物品 JSON 中提取 tag/components 数据
      */
     private static String extractItemTag(String itemJson) {
+        if (itemJson == null || itemJson.isEmpty()) {
+            return null;
+        }
         try {
             com.google.gson.JsonObject json = com.google.gson.JsonParser.parseString(itemJson).getAsJsonObject();
             
@@ -549,8 +552,45 @@ public class ModernItemUtil {
             if (json.size() > 0) {
                 return json.toString();
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+            // JSON 解析失败时，尝试从 SNBT 中提取 tag/components
+            return extractItemTagFromSnbt(itemJson);
+        }
         
+        return null;
+    }
+
+    /**
+     * 从 SNBT 字符串中提取 tag/components 数据
+     */
+    private static String extractItemTagFromSnbt(String snbt) {
+        String key = null;
+        int componentsIndex = snbt.indexOf("components:");
+        int tagIndex = snbt.indexOf("tag:");
+        if (componentsIndex >= 0 && (tagIndex < 0 || componentsIndex < tagIndex)) {
+            key = "components:";
+        } else if (tagIndex >= 0) {
+            key = "tag:";
+        }
+        if (key == null) {
+            return null;
+        }
+        int start = snbt.indexOf('{', snbt.indexOf(key));
+        if (start < 0) {
+            return null;
+        }
+        int depth = 0;
+        for (int i = start; i < snbt.length(); i++) {
+            char c = snbt.charAt(i);
+            if (c == '{') {
+                depth++;
+            } else if (c == '}') {
+                depth--;
+                if (depth == 0) {
+                    return snbt.substring(start, i + 1);
+                }
+            }
+        }
         return null;
     }
     
@@ -596,7 +636,7 @@ public class ModernItemUtil {
     
     /**
      * 获取物品的简化数据（用于跨服传输）
-     * 包含: id, count, displayName, lore, enchantments
+     * 包含: id, count, displayName, lore, enchantments, nbt, fullItemData
      */
     public static String getItemDataForTransfer(ItemStack itemStack) {
         if (itemStack == null || itemStack.getType().equals(Material.AIR)) {
@@ -651,16 +691,36 @@ public class ModernItemUtil {
             json.add("enchantments", enchants);
         }
         
-        // 完整的序列化数据（用于客户端显示）
-        // 注意：_raw 字段可能包含复杂的二进制数据，不建议在JSON中使用
-        // 暂时注释掉，避免JSON解析错误
-        /*
+        // 尝试添加 NBT/组件数据（用于原版 Hover）
         String fullJson = convertItemToJson(itemStack);
-        if (fullJson != null) {
-            json.addProperty("_raw", fullJson);
+        String itemTag = extractItemTag(fullJson);
+        if (itemTag != null && !itemTag.isEmpty()) {
+            json.addProperty("nbt", itemTag);
         }
-        */
+        
+        // 添加完整的序列化数据（用于跨服完整恢复物品，支持插件自定义物品）
+        String fullItemData = serializeItemFully(itemStack);
+        if (fullItemData != null && !fullItemData.isEmpty()) {
+            json.addProperty("fullItemData", fullItemData);
+        }
         
         return json.toString();
+    }
+    
+    /**
+     * 完整序列化物品（包含所有 NBT 数据）
+     * 使用 Bukkit 的序列化 API，确保插件自定义物品的完整性
+     */
+    private static String serializeItemFully(ItemStack itemStack) {
+        try {
+            java.io.ByteArrayOutputStream outputStream = new java.io.ByteArrayOutputStream();
+            org.bukkit.util.io.BukkitObjectOutputStream dataOutput = new org.bukkit.util.io.BukkitObjectOutputStream(outputStream);
+            dataOutput.writeObject(itemStack);
+            dataOutput.close();
+            return java.util.Base64.getEncoder().encodeToString(outputStream.toByteArray());
+        } catch (Exception e) {
+            Bukkit.getLogger().log(Level.FINE, "Failed to fully serialize item", e);
+            return null;
+        }
     }
 }

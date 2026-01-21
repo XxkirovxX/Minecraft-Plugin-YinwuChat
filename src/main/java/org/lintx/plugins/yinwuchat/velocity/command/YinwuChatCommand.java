@@ -763,11 +763,11 @@ public class YinwuChatCommand implements SimpleCommand {
 
     private void showHelp(Player player) {
         boolean isAdmin = config.isAdmin(player);
+        boolean isDefault = config.isDefault(player);
         
         player.sendMessage(Component.text("=== YinwuChat 帮助 ===").color(NamedTextColor.GOLD));
         player.sendMessage(Component.text("/yinwuchat").color(NamedTextColor.AQUA)
             .append(Component.text(": 显示帮助信息").color(NamedTextColor.GRAY)));
-
         player.sendMessage(Component.text("/yinwuchat ws").color(NamedTextColor.AQUA)
             .append(Component.text(": 获取当前 WebSocket 地址").color(NamedTextColor.GRAY)));
         
@@ -776,8 +776,24 @@ public class YinwuChatCommand implements SimpleCommand {
                 .append(Component.text(": 重新加载配置").color(NamedTextColor.GRAY)));
         }
         
-        player.sendMessage(Component.text("/msg <玩家名> <消息>").color(NamedTextColor.AQUA)
+        player.sendMessage(Component.text("—— Web 端配置指令 ——").color(NamedTextColor.YELLOW));
+        player.sendMessage(Component.text("/yinwuchat bind <Token>").color(NamedTextColor.AQUA)
+            .append(Component.text(": 绑定 Web 账号").color(NamedTextColor.GRAY)));
+        player.sendMessage(Component.text("/yinwuchat unbind").color(NamedTextColor.AQUA)
+            .append(Component.text(": 解绑当前 Web 账号").color(NamedTextColor.GRAY)));
+        player.sendMessage(Component.text("/yinwuchat list").color(NamedTextColor.AQUA)
+            .append(Component.text(": 查看已绑定 Token").color(NamedTextColor.GRAY)));
+        if (isAdmin) {
+            player.sendMessage(Component.text("/yinwuchat webbind query <账号名/玩家名>").color(NamedTextColor.AQUA)
+                .append(Component.text(": 查询 Web 绑定关系").color(NamedTextColor.GRAY)));
+            player.sendMessage(Component.text("/yinwuchat webbind unbind <账号名/玩家名>").color(NamedTextColor.AQUA)
+                .append(Component.text(": 解除 Web 绑定关系").color(NamedTextColor.GRAY)));
+        }
+        
+        player.sendMessage(Component.text("—— Velocity 指令 ——").color(NamedTextColor.YELLOW));
+        player.sendMessage(Component.text("/yinwuchat msg <玩家名> <消息>").color(NamedTextColor.AQUA)
             .append(Component.text(": 发送私聊消息").color(NamedTextColor.GRAY)));
+        player.sendMessage(Component.text("  别名: /msg /tell /whisper /w /t").color(NamedTextColor.GRAY));
         
         player.sendMessage(Component.text("/yinwuchat noat").color(NamedTextColor.AQUA)
             .append(Component.text(": 禁止/允许被@").color(NamedTextColor.GRAY)));
@@ -811,10 +827,13 @@ public class YinwuChatCommand implements SimpleCommand {
         if (player.hasPermission(Const.PERMISSION_MUTE) || isAdmin) {
             player.sendMessage(Component.text("/yinwuchat mute <玩家> [时长] [原因]").color(NamedTextColor.AQUA)
                 .append(Component.text(": 禁言玩家").color(NamedTextColor.GRAY)));
+            player.sendMessage(Component.text("  别名: /mute").color(NamedTextColor.GRAY));
             player.sendMessage(Component.text("/yinwuchat unmute <玩家>").color(NamedTextColor.AQUA)
                 .append(Component.text(": 解除禁言").color(NamedTextColor.GRAY)));
+            player.sendMessage(Component.text("  别名: /unmute").color(NamedTextColor.GRAY));
             player.sendMessage(Component.text("/yinwuchat muteinfo <玩家>").color(NamedTextColor.AQUA)
                 .append(Component.text(": 查看禁言信息").color(NamedTextColor.GRAY)));
+            player.sendMessage(Component.text("  别名: /muteinfo").color(NamedTextColor.GRAY));
         }
         
         if (isAdmin) {
@@ -822,7 +841,23 @@ public class YinwuChatCommand implements SimpleCommand {
                 .append(Component.text(": 同步 LuckPerms 组权限节点").color(NamedTextColor.GRAY)));
             player.sendMessage(Component.text("/yinwuchat chatban <玩家> [时长] [原因]").color(NamedTextColor.AQUA)
                 .append(Component.text(": 封禁 Web 账号").color(NamedTextColor.GRAY)));
+            player.sendMessage(Component.text("  别名: /chatban").color(NamedTextColor.GRAY));
+            player.sendMessage(Component.text("/yinwuchat chatunban <玩家>").color(NamedTextColor.AQUA)
+                .append(Component.text(": 解封 Web 账号").color(NamedTextColor.GRAY)));
+            player.sendMessage(Component.text("  别名: /chatunban").color(NamedTextColor.GRAY));
         }
+
+        if (player.hasPermission(Const.PERMISSION_ITEM_DISPLAY) || isDefault) {
+            player.sendMessage(Component.text("/yinwuchat itemdisplay").color(NamedTextColor.AQUA)
+                .append(Component.text(": 显示物品展示帮助").color(NamedTextColor.GRAY)));
+            player.sendMessage(Component.text("  别名: /itemdisplay /showitem /displayitem").color(NamedTextColor.GRAY));
+        }
+        
+        player.sendMessage(Component.text("—— Bukkit 指令（子服） ——").color(NamedTextColor.YELLOW));
+        player.sendMessage(Component.text("/msg <玩家名> <消息>").color(NamedTextColor.AQUA)
+            .append(Component.text(": 子服私聊指令").color(NamedTextColor.GRAY)));
+        player.sendMessage(Component.text("/viewitem <物品ID>").color(NamedTextColor.AQUA)
+            .append(Component.text(": 查看物品展示详情").color(NamedTextColor.GRAY)));
     }
 
     private void handlePermissionSync(Player player) {

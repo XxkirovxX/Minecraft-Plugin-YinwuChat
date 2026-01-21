@@ -835,7 +835,15 @@
                     if (window.__YINWUCHAT_DISCOVERY_BASE__) return String(window.__YINWUCHAT_DISCOVERY_BASE__);
                     return '';
                 };
+                // ========== 鸿蒙APP服务器配置 ==========
+                // 请将下方地址修改为您的YinwuChat服务器地址
+                // 格式: 域名或IP:端口, 例如: mc.example.com:8888 或 192.168.1.100:8888
+                const HARMONY_DEFAULT_SERVER = '';
+                // ==========================================
+                
                 const getDiscoveryBase = () => {
+                    // 优先使用鸿蒙APP配置的服务器地址
+                    if (HARMONY_DEFAULT_SERVER) return HARMONY_DEFAULT_SERVER;
                     const trimmed = String(defaultDomain.value || '').trim();
                     if (trimmed) return trimmed;
                     const injected = getInjectedDiscoveryBase();

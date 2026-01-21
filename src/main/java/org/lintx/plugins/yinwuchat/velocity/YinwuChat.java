@@ -39,7 +39,7 @@ import java.nio.file.Path;
 @Plugin(
     id = "yinwuchat-velocity",
     name = "YinwuChat",
-    version = "2.12.70",
+    version = "2.12.72",
     description = "Cross-server chat synchronization for Velocity",
     authors = {"LinTx"}
 )
@@ -314,3 +314,4 @@ public class YinwuChat {
         } catch (IOException ignored) {}
     }
 }
+

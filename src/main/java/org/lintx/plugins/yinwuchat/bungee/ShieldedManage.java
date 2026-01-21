@@ -87,9 +87,9 @@ public class ShieldedManage {
                 }
             } else {
                 // 没有账户名时，仍然踢出
-                NettyChannelMessageHelper.send(channel, OutputServerMessage.errorJSON(formatMessage(Config.getInstance().tipsConfig.shieldedKickTip)).getJSON());
-                channel.close();
-                YinwuChat.getPlugin().getLogger().info("[屏蔽词] Web 玩家 " + uuid + " 因多次发送违禁词被断开连接");
+            NettyChannelMessageHelper.send(channel, OutputServerMessage.errorJSON(formatMessage(Config.getInstance().tipsConfig.shieldedKickTip)).getJSON());
+            channel.close();
+            YinwuChat.getPlugin().getLogger().info("[屏蔽词] Web 玩家 " + uuid + " 因多次发送违禁词被断开连接");
             }
         }
         else if (result.shielded){

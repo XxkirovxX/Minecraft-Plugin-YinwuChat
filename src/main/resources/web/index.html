@@ -523,7 +523,7 @@
             <!-- 左侧玩家列表 (电脑端常驻 / 手机端侧滑) -->
             <div v-show="!isMobile || showSidebar || sidebarDragging || sidebarAnimationActive" 
                 :class="['fixed inset-y-0 left-0 z-40 w-72 bg-beige-100 dark:bg-gray-800 border-r border-beige-200 dark:border-gray-700 flex flex-col lg:static sidebar-panel', sidebarDragging ? 'dragging' : '']"
-                :style="isMobile ? { transform: `translateX(${sidebarTranslateX}px)` } : {}"
+                :style="isMobile ? { width: `${sidebarWidth}px`, transform: `translateX(${sidebarTranslateX}px)` } : {}"
                 @touchstart="onSidebarTouchStart"
                 @touchmove="onSidebarTouchMove"
                 @touchend="onSidebarTouchEnd">
@@ -719,6 +719,21 @@
 
                 <!-- 输入区域 -->
                 <footer class="p-4 bg-beige-100/80 dark:bg-gray-900/80 backdrop-blur-md border-t border-beige-200 dark:border-gray-700">
+                    <div v-if="showCommandPicker" class="mb-2 max-h-36 overflow-y-auto chat-scroll bg-beige-50 dark:bg-gray-800 border border-beige-200 dark:border-gray-700 rounded-2xl p-2 shadow-inner">
+                        <div class="text-[10px] text-gray-500 dark:text-gray-400 px-2 py-1">快捷选人</div>
+                        <div class="grid grid-cols-1 gap-1">
+                            <button v-for="player in commandTargetCandidates" :key="player.name"
+                                @click="selectCommandTarget(player.name)"
+                                class="flex items-center gap-2 px-2.5 py-2 rounded-xl text-xs text-left transition-all hover:bg-beige-200 dark:hover:bg-gray-700">
+                                <span class="w-2.5 h-2.5 rounded-full"
+                                    :class="player.status === 'game' ? 'bg-green-500' : (player.status === 'web' ? 'bg-blue-500' : 'bg-gray-400')"></span>
+                                <span class="font-semibold text-gray-700 dark:text-gray-200">{{ player.name }}</span>
+                                <span class="text-[10px] text-gray-400">
+                                    {{ player.status === 'game' ? '游戏在线' : (player.status === 'web' ? 'Web在线' : '离线') }}
+                                </span>
+                            </button>
+                        </div>
+                    </div>
                     <div class="flex items-end gap-2 bg-beige-100 dark:bg-gray-800 rounded-2xl p-2 focus-within:ring-2 focus-within:ring-primary-500 transition-all shadow-inner">
                         <textarea v-model="inputMsg" 
                             rows="1"
@@ -744,6 +759,9 @@
 
             <!-- 手机端背景遮罩 -->
             <div v-show="isMobile && (showSidebar || sidebarDragging || sidebarAnimationActive)" @click="closeSidebar" 
+                @touchstart="onChatTouchStart"
+                @touchmove="onChatTouchMove"
+                @touchend="onChatTouchEnd"
                 class="fixed inset-0 z-30 bg-black/40 backdrop-blur-sm sidebar-overlay"
                 :class="{ 'pointer-events-none': !showSidebar && !sidebarDragging }"
                 :style="{ opacity: sidebarDragging ? (sidebarOverlayOpacity * 2) : (showSidebar ? 1 : 0) }"></div>
@@ -950,11 +968,20 @@
                 const currentChat = ref('public'); 
                 const inputMsg = ref('');
                 const isMobile = ref(window.innerWidth < 1024);
-                const sidebarWidth = 288;
-                const sidebarTranslateX = ref(-sidebarWidth);
+                const getSidebarWidth = () => {
+                    const ratio = 0.618;
+                    const width = Math.round(window.innerWidth * ratio);
+                    return Math.max(220, Math.min(420, width));
+                };
+                const sidebarWidth = ref(getSidebarWidth());
+                const sidebarTranslateX = ref(-sidebarWidth.value);
                 const sidebarDragging = ref(false);
                 const sidebarStartX = ref(0);
                 const sidebarStartY = ref(0);
+                const sidebarLastX = ref(0);
+                const sidebarLastY = ref(0);
+                const sidebarTouchStartTime = ref(0);
+                const sidebarLongPressActive = ref(false);
                 const sidebarAnimationActive = ref(false);
 
                 // 从本地加载历史消息
@@ -980,19 +1007,19 @@
 
                 const sidebarOverlayOpacity = computed(() => {
                     if (!isMobile.value) return 0;
-                    const progress = 1 - Math.abs(sidebarTranslateX.value) / sidebarWidth;
+                    const progress = 1 - Math.abs(sidebarTranslateX.value) / sidebarWidth.value;
                     return Math.min(0.5, Math.max(0, progress * 0.5));
                 });
                 
                 const sidebarBlur = computed(() => {
                     if (!isMobile.value) return 0;
-                    const progress = 1 - Math.abs(sidebarTranslateX.value) / sidebarWidth;
+                    const progress = 1 - Math.abs(sidebarTranslateX.value) / sidebarWidth.value;
                     return Math.max(0, progress * 8); // 最大模糊度 8px
                 });
 
                 const sidebarOverlayVisible = computed(() => {
                     if (!isMobile.value) return false;
-                    return sidebarTranslateX.value > -sidebarWidth + 1 || sidebarDragging.value || showSidebar.value;
+                    return sidebarTranslateX.value > -sidebarWidth.value + 1 || sidebarDragging.value || showSidebar.value;
                 });
 
                 const gamePlayers = ref([]);
@@ -1067,6 +1094,61 @@
                     isDark.value = !isDark.value;
                     localStorage.setItem('yinwuchat_dark', isDark.value);
                     document.documentElement.classList.toggle('dark', isDark.value);
+                };
+
+                // 需要玩家参数的命令映射，值为玩家参数的位置索引（从0开始）
+                const commandTargetMap = {
+                    // 私聊命令
+                    msg: 1, tell: 1, w: 1, m: 1, whisper: 1, pm: 1,
+                    // 管理命令
+                    chatban: 1, chatunban: 1, mute: 1, unmute: 1, muteinfo: 1,
+                    // 用户命令
+                    ignore: 1, unignore: 1
+                };
+                // yinwuchat 子命令中需要玩家参数的（参数位置为 2）
+                const commandSubTargets = new Set(['ban', 'unban', 'chatban', 'chatunban', 'webbind', 'bind', 'unbind', 'query', 'ignore', 'unignore']);
+                const getCommandTargetIndex = (input) => {
+                    if (!input.startsWith('/')) return null;
+                    const parts = input.trim().split(/\s+/);
+                    if (parts.length === 0) return null;
+                    const cmd = parts[0].slice(1).toLowerCase();
+                    if (commandTargetMap[cmd]) return commandTargetMap[cmd];
+                    if (cmd === 'yinwuchat') {
+                        const sub = (parts[1] || '').toLowerCase();
+                        if (commandSubTargets.has(sub)) return 2;
+                        return null;
+                    }
+                    return null;
+                };
+                const showCommandPicker = computed(() => {
+                    // 同时支持桌面端和移动端
+                    const idx = getCommandTargetIndex(inputMsg.value.trim());
+                    return idx !== null;
+                });
+                const commandTargetCandidates = computed(() => {
+                    const idx = getCommandTargetIndex(inputMsg.value.trim());
+                    if (idx === null) return [];
+                    const parts = inputMsg.value.trim().split(/\s+/);
+                    const keyword = (parts[idx] || '').toLowerCase();
+                    return playerRoster.value.filter(p => {
+                        if (!p.name) return false;
+                        if (keyword && !p.name.toLowerCase().includes(keyword)) return false;
+                        return true;
+                    }).slice(0, 30);
+                });
+                const selectCommandTarget = (name) => {
+                    const raw = inputMsg.value || '';
+                    const idx = getCommandTargetIndex(raw.trim());
+                    if (idx === null) return;
+                    const parts = raw.trim().split(/\s+/);
+                    if (parts.length <= idx) {
+                        while (parts.length < idx) parts.push('');
+                        parts.push(name);
+                    } else {
+                        parts[idx] = name;
+                    }
+                    const tail = parts.slice(idx + 1).join(' ');
+                    inputMsg.value = parts.slice(0, idx + 1).join(' ') + (tail ? ' ' + tail : ' ');
                 };
 
                 const clearCache = () => {
@@ -2123,6 +2205,8 @@
 
                 window.addEventListener('resize', () => {
                     isMobile.value = window.innerWidth < 1024;
+                    sidebarWidth.value = getSidebarWidth();
+                    syncSidebarPosition();
                 });
 
                 const fillSavedWsUrl = () => {
@@ -2138,7 +2222,7 @@
                     }
                     if (sidebarDragging.value) return;
                     // 左侧抽屉：关闭时 translateX(-sidebarWidth), 打开时 translateX(0)
-                    sidebarTranslateX.value = showSidebar.value ? 0 : -sidebarWidth;
+                    sidebarTranslateX.value = showSidebar.value ? 0 : -sidebarWidth.value;
                 };
 
                 const onSidebarTouchStart = (event) => {
@@ -2146,6 +2230,10 @@
                     const touch = event.touches[0];
                     sidebarStartX.value = touch.clientX;
                     sidebarStartY.value = touch.clientY;
+                    sidebarLastX.value = touch.clientX;
+                    sidebarLastY.value = touch.clientY;
+                    sidebarTouchStartTime.value = Date.now();
+                    sidebarLongPressActive.value = false;
                     sidebarDragging.value = false;
                 };
 
@@ -2154,36 +2242,69 @@
                     const touch = event.touches[0];
                     const dx = touch.clientX - sidebarStartX.value;
                     const dy = touch.clientY - sidebarStartY.value;
+                    sidebarLastX.value = touch.clientX;
+                    sidebarLastY.value = touch.clientY;
                     
-                    if (!sidebarDragging.value) {
                         // 判定是否是水平滑动
-                        if (Math.abs(dx) > Math.abs(dy) + 10) {
-                            // 左侧抽屉逻辑：
-                            // 1. 如果侧边栏已关闭，只有从左侧边缘向右滑才触发
-                            if (!showSidebar.value) {
-                                const fromLeftEdge = sidebarStartX.value < 60;
-                                if (!fromLeftEdge || dx < 0) return;
-                            }
-                            // 2. 如果侧边栏已打开，向左滑即触发关闭拖动
+                    const isHorizontal = Math.abs(dx) > Math.abs(dy) + 5;
+                    
+                    // 只要是水平滑动就进入拖动模式
+                    if (!sidebarDragging.value && isHorizontal && Math.abs(dx) > 10) {
                             sidebarDragging.value = true;
-                        } else {
-                            return;
-                        }
                     }
                     
+                    // 如果是水平滑动或已在拖动中，阻止默认行为（防止页面滚动）
+                    if (sidebarDragging.value || (isHorizontal && Math.abs(dx) > 5)) {
                     event.preventDefault();
+                    }
+                    
+                    if (!sidebarDragging.value) return;
+                    
                     // 左侧抽屉偏移计算
-                    let next = (showSidebar.value ? 0 : -sidebarWidth) + dx;
-                    sidebarTranslateX.value = Math.max(-sidebarWidth, Math.min(0, next));
+                    let next = (showSidebar.value ? 0 : -sidebarWidth.value) + dx;
+                    sidebarTranslateX.value = Math.max(-sidebarWidth.value, Math.min(0, next));
                 };
 
                 const onSidebarTouchEnd = () => {
-                    if (!isMobile.value || !sidebarDragging.value) return;
-                    // 如果偏移量大于负宽度的一半，则视为打开
-                    const shouldOpen = sidebarTranslateX.value > -sidebarWidth / 2;
+                    if (!isMobile.value) return;
+                    const elapsed = Date.now() - sidebarTouchStartTime.value;
+                    const totalDx = sidebarLastX.value - sidebarStartX.value;
+                    const totalDy = sidebarLastY.value - sidebarStartY.value;
+                    const isHorizontal = Math.abs(totalDx) > Math.abs(totalDy) + 5;
+                    
+                    // 计算滑动速度（像素/毫秒）
+                    const velocity = elapsed > 0 ? Math.abs(totalDx) / elapsed : 0;
+                    const isFastSwipe = velocity > 0.3; // 快速滑动阈值
+
+                    // 快速滑动或短距离滑动：直接触发打开/关闭动画
+                    if (isHorizontal && (isFastSwipe || (elapsed < 400 && Math.abs(totalDx) > 30))) {
+                        const shouldOpen = totalDx > 0;
+                        // 只有当前状态与目标状态不同时才触发
+                        if (showSidebar.value !== shouldOpen) {
                     showSidebar.value = shouldOpen;
-                    sidebarTranslateX.value = shouldOpen ? 0 : -sidebarWidth;
+                            sidebarTranslateX.value = shouldOpen ? 0 : -sidebarWidth.value;
+                        }
                     sidebarDragging.value = false;
+                        sidebarLongPressActive.value = false;
+                        return;
+                    }
+
+                    if (!sidebarDragging.value) return;
+
+                    // 拖动滑动：移动超过 20% 触发打开/关闭，否则回弹
+                    const threshold = sidebarWidth.value * 0.2;
+                    let shouldOpen = showSidebar.value;
+                    if (showSidebar.value) {
+                        // 已打开状态：向左拖超过 20% 则关闭
+                        shouldOpen = sidebarTranslateX.value > -threshold;
+                    } else {
+                        // 已关闭状态：向右拖超过 20% 则打开
+                        shouldOpen = sidebarTranslateX.value > -sidebarWidth.value + threshold;
+                    }
+                    showSidebar.value = shouldOpen;
+                    sidebarTranslateX.value = shouldOpen ? 0 : -sidebarWidth.value;
+                    sidebarDragging.value = false;
+                    sidebarLongPressActive.value = false;
                 };
 
                 const onChatTouchStart = (event) => {
@@ -2279,13 +2400,27 @@
 
                     // 自动聚焦输入框（欢迎页）
                     setTimeout(() => {
+                        // 如果用户名已填写，聚焦到密码框；否则聚焦到用户名框
+                        if (loginForm.value.username) {
+                            const passwordInput = document.querySelector('input[type="password"]');
+                            if (passwordInput) {
+                                passwordInput.focus();
+                                return;
+                            }
+                        }
                         const input = document.querySelector('input');
                         if (input) input.focus();
                     }, 500);
                 });
 
                 watch(isConnected, (val) => {
-                    if (val) nextTick(() => lucide.createIcons());
+                    if (val) {
+                        nextTick(() => {
+                            lucide.createIcons();
+                            // 进入聊天界面后滚动到最新消息
+                            scrollToBottom();
+                        });
+                    }
                 });
 
                 watch(showSidebar, (val) => {
@@ -2294,7 +2429,7 @@
                         sidebarAnimationActive.value = true;
                         // 展开动画关键：
                         // 1. 确保 sidebarTranslateX 初始处于关闭状态
-                        sidebarTranslateX.value = -sidebarWidth;
+                        sidebarTranslateX.value = -sidebarWidth.value;
                         // 2. 在两次 requestAnimationFrame 后触发，确保浏览器已应用初始位置并渲染一帧
                         requestAnimationFrame(() => {
                             requestAnimationFrame(() => {
@@ -2304,7 +2439,7 @@
                     } else {
                         // 收回动画
                         sidebarAnimationActive.value = true;
-                        sidebarTranslateX.value = -sidebarWidth;
+                        sidebarTranslateX.value = -sidebarWidth.value;
                         setTimeout(() => {
                             if (!showSidebar.value) {
                                 sidebarAnimationActive.value = false;
@@ -2349,10 +2484,11 @@
                     sendMessage, selectChat, mentionPlayer, logout, toggleDarkMode, clearCache, confirmClearCache, formatMessage,
                     handleTouchStart, handleTouchEnd, getAvatarName, getAvatarUrl, getTargetStatus,
                     showSettings, defaultDomain, saveDefaultDomain,
-                    sidebarTranslateX, sidebarDragging, sidebarOverlayOpacity, sidebarOverlayVisible, sidebarBlur, sidebarAnimationActive,
+                    sidebarWidth, sidebarTranslateX, sidebarDragging, sidebarOverlayOpacity, sidebarOverlayVisible, sidebarBlur, sidebarAnimationActive,
                     onSidebarTouchStart, onSidebarTouchMove, onSidebarTouchEnd,
                     onChatTouchStart, onChatTouchMove, onChatTouchEnd, closeSidebar,
-                    toastDragId, toastDragOffset, startToastDrag, moveToastDrag, endToastDrag
+                    toastDragId, toastDragOffset, startToastDrag, moveToastDrag, endToastDrag,
+                    showCommandPicker, commandTargetCandidates, selectCommandTarget
                 };
             }
         }).mount('#app');
