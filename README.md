@@ -1,662 +1,781 @@
-# YinwuChat 璇存槑鏂囨。
+# YinwuChat 说明文档
 
-### 鍏充簬YinwuChat
-#### 鍓嶈█
+### 关于YinwuChat
+#### 前言
 
-[YinwuChat]涓轰腑鍥芥鐗圡inecraft鍏泭鏈嶅姟鍣╗YinwuRealm](www.yinwurealm.org)鎻掍欢锛屽紑鍙戣€呬负鏈嶅姟鍣ㄨ繍缁村洟闃熷墠杈圼LinTx]
+[YinwuChat]为中国正版Minecraft公益服务器[YinwuRealm](www.yinwurealm.org)插件，开发者为服务器运维团队前辈[LinTx]
 
-闅忕潃娓告垙鐗堟湰鍙樻洿锛屾钵娴锋鐢帮紝鍓嶄换鏈嶅姟鍣ㄧ淮鎶ゅ洟闃熼€愭笎鐢变簬鍚勭被鍘熷洜鍋滄浜嗙淮鎶わ紝鍏朵腑鍖呮嫭璇ラ」鐩€?7骞存椂闂撮噷锛屾湇涓籟fengshuai]涔熸浘灏濊瘯杩囧鎻掍欢杩涜琛ヤ竵淇锛屼絾鑻︿簬绮惧姏鏈夐檺锛屾湭鑳藉chat杩涜澶х増鏈洿鏂帮紝chat鐨勭増鏈彿鍋滅暀鍦ㄤ簡2.12
+随着游戏版本变更，沧海桑田，前任服务器维护团队逐渐由于各类原因停止了维护，其中包括该项目。
+7年时间里，服主[fengshuai]也曾尝试过对插件进行补丁修正，但苦于精力有限，未能对chat进行大版本更新，chat的版本号停留在了2.12
 
-7骞村悗鐨勪粖鏃ワ紝鐢变簬AI鐨勯閫熻繘姝ワ紝鏈嶅姟鍣ㄨ繍缁村洟闃熺粓浜庡彲浠ヤ箻AI鐨勪笢椋庨噸鍚Chat鐨勮繍缁磋鍒掞紝灏樺皝宸蹭箙鐨刢hat椤圭洰寰椾互閲嶈澶╂棩
+7年后的今日，由于AI的飞速进步，服务器运维团队终于可以乘AI的东风重启对Chat的运维计划，尘封已久的chat项目得以重见天日
 
-濡備粖锛岃椤圭洰鐢辨湇鍔″櫒杩愮淮鍥㈤槦[YinwuRealm鏈嶅姟缁刔杩愮淮鑰匸Xx_Kirov_xX]灏濊瘯閲嶆柊杩愮淮
+如今，该项目由服务器运维团队[YinwuRealm服务组]运维者[Xx_Kirov_xX]尝试重新运维
 
-鏃跺厜鑽忚嫆锛岄殢鐫€Mincraft鐨勭増鏈洿杩紝濡備粖鐨凪inecraft鏈嶅姟鍣ㄥ凡涓嶅褰撳勾鐧捐姳榻愭斁鐨勫Э鎬侊紝YinwuRealm鍏泭鏈嶅姟鍣ㄦ洿鏄洜涓虹己涔忚祫閲戜笌浜烘墜锛屼竴鐩村浜庝妇姝ヤ负鑹扮殑鐘舵€併€?2025骞村簳锛屾湇鍔＄粍缁勯暱[MadaoMeloN]鍚姩浜哬inwu绗崄浜屽懆鐩殑寤鸿宸ヤ綔锛宑hat浣滀负鏍稿績鎻掍欢琚彁涓婃棩绋嬨€?濡備粖锛宑hat灏嗘寜鐓у涓嬪嚑鐐归€愭鏇存柊锛?1. 涓庢洿濂界殑鏈嶅姟鍣ㄦ牳蹇冨吋瀹癸紝濡俧olia绛?2. 璺ㄦ湇閫氳鍔熻兘锛屼粠bungeecord杩佺Щ鑷硋elocity
-3. 鐜╁鐗╁搧淇℃伅[i]鍔熻兘
-4. 褰╄壊鏂囨湰鍔熻兘
-5. 鏈嶅姟鍣ㄦ秷鎭笌Q缇ゅ悓姝ュ姛鑳?**闇€娴嬭瘯**
-6. 鍏抽敭璇嶈繃婊ゅ姛鑳界瓑
-7. 缃戦〉绔€氳锛屽疄鐜颁娇鐢ˋPP涓庢湇鍔″櫒鍐呯帺瀹跺疄鏃堕€氳鐨勫姛鑳界瓑
+时光荏苒，随着Mincraft的版本更迭，如今的Minecraft服务器已不复当年百花齐放的姿态，YinwuRealm公益服务器更是因为缺乏资金与人手，一直处于举步为艰的状态。
+2025年底，服务组组长[MadaoMeloN]启动了Yinwu第十二周目的建设工作，chat作为核心插件被提上日程。
+如今，chat将按照如下几点逐步更新：
+1. 与更好的服务器核心兼容，如folia等
+2. 跨服通讯功能，从bungeecord迁移至velocity
+3. 玩家物品信息[i]功能
+4. 彩色文本功能
+5. 服务器消息与Q群同步功能 **需测试**
+6. 关键词过滤功能等
+7. 网页端通讯，实现使用APP与服务器内玩家实时通讯的功能等
 
-#### 鐗堟湰鏇存柊
-- 2.12.60锛氭洿鏂扮増鏈彿閰嶇疆锛岃В鍐崇鑱婃牸寮忛棶棰?- 2.12.61锛氭秷闄や笂鐗堟湰瀛樺湪鐨勬秷鎭噸澶嶅彂閫侀棶棰?- 2.12.62锛氳В鍐崇帺瀹跺悕绉癶over鐨勫崰浣嶇鍜宮sg鏃犳硶璋冪敤鐜╁鍚嶇О鐨勯棶棰橈紝鍩烘湰瀹屾垚YinwuChat璺ㄦ湇閫氳鍔熻兘鎼缓
-- 2.12.63锛歳edis渚濊禆杞悜velocity,at涓巒oat涓婄嚎
-- 2.12.64锛氬墠鍚庣紑缂栬緫涓婄嚎锛屼紭鍖栫紪杈戝姛鑳斤紝鐜板湪鍙互缂栬緫銆佸垹闄ゃ€佷互鍙婂揩鎹锋寚浠ゅ鍏ワ紝鍔犲叆绉佽亰鍓嶅悗缂€
-- 2.12.65锛歠olia鏀寔鍔犲叆锛屾鍦ㄦ祴璇曚腑锛宐ukkit杩愯姝ｅ父锛宲aper娴嬭瘯姝ｅ父
-- 2.12.66锛氭柊澧炵瑷€鍔熻兘锛岄殣韬姛鑳斤紝閲嶅姞杞芥彃浠跺姛鑳斤紝鏀寔瀹氭椂绂佽█銆佹案涔呯瑷€銆佺瑷€鍘熷洜锛涙柊澧炵嫭绔嬪懡浠?/mute銆?unmute銆?muteinfo锛涗紭鍖?[p] 浣嶇疆鏄剧ず鍔熻兘锛屼慨澶嶈嚜瀹氫箟鍓嶅悗缂€涓庡崰浣嶇鍐茬獊闂锛岃嚦姝わ紝鏈嶅唴鑱婂ぉ鍔熻兘宸插叏閮ㄤ笂绾?- 2.12.67锛氭洿鏂扮綉椤电鍏叡鑱婂ぉ瀹ゆ秷鎭樉绀哄吋瀹瑰鐞嗭紝瀹屽杽 WebSocket 娑堟伅瑙ｆ瀽涓庨鑹茬爜娓叉煋锛屽疄鐜皐eb绔寚浠ら泦鎴?- 2.12.68锛氫笂绾緼PP debug鐗堟湰锛屾敮鎸佸畨鍗撶
-- 2.12.69锛歐eb绔殣韬姛鑳戒笂绾匡紝鏀寔鐙珛 /vanish 鎸囦护锛涗紭鍖?Web 绔寚浠ゆ潈闄愭帶鍒朵笌鐧藉悕鍗曟満鍒讹紱鏇存柊 Web 绔郴缁熷ご鍍忥紱瀹屽杽蹇界暐锛圛gnore锛夐€昏緫锛涙敮鎸佺嫭绔?/ignore 鍜?/noat 鎸囦护绛?- 2.12.70锛歎I浼樺寲锛氱Щ闄ょ鑱婄獥鍙ｉ《閮ㄥご鍍忓浘鏍囷紝绮剧畝鐣岄潰锛沇eb绔晶杈规爮浜や簰浼樺寲锛氭敮鎸佹墜鏈虹宸︿晶渚ф粦鍛煎嚭/鍏抽棴鐜╁鍒楄〃锛屽疄鐜板钩婊戣窡闅忔晥鏋滐紱淇 Android App 鎵嬪娍鍏煎鎬э紱鍔犲叆/chatban銆?chatunban锛屽疄鐜板皝绂佺鐞嗭紝骞跺姞鍏ヤ簡APP/web绔弻绔悓鏃剁櫥褰曞姛鑳?- 2.12.71锛氭敮鎸?Web 绔笌 APP 鍚屾椂浣跨敤鍚屼竴璐﹀彿鐧诲綍锛屾秷鎭疄鏃跺悓姝ワ紱web绔ご鍍忔敼涓?/helm/ 绔偣锛屾樉绀哄弻灞傜毊鑲わ紙搴曞眰+澶寸洈灞傦級锛涙柊澧?/chatban鎸囦护锛屽疄鐜?web 绔皝绂佸悓姝ユ父鎴忕绂佽█锛屾柊澧?/chatunban 瑙ｅ皝鎸囦护锛屾敮鎸佽В闄?/chatban 鐨勫皝绂?- 2.12.72锛歐eb绔疷I浼樺寲锛屾柊澧炲揩鎹烽€変汉鍔熻兘锛屾敮鎸佺偣鍑荤帺瀹跺垪琛ㄥ揩閫熷彂璧风鑱婏紱鏂板 HarmonyOS锛堥缚钂欙級鍘熺敓搴旂敤鏀寔锛屽熀浜?ArkTS 寮€鍙戯紝鏀寔 HarmonyOS NEXT 5.0.0+锛屽疄鐜颁笌 Web 绔?Android 绔浉鍚岀殑鑱婂ぉ鍔熻兘
+#### 版本更新
+- 2.12.60：更新版本号配置，解决私聊格式问题
+- 2.12.61：消除上版本存在的消息重复发送问题
+- 2.12.62：解决玩家名称hover的占位符和msg无法调用玩家名称的问题，基本完成YinwuChat跨服通讯功能搭建
+- 2.12.63：redis依赖转向velocity,at与noat上线
+- 2.12.64：前后缀编辑上线，优化编辑功能，现在可以编辑、删除、以及快捷指令导入，加入私聊前后缀
+- 2.12.65：folia支持加入，正在测试中，bukkit运行正常，paper测试正常
+- 2.12.66：新增禁言功能，隐身功能，重加载插件功能，支持定时禁言、永久禁言、禁言原因；新增独立命令 /mute、/unmute、/muteinfo；优化 [p] 位置显示功能，修复自定义前后缀与占位符冲突问题，至此，服内聊天功能已全部上线
+- 2.12.67：更新网页端公共聊天室消息显示兼容处理，完善 WebSocket 消息解析与颜色码渲染，实现web端指令集成
+- 2.12.68：上线APP debug版本，支持安卓端
+- 2.12.69：Web端隐身功能上线，支持独立 /vanish 指令；优化 Web 端指令权限控制与白名单机制；更新 Web 端系统头像；完善忽略（Ignore）逻辑；支持独立 /ignore 和 /noat 指令等
+- 2.12.70：UI优化：移除私聊窗口顶部头像图标，精简界面；Web端侧边栏交互优化：支持手机端左侧侧滑呼出/关闭玩家列表，实现平滑跟随效果；修复 Android App 手势兼容性；加入/chatban、/chatunban，实现封禁管理，并加入了APP/web端双端同时登录功能
+- 2.12.71：支持 Web 端与 APP 同时使用同一账号登录，消息实时同步；web端头像改为 /helm/ 端点，显示双层皮肤（底层+头盔层）；新增 /chatban指令，实现 web 端封禁同步游戏端禁言，新增 /chatunban 解封指令，支持解除 /chatban 的封禁
+- 2.12.72：Web端UI优化，新增快捷选人功能，支持点击玩家列表快速发起私聊；新增 HarmonyOS（鸿蒙）原生应用支持，基于 ArkTS 开发，支持 HarmonyOS NEXT 5.0.0+，实现与 Web 端/Android 端相同的聊天功能
 
-YinwuChat鏄疺elocity浠ｇ悊鎻掍欢鍜孲pigot鎻掍欢锛屼富瑕佸姛鑳芥湁锛?1. 璺ㄦ湇鑱婂ぉ鍚屾
-2. 璺ㄦ湇绉佽亰锛坄/msg <鐜╁鍚? 娑堟伅`锛?3. 璺ㄦ湇@锛堣亰澶╁唴瀹逛腑杈撳叆鎯矦鐨勭帺瀹剁殑鍚嶅瓧锛屾垨鍚嶅瓧鐨勫墠闈竴閮ㄥ垎锛屼笉鍖哄垎澶у皬鍐欙級
-4. 璺ㄦ湇鐗╁搧灞曠ず锛堣亰澶╁唴瀹逛腑杈撳叆`[i]`鍗冲彲灏嗘墜涓殑鐗╁搧鍙戦€佸埌鑱婂ぉ鏍忥紝杈撳叆`[i:x]`鍙互灞曠ず鑳屽寘涓瓁瀵瑰簲鐨勭墿鍝佹爮鐨勭墿鍝侊紝鐗╁搧鏍忎负0-8锛岀劧鍚庝粠鑳屽寘宸︿笂瑙掍粠宸﹁嚦鍙充粠涓婅嚦涓嬩负9-35锛岃澶囨爮涓?6-39锛屽壇鎵嬩负40锛屼竴鏉℃秷鎭腑鍙互灞曠ず澶氫釜鐗╁搧锛?5. WebSocket锛屽紑鍚疻ebSocket鍚庨厤鍚圷inwuChat-Web锛圵eb瀹㈡埛绔級鍙互瀹炵幇web銆佹父鎴忓唴鑱婂ぉ鍚屾
-6. 鍏抽敭璇嶅睆钄?7. 浣跨敤閰稱鍜岄叿Q HTTP API鏉ュ疄鐜癚缇よ亰澶╁悓姝?
-**娉ㄦ剰**锛氫綘闇€瑕佸湪浣犵殑**Velocity浠ｇ悊鏈嶅姟鍣?*鍜岃繖涓猇elocity鎺ュ叆鐨勬墍鏈夌殑**Spigot鏈嶅姟鍣?*閮藉畨瑁呰繖涓彃浠?
-### 鎸囦护璇存槑
+YinwuChat是Velocity代理插件和Spigot插件，主要功能有：
+1. 跨服聊天同步
+2. 跨服私聊（`/msg <玩家名> 消息`）
+3. 跨服@（聊天内容中输入想@的玩家的名字，或名字的前面一部分，不区分大小写）
+4. 跨服物品展示（聊天内容中输入`[i]`即可将手中的物品发送到聊天栏，输入`[i:x]`可以展示背包中x对应的物品栏的物品，物品栏为0-8，然后从背包左上角从左至右从上至下为9-35，装备栏为36-39，副手为40，一条消息中可以展示多个物品）
+5. WebSocket，开启WebSocket后配合YinwuChat-Web（Web客户端）可以实现web、游戏内聊天同步
+6. 关键词屏蔽
+7. 使用酷Q和酷Q HTTP API来实现Q群聊天同步
 
-#### Web 绔厤缃寚浠?- `/yinwuchat bind <Token>`锛氱粦瀹?Web 璐﹀彿
-- `/yinwuchat unbind`锛氳В缁戝綋鍓?Web 璐﹀彿
-- `/yinwuchat list`锛氭煡鐪嬪凡缁戝畾 Token
-- `/yinwuchat webbind query <璐﹀彿鍚?鐜╁鍚?`锛氭煡璇?Web 缁戝畾鍏崇郴锛堢鐞嗗憳锛?- `/yinwuchat webbind unbind <璐﹀彿鍚?鐜╁鍚?`锛氳В闄?Web 缁戝畾鍏崇郴锛堢鐞嗗憳锛?
-璇存槑锛?- Web 璐﹀彿涓庣帺瀹跺悕鐨勮嚜鍔ㄧ粦瀹氬湪 **Web 鐧诲綍鎴愬姛骞跺缓绔?WS 杩炴帴涓?Token 宸茬粦瀹?* 鍚庡畬鎴愩€?- 浣跨敤鐜╁鍚嶆墽琛屾煡璇?瑙ｇ粦鏃讹紝浼氳嚜鍔ㄦ槧灏勫埌瀵瑰簲 Web 璐﹀彿銆?
-#### Velocity 鎸囦护
+**注意**：你需要在你的**Velocity代理服务器**和这个Velocity接入的所有的**Spigot服务器**都安装这个插件
 
-- `/yinwuchat ws`锛氳幏鍙栧綋鍓?WebSocket 鍦板潃
-- `/yinwuchat reload [config|ws]`锛氶噸鏂板姞杞介厤缃紙绠＄悊鍛橈級
-- `/yinwuchat msg <鐜╁鍚? <娑堟伅>`锛氬彂閫佺鑱婃秷鎭紙鍒悕锛歚/msg /tell /whisper /w /t`锛?- `/yinwuchat noat`锛氱姝?鍏佽琚獲
-- `/yinwuchat muteat`锛氬垏鎹鏃剁殑澹伴煶
-- `/yinwuchat ignore <鐜╁鍚?`锛氬拷鐣?鍙栨秷蹇界暐鐜╁
-- `/yinwuchat vanish`锛氬垏鎹㈤殣韬ā寮忥紙绠＄悊鍛橈級
-- `/yinwuchat atalladmin`锛氭姤鍛婄獊鍙戜簨浠剁粰鎵€鏈夌鐞嗗憳锛堟瘡鏃ラ檺涓€娆★級
-- `/yinwuchat atalladmin confirm <鐜╁鍚?`锛氶噸缃帺瀹舵姤鍛婂喎鍗存椂闂达紙绠＄悊鍛橈級
-- `/yinwuchat format edit|show`锛氱紪杈?鏌ョ湅鑱婂ぉ鍓嶅悗缂€
-- `/yinwuchat mute <鐜╁> [鏃堕暱] [鍘熷洜]`锛氱瑷€鐜╁锛堝埆鍚嶏細`/mute`锛岀鐞嗗憳锛?- `/yinwuchat unmute <鐜╁>`锛氳В闄ょ瑷€锛堝埆鍚嶏細`/unmute`锛岀鐞嗗憳锛?- `/yinwuchat muteinfo <鐜╁>`锛氭煡鐪嬬瑷€淇℃伅锛堝埆鍚嶏細`/muteinfo`锛岀鐞嗗憳锛?- `/yinwuchat permsync`锛氬悓姝?LuckPerms 缁勬潈闄愯妭鐐癸紙绠＄悊鍛橈級
-- `/yinwuchat chatban <鐜╁> [鏃堕暱] [鍘熷洜]`锛氬皝绂?Web 璐﹀彿锛堝埆鍚嶏細`/chatban`锛岀鐞嗗憳锛?- `/yinwuchat chatunban <鐜╁>`锛氳В灏?Web 璐﹀彿锛堝埆鍚嶏細`/chatunban`锛岀鐞嗗憳锛?- `/yinwuchat itemdisplay`锛氱墿鍝佸睍绀哄府鍔╋紙鍒悕锛歚/itemdisplay /showitem /displayitem`锛?
-#### Bukkit 鎸囦护锛堝瓙鏈嶏級
+### 指令说明
 
-- `/msg <鐜╁鍚? <娑堟伅>`锛氬瓙鏈嶇鑱婃寚浠?- `/viewitem <鐗╁搧ID>`锛氭煡鐪嬬墿鍝佸睍绀鸿鎯?- `/yinwuchat-bukkit`锛氬瓙鏈嶆ˉ鎺ユ寚浠わ紙鍐呴儴浣跨敤锛?
-### 馃敡 閰嶇疆璇存槑
+#### Web 端配置指令
+- `/yinwuchat bind <Token>`：绑定 Web 账号
+- `/yinwuchat unbind`：解绑当前 Web 账号
+- `/yinwuchat list`：查看已绑定 Token
+- `/yinwuchat webbind query <账号名/玩家名>`：查询 Web 绑定关系（管理员）
+- `/yinwuchat webbind unbind <账号名/玩家名>`：解除 Web 绑定关系（管理员）
 
-#### Velocity浠ｇ悊鏈嶅姟鍣ㄩ厤缃?Velocity閰嶇疆鏂囦欢閫氬父浣嶄簬 `plugins/velocity/config.toml`锛?```toml
+说明：
+- Web 账号与玩家名的自动绑定在 **Web 登录成功并建立 WS 连接且 Token 已绑定** 后完成。
+- 使用玩家名执行查询/解绑时，会自动映射到对应 Web 账号。
+
+#### Velocity 指令
+
+- `/yinwuchat ws`：获取当前 WebSocket 地址
+- `/yinwuchat reload [config|ws]`：重新加载配置（管理员）
+- `/yinwuchat msg <玩家名> <消息>`：发送私聊消息（别名：`/msg /tell /whisper /w /t`）
+- `/yinwuchat noat`：禁止/允许被@
+- `/yinwuchat muteat`：切换@时的声音
+- `/yinwuchat ignore <玩家名>`：忽略/取消忽略玩家
+- `/yinwuchat vanish`：切换隐身模式（管理员）
+- `/yinwuchat atalladmin`：报告突发事件给所有管理员（每日限一次）
+- `/yinwuchat atalladmin confirm <玩家名>`：重置玩家报告冷却时间（管理员）
+- `/yinwuchat format edit|show`：编辑/查看聊天前后缀
+- `/yinwuchat mute <玩家> [时长] [原因]`：禁言玩家（别名：`/mute`，管理员）
+- `/yinwuchat unmute <玩家>`：解除禁言（别名：`/unmute`，管理员）
+- `/yinwuchat muteinfo <玩家>`：查看禁言信息（别名：`/muteinfo`，管理员）
+- `/yinwuchat permsync`：同步 LuckPerms 组权限节点（管理员）
+- `/yinwuchat chatban <玩家> [时长] [原因]`：封禁 Web 账号（别名：`/chatban`，管理员）
+- `/yinwuchat chatunban <玩家>`：解封 Web 账号（别名：`/chatunban`，管理员）
+- `/yinwuchat itemdisplay`：物品展示帮助（别名：`/itemdisplay /showitem /displayitem`）
+
+#### Bukkit 指令（子服）
+
+- `/msg <玩家名> <消息>`：子服私聊指令
+- `/viewitem <物品ID>`：查看物品展示详情
+- `/yinwuchat-bukkit`：子服桥接指令（内部使用）
+
+### 配置说明
+
+#### Velocity代理服务器配置
+Velocity配置文件通常位于 `plugins/velocity/config.toml`：
+```toml
 [servers]
 lobby = "127.0.0.1:30001"
 survival = "127.0.0.1:30002"
 creative = "127.0.0.1:30003"
 ```
 
-#### 鍚庣鏈嶅姟鍣ㄩ厤缃?姣忎釜鍚庣鏈嶅姟鍣ㄧ殑閰嶇疆鏂囦欢浣嶄簬 `plugins/YinwuChat/config.yml`锛?```yaml
-# 鏈嶅姟鍣ㄥ悕绉伴厤缃紙鑷姩妫€娴嬬帺瀹舵墍鍦ㄦ湇鍔″櫒锛?serverName: "lobby"  # 鍙€夛細鎵嬪姩鎸囧畾鏈嶅姟鍣ㄥ悕绉帮紝涓嶈缃垯鑷姩妫€娴?
-# 娑堟伅鏍煎紡閰嶇疆锛堟墍鏈夋秷鎭兘閫氳繃Velocity缁熶竴澶勭悊锛?format:
-  - message: "&b[ServerName]"    # 鏈嶅姟鍣ㄥ悕绉板崰浣嶇锛岃嚜鍔ㄦ浛鎹负瀹為檯鏈嶅姟鍣ㄥ悕
-    hover: "鎵€鍦ㄦ湇鍔″櫒锛歋erverName"  # 鎮仠鏄剧ず锛孲erverName浼氳鏇挎崲
-    click: "/server ServerName"      # 鐐瑰嚮浜嬩欢锛孲erverName浼氳鏇挎崲
-  - message: "&e{displayName}"   # 鐜╁鍚嶇О鍗犱綅绗?    hover: "鐐瑰嚮绉佽亰"
+#### 后端服务器配置
+每个后端服务器的配置文件位于 `plugins/YinwuChat/config.yml`：
+```yaml
+# 服务器名称配置（自动检测玩家所在服务器）
+serverName: "lobby"  # 可选：手动指定服务器名称，不设置则自动检测
+
+# 消息格式配置（所有消息都通过Velocity统一处理）
+format:
+  - message: "&b[ServerName]"    # 服务器名称占位符，自动替换为实际服务器名
+    hover: "所在服务器：ServerName"  # 悬停显示，ServerName会被替换
+    click: "/server ServerName"      # 点击事件，ServerName会被替换
+  - message: "&e{displayName}"   # 玩家名称占位符
+    hover: "点击私聊"
     click: "/msg {displayName}"
   - message: " &6>>> "
-  - message: "&r{message}"       # 娑堟伅鍐呭鍗犱綅绗?
-# 鍏朵粬閰嶇疆...
+  - message: "&r{message}"       # 消息内容占位符
+
+# 其他配置...
 ```
 
-#### 璺ㄦ湇鑱婂ぉ璇存槑
+#### 跨服聊天说明
 
-鎻掍欢瀹炵幇浜嗗畬鏁寸殑璺ㄦ湇鑱婂ぉ鍔熻兘锛?- **鏅€氭秷鎭?*锛氳嚜鍔ㄨ法鏈嶅悓姝ワ紝鎵€鏈夋湇鍔″櫒鐨勭帺瀹堕兘鑳界湅鍒?- **鐗╁搧娑堟伅**锛氭敮鎸佽法鏈嶅睍绀虹墿鍝佷俊鎭?- **鏈嶅姟鍣ㄦ爣璇?*锛氭秷鎭墠鏄剧ず鍙戦€佽€呮墍鍦ㄧ殑鏈嶅姟鍣ㄥ悕绉?- **鎮仠鐐瑰嚮**锛氭敮鎸佹偓鍋滄煡鐪嬫湇鍔″櫒淇℃伅锛岀偣鍑诲垏鎹㈡湇鍔″櫒
+插件实现了完整的跨服聊天功能：
+- **普通消息**：自动跨服同步，所有服务器的玩家都能看到
+- **物品消息**：支持跨服展示物品信息
+- **服务器标识**：消息前显示发送者所在的服务器名称
+- **悬停点击**：支持悬停查看服务器信息，点击切换服务器
 
-#### 娑堟伅澶勭悊娴佺▼
+#### 消息处理流程
 
-1. 鐜╁鍙戦€佹秷鎭?鈫?Bukkit绔帴鏀?2. Bukkit绔彂閫佸埌Velocity 鈫?鍖呭惈鏈嶅姟鍣ㄥ悕绉颁俊鎭?3. Velocity澶勭悊鏍煎紡鍖?鈫?搴旂敤鍗犱綅绗︽浛鎹?4. Velocity骞挎挱鍒版墍鏈夋湇鍔″櫒 鈫?鎵€鏈夌帺瀹舵敹鍒版秷鎭?
-#### 鏈嶅姟鍣ㄥ悕绉拌嚜鍔ㄦ娴?鎻掍欢鏀寔澶氱鏂瑰紡鑷姩妫€娴嬫湇鍔″櫒鍚嶇О锛?
-1. **閰嶇疆鏂囦欢鎸囧畾**锛堟帹鑽愶級锛?   ```yaml
+1. 玩家发送消息 - Bukkit端接收
+2. Bukkit端发送到Velocity - 包含服务器名称信息
+3. Velocity处理格式化 - 应用占位符替换
+4. Velocity广播到所有服务器 - 所有玩家收到消息
+
+#### 服务器名称自动检测
+插件支持多种方式自动检测服务器名称：
+
+1. **配置文件指定**（推荐）：
+   ```yaml
    serverName: "lobby"
    ```
 
-2. **绯荤粺灞炴€?*锛?   ```bash
+2. **系统属性**：
+   ```bash
    java -Dyinwuchat.server.name=lobby -jar server.jar
    ```
 
-3. **鐜鍙橀噺**锛?   ```bash
+3. **环境变量**：
+   ```bash
    export YINWUCHAT_SERVER_NAME=lobby
    java -jar server.jar
    ```
 
-4. **鑷姩妫€娴?*锛氫娇鐢╒elocity閰嶇疆涓殑鏈嶅姟鍣ㄥ悕绉?
-#### 娑堟伅鏍煎紡鍗犱綅绗?- `[ServerName]` 鎴?`{ServerName}`: 鏄剧ず鏈嶅姟鍣ㄥ悕绉?- `{displayName}`: 鏄剧ず鐜╁鍚嶇О
-- `{message}`: 鏄剧ず娑堟伅鍐呭
+4. **自动检测**：使用Velocity配置中的服务器名称
 
-#### 绀轰緥鏁堟灉
+#### 消息格式占位符
+- `[ServerName]` 或 `{ServerName}`: 显示服务器名称
+- `{displayName}`: 显示玩家名称
+- `{message}`: 显示消息内容
 
-- **澶у巺鏈嶅姟鍣?*: `[lobby]鐜╁A >>> 浣犲ソ`
-- **鐢熷瓨鏈嶅姟鍣?*: `[survival]鐜╁B >>> 娆㈣繋鏉ュ埌鐢熷瓨鏈峘
-- **鍒涢€犳湇鍔″櫒**: `[creative]鐜╁C >>> [鐗╁搧灞曠ず]`
+#### 示例效果
 
-### 骞冲彴鍙樻洿
-- **v2.12+**: 浠嶣ungeeCord杩佺Щ鑷砎elocity浠ｇ悊骞冲彴
-- Velocity鎻愪緵鏇村ソ鐨勬€ц兘鍜岀幇浠ｅ寲鐨凙PI璁捐
-- 鎵€鏈夊姛鑳戒繚鎸佸吋瀹癸紝閰嶇疆鏂囦欢鏍煎紡涓嶅彉
+- **大厅服务器**: `[lobby]玩家A >>> 你好`
+- **生存服务器**: `[survival]玩家B >>> 欢迎来到生存服`
+- **创造服务器**: `[creative]玩家C >>> [物品展示]`
 
-## 馃彈锔?鏋勫缓璇存槑
+### 平台变更
+- **v2.12+**: 从BungeeCord迁移至Velocity代理平台
+- Velocity提供更好的性能和现代化的API设计
+- 所有功能保持兼容，配置文件格式不变
 
-### 鐜瑕佹眰
+## 构建说明
+
+### 环境要求
 - Java 17+
 - Maven 3.6+
 
-### 澶氬钩鍙版瀯寤?椤圭洰鏀寔鍚屾椂鏋勫缓 Velocity 浠ｇ悊鍜?Bukkit/Spigot 鍚庣鐗堟湰锛?
+### 多平台构建
+项目支持同时构建 Velocity 代理和 Bukkit/Spigot 后端版本：
+
 #### Windows
 ```bash
-# 鏋勫缓鎵€鏈夊钩鍙?build.bat all
+# 构建所有平台
+build.bat all
 
-# 浠呮瀯寤?Velocity 鐗堟湰
+# 仅构建 Velocity 版本
 build.bat velocity
 
-# 浠呮瀯寤?Bukkit 鐗堟湰
+# 仅构建 Bukkit 版本
 build.bat bukkit
 ```
 
 #### Linux/Mac
 ```bash
-# 鏋勫缓鎵€鏈夊钩鍙?./build.sh all
+# 构建所有平台
+./build.sh all
 
-# 浠呮瀯寤?Velocity 鐗堟湰
+# 仅构建 Velocity 版本
 ./build.sh velocity
 
-# 浠呮瀯寤?Bukkit 鐗堟湰
+# 仅构建 Bukkit 版本
 ./build.sh bukkit
 ```
 
-#### Maven 鍛戒护
+#### Maven 命令
 ```bash
-# 鏋勫缓鎵€鏈夊钩鍙帮紙榛樿锛?mvn clean package
+# 构建所有平台（默认）
+mvn clean package
 
-# 浠呮瀯寤?Velocity 鐗堟湰
+# 仅构建 Velocity 版本
 mvn clean package -P velocity
 
-# 浠呮瀯寤?Bukkit 鐗堟湰
+# 仅构建 Bukkit 版本
 mvn clean package -P bukkit
 ```
 
-### 杈撳嚭鏂囦欢
+### 输出文件
 
-鏋勫缓瀹屾垚鍚庯紝鍦?`target/` 鐩綍涓嬩細鐢熸垚锛?- `YinwuChat-Velocity-2.12.72.jar` - Velocity 浠ｇ悊涓撶敤鐗堟湰
-- `YinwuChat-Bukkit-2.12.72.jar` - Bukkit/Spigot 鍚庣涓撶敤鐗堟湰
-- `YinwuChat-2.12.72.jar` - 鍖呭惈鎵€鏈夊钩鍙颁唬鐮侊紙鍚戝悗鍏煎锛?
-### 閮ㄧ讲璇存槑
+构建完成后，在 `target/` 目录下会生成：
+- `YinwuChat-Velocity-2.12.72.jar` - Velocity 代理专用版本
+- `YinwuChat-Bukkit-2.12.72.jar` - Bukkit/Spigot 后端专用版本
+- `YinwuChat-2.12.72.jar` - 包含所有平台代码（向后兼容）
 
-1. **Velocity 浠ｇ悊鏈嶅姟鍣?*
-   - 瀹夎锛歚YinwuChat-Velocity-2.12.72.jar`
-   - 浣嶇疆锛歚plugins/YinwuChat-Velocity-2.12.72.jar`
+### 部署说明
 
-2. **Bukkit/Spigot 鍚庣鏈嶅姟鍣?*
-   - 瀹夎锛歚YinwuChat-Bukkit-2.12.72.jar`
-   - 浣嶇疆锛歚plugins/YinwuChat-Bukkit-2.12.72.jar`
+1. **Velocity 代理服务器**
+   - 安装：`YinwuChat-Velocity-2.12.72.jar`
+   - 位置：`plugins/YinwuChat-Velocity-2.12.72.jar`
 
-3. **閰嶇疆鏂囦欢**
-   - 棣栨杩愯鍚庝細鍦ㄧ浉搴旀彃浠剁洰褰曠敓鎴愰厤缃枃浠?
-### Q缇よ亰澶╁悓姝?鏈彃浠舵敮鎸侀€氳繃 **AQQBot**锛堝熀浜?OneBot 鏍囧噯锛夋垨 **CoolQ HTTP API** 瀹炵幇 QQ 缇よ亰澶╁悓姝ャ€?**鎺ㄨ崘浣跨敤 AQQBot**锛堟敮鎸?Lagrange銆丩LoneBot銆丯apCat 绛夊悗绔級
+2. **Bukkit/Spigot 后端服务器**
+   - 安装：`YinwuChat-Bukkit-2.12.72.jar`
+   - 位置：`plugins/YinwuChat-Bukkit-2.12.72.jar`
 
-#### 鏂瑰紡涓€锛氫娇鐢?AQQBot锛堟帹鑽愶級
+3. **配置文件**
+   - 首次运行后会在相应插件目录生成配置文件
 
-1. **YinwuChat 鎻掍欢閰嶇疆**
-   - 闇€瑕佸紑鍚?`openwsserver`
-   - 閰嶇疆 `aqqBotConfig` 閮ㄥ垎锛?     - `qqGroup`: 璁剧疆涓轰綘鎯冲悓姝ョ殑 QQ 缇ゅ彿
-     - `accessToken`: 璁剧疆涓轰竴涓冻澶熷鏉傝冻澶熼暱鐨勫瓧绗︿覆锛堟帹鑽?2浣嶅乏鍙崇殑闅忔満瀛楃涓诧級
-     - `gameToQQ`: 璁剧疆涓?`true` 浠ュ惎鐢ㄦ父鎴忓唴娑堟伅鍙戦€佸埌 QQ 缇?     - `qqToGame`: 璁剧疆涓?`true` 浠ュ惎鐢?QQ 缇ゆ秷鎭彂閫佸埌娓告垙鍐?
-2. **瀹夎 AQQBot 鍚庣**
+### Q群聊天同步
+本插件支持通过 **AQQBot**（基于 OneBot 标准）或 **CoolQ HTTP API** 实现 QQ 群聊天同步。
+**推荐使用 AQQBot**（支持 Lagrange、LLoneBot、NapCat 等后端）
 
-   **閫夐」 A锛氫娇鐢?Lagrange 鍚庣**
-   - 浠?[Lagrange 鐨?GitHub Releases](https://github.com/LagrangeDev/Lagrange.Core) 涓嬭浇閫傚悎鎮ㄦ搷浣滅郴缁熺殑鐗堟湰
-   - 杩愯 `Lagrange.OneBot.exe`锛圵indows锛夋垨 `./Lagrange.OneBot`锛圠inux/macOS锛?   - 棣栨杩愯浼氱敓鎴?`appsettings.json` 閰嶇疆鏂囦欢
-   - 閰嶇疆 WebSocket 鍙嶅悜杩炴帴锛?     - `ws_reverse_url`: 璁剧疆涓?`ws://浣犵殑鏈嶅姟鍣↖P:YinwuChat鐨剋s绔彛/ws`锛堜緥濡傦細`ws://127.0.0.1:8888/ws`锛?     - `ws_reverse_use_universal_client`: 璁剧疆涓?`true`
-     - `access_token`: 璁剧疆涓轰笌 YinwuChat 閰嶇疆涓殑 `accessToken` 涓€鑷?
-   **閫夐」 B锛氫娇鐢?LLoneBot 鍚庣锛圠iteLoaderQQNT 鎻掍欢锛?*
-   - 瀹夎 LiteLoaderQQNT锛歨ttps://github.com/LiteLoaderQQNT/LiteLoaderQQNT
-   - 浠?[LLoneBot 鐨?GitHub Releases](https://github.com/jackiotyu/llonebot-docker) 涓嬭浇 `.zip` 鏂囦欢
-   - 鍦?QQ 璁剧疆涓紝鐐瑰嚮 LiteLoaderQQNT锛岄€夋嫨"瀹夎鏂版彃浠?锛岄€夋嫨涓嬭浇鐨?`.zip` 鏂囦欢
-   - 閲嶅惎 QQ锛屽湪 LiteLoaderQQNT 璁剧疆涓惎鐢?LLoneBot
-   - 閰嶇疆姝ｅ悜 WebSocket 鎴栧弽鍚?WebSocket锛堟帹鑽愬弽鍚戯級锛?     - 鍚敤鍙嶅悜 WebSocket锛岃缃鍙ｅ拰 Access Token
-     - 灏嗚繛鎺ュ湴鍧€璁剧疆涓?YinwuChat 鐨?WebSocket 鍦板潃
+#### 方式一：使用 AQQBot（推荐）
 
-   **閫夐」 C锛氫娇鐢?NapCat 鍚庣**
-   - 瀹夎 LiteLoaderQQNT锛堝悓涓婏級
-   - 浠?[NapCat 鐨?GitHub Releases](https://github.com/NapNeko/NapCatQQ) 涓嬭浇 `.zip` 鏂囦欢
-   - 瀹夎姝ラ鍜?LLoneBot 绫讳技
-   - 閰嶇疆 WebSocket 杩炴帴鍜?Access Token
+1. **YinwuChat 插件配置**
+   - 需要开启 `openwsserver`
+   - 配置 `aqqBotConfig` 部分：
+     - `qqGroup`: 设置为你想同步的 QQ 群号
+     - `accessToken`: 设置为一个足够复杂足够长的字符串（推荐32位左右的随机字符串）
+     - `gameToQQ`: 设置为 `true` 以启用游戏内消息发送到 QQ 群
+     - `qqToGame`: 设置为 `true` 以启用 QQ 群消息发送到游戏内
 
-3. **娓告垙鍐呬娇鐢?*
-   - 浣跨敤 `/qq <娑堟伅>` 鍛戒护灏嗘秷鎭彂閫佸埌 QQ 缇?   - 姣忔潯娑堟伅涔嬮棿鏈?5 绉掑喎鍗存椂闂?   - 绗竴娆″彂閫佸悗鏈?5 绉掑唴鏃犳硶鍐嶆鍙戦€?
-#### 鏂瑰紡浜岋紙鑰佹柟寮忥紝鐢变簬閰稱寮€鍙戣€呬笉鍐嶆敮鎸侊紝宸插純鐢級锛氫娇鐢?CoolQ HTTP API
+2. **安装 AQQBot 后端**
 
-1. YinwuChat鎻掍欢閰嶇疆
-    1. 闇€瑕佸紑鍚痮penwsserver
-    2. 灏哻oolQGroup璁剧疆涓轰綘鎯冲悓姝ョ殑Q缇ょ殑鍙风爜
-    3. 灏哻oolQAccessToken璁剧疆涓轰竴涓冻澶熷鏉傝冻澶熼暱鐨勫瓧绗︿覆锛堟帹鑽?2浣嶅乏鍙崇殑闅忔満瀛楃涓诧級
-2. 瀹夎閰稱 HTTP API鎻掍欢
-    1. 浠?https://github.com/richardchien/coolq-http-api/releases/latest 涓嬭浇鏈€鏂扮増鏈殑coolq-http-api锛宑oolq-http-api鍏蜂綋鐨勫畨瑁呰鏄庡彲浠ュ埌 https://cqhttp.cc/docs/ 鎴?http://richardchien.gitee.io/coolq-http-api/docs/ 鏌ョ湅
-    2. 灏哻oolq-http-api鏀惧埌閰稱鐩綍涓嬬殑app鐩綍涓?    3. 鎵撳紑閰稱鐨勫簲鐢ㄧ鐞嗙晫闈紝鐐瑰嚮閲嶈浇搴旂敤鎸夐挳
-    4. 鎵惧埌"[鏈惎鐢╙HTTP API"锛岀偣瀹冿紝鐒跺悗鐐瑰彸杈圭殑鍚敤鎸夐挳
-    5. 鏈夋彁绀虹殑鍏ㄩ儴鐐?鏄?
-    6. 鍒伴叿Q鐩綍涓嬬殑"data\app\io.github.richardchien.coolqhttpapi\config"鐩綍锛屼笅锛屾墦寮€浣犵櫥褰曠殑QQ鍙峰搴旂殑json鏂囦欢锛堟瘮濡備綘鐧诲綍鐨凲Q鍙锋槸10000锛岄偅鏂囦欢鍚嶅氨鏄?0000.json锛?    7. 灏唘se_http淇敼涓篺alse锛堝鏋滀綘娌℃湁鍏朵粬搴旂敤闇€瑕佷娇鐢ㄧ殑璇濓級
-    8. 灏唘se_ws_reverse淇敼涓簍rue锛堝繀椤伙紒锛?    9. 灏唚s_reverse_url淇敼涓烘彃浠剁殑websocket鐩戝惉鍦板潃鍔犵鍙ｏ紙姣斿浣犵鍙ｆ槸9000锛岄叿Q鍜宮c鏈嶅姟鍣ㄥ湪涓€鍙版満鍣ㄤ笂灏卞～ ws://127.0.0.1:9000/ws锛?    10. post_message_format璇峰姟蹇呬繚璇佹槸"string"
-    11. 灏唀nable_heartbeat璁剧疆涓簍rue
-    12. 澧炲姞涓€琛? "ws_reverse_use_universal_client": true,    鎴栬€呭鏋滀綘鐨刯son鏂囦欢涓湁ws_reverse_use_universal_client鐨勮瘽灏嗗畠鏀逛负true锛堝繀椤伙紒锛?    13. 灏哸ccess_token淇敼涓哄拰YinwuChat閰嶇疆涓殑coolQAccessToken涓€鑷寸殑鍐呭
-    14. 鍙抽敭閰稱涓荤晫闈紝閫夋嫨搴旂敤-HTTP API-閲嶅惎搴旂敤
+   **选项 A：使用 Lagrange 后端**
+   - 从 [Lagrange 的 GitHub Releases](https://github.com/LagrangeDev/Lagrange.Core) 下载适合您操作系统的版本
+   - 运行 `Lagrange.OneBot.exe`（Windows）或 `./Lagrange.OneBot`（Linux/macOS）
+   - 首次运行会生成 `appsettings.json` 配置文件
+   - 配置 WebSocket 反向连接：
+     - `ws_reverse_url`: 设置为 `ws://你的服务器IP:YinwuChat的ws端口/ws`（例如：`ws://127.0.0.1:8888/ws`）
+     - `ws_reverse_use_universal_client`: 设置为 `true`
+     - `access_token`: 设置为与 YinwuChat 配置中的 `accessToken` 一致
 
-**娉ㄦ剰**锛欳oolQ 宸插仠姝㈢淮鎶わ紝璇蜂娇鐢?AQQBot 鏇夸唬鏂规銆?
-### 璺╒elocity鑱婂ぉ
-> 鏀寔鍏睆鑱婂ぉ銆佺鑱娿€乤t绛夋墍鏈夊姛鑳?
-1. 灏哣elocity绔厤缃枃浠剁殑redisConfig.openRedis淇敼涓簍rue
-2. redisConfig.ip淇敼涓簉edis鏈嶅姟鍣ㄧ殑ip
-3. redisConfig.port淇敼涓簉edis鏈嶅姟鍣ㄧ殑绔彛
-4. redisConfig.password淇敼涓簉edis鏈嶅姟鍣ㄧ殑瀵嗙爜
-5. redisConfig.selfName淇敼涓烘瘡涓猇elocity绔兘涓嶄竴鏍风殑涓€涓瓧绗︿覆锛堟彃浠跺唴閮ㄦ爣璁版秷鎭潵婧愬強娑堟伅鐩殑鐢紝姣忎釜Velocity蹇呴』涓嶄竴鏍凤紝鏃犲叾浠栬姹傦級
-6. 閲嶆柊鍔犺浇鎻掍欢鍚庯紝鍦ㄤ竴涓猇elocity绔帴鍏ョ殑鐜╁鍙戦€佺殑娑堟伅鍙互鍦ㄥ叾浠朧elocity绔帴鍏ョ殑鐜╁澶勭湅鍒?
-### 閰嶇疆鏂囦欢
-YinwuChat-Velocity鐨勯厤缃枃浠跺唴瀹逛负锛?```yaml
-#鏄惁寮€鍚疻ebSocket
+   **选项 B：使用 LLoneBot 后端（LiteLoaderQQNT 插件）**
+   - 安装 LiteLoaderQQNT：https://github.com/LiteLoaderQQNT/LiteLoaderQQNT
+   - 从 [LLoneBot 的 GitHub Releases](https://github.com/jackiotyu/llonebot-docker) 下载 `.zip` 文件
+   - 在 QQ 设置中，点击 LiteLoaderQQNT，选择"安装新插件"，选择下载的 `.zip` 文件
+   - 重启 QQ，在 LiteLoaderQQNT 设置中启用 LLoneBot
+   - 配置正向 WebSocket 或反向 WebSocket（推荐反向）：
+     - 启用反向 WebSocket，设置端口和 Access Token
+     - 将连接地址设置为 YinwuChat 的 WebSocket 地址
+
+   **选项 C：使用 NapCat 后端**
+   - 安装 LiteLoaderQQNT（同上）
+   - 从 [NapCat 的 GitHub Releases](https://github.com/NapNeko/NapCatQQ) 下载 `.zip` 文件
+   - 安装步骤和 LLoneBot 类似
+   - 配置 WebSocket 连接和 Access Token
+
+3. **游戏内使用**
+   - 使用 `/qq <消息>` 命令将消息发送到 QQ 群
+   - 每条消息之间有 5 秒冷却时间
+   - 第一次发送后有 5 秒内无法再次发送
+
+#### 方式二（老方式，由于酷Q开发者不再支持，已弃用）：使用 CoolQ HTTP API
+
+1. YinwuChat插件配置
+    1. 需要开启openwsserver
+    2. 将coolQGroup设置为你想同步的Q群的号码
+    3. 将coolQAccessToken设置为一个足够复杂足够长的字符串（推荐32位左右的随机字符串）
+2. 安装酷Q HTTP API插件
+    1. 从 https://github.com/richardchien/coolq-http-api/releases/latest 下载最新版本的coolq-http-api，coolq-http-api具体的安装说明可以到 https://cqhttp.cc/docs/ 或 http://richardchien.gitee.io/coolq-http-api/docs/ 查看
+    2. 将coolq-http-api放到酷Q目录下的app目录中
+    3. 打开酷Q的应用管理界面，点击重载应用按钮
+    4. 找到"[未启用]HTTP API"，点它，然后点右边的启用按钮
+    5. 有提示的全部点"是"
+    6. 到酷Q目录下的"data\app\io.github.richardchien.coolqhttpapi\config"目录，下，打开你登录的QQ号对应的json文件（比如你登录的QQ号是10000，那文件名就是10000.json）
+    7. 将use_http修改为false（如果你没有其他应用需要使用的话）
+    8. 将use_ws_reverse修改为true（必须！）
+    9. 将ws_reverse_url修改为插件的websocket监听地址加端口（比如你端口是9000，酷Q和mc服务器在一台机器上就填 ws://127.0.0.1:9000/ws）
+    10. post_message_format请务必保证是"string"
+    11. 将enable_heartbeat设置为true
+    12. 增加一行  "ws_reverse_use_universal_client": true,    或者如果你的json文件中有ws_reverse_use_universal_client的话将它改为true（必须！）
+    13. 将access_token修改为和YinwuChat配置中的coolQAccessToken一致的内容
+    14. 右键酷Q主界面，选择应用-HTTP API-重启应用
+
+**注意**：CoolQ 已停止维护，请使用 AQQBot 替代方案。
+
+### 跨Velocity聊天
+> 支持公屏聊天、私聊、at等所有功能
+
+1. 将Velocity端配置文件的redisConfig.openRedis修改为true
+2. redisConfig.ip修改为redis服务器的ip
+3. redisConfig.port修改为redis服务器的端口
+4. redisConfig.password修改为redis服务器的密码
+5. redisConfig.selfName修改为每个Velocity端都不一样的一个字符串（插件内部标记消息来源及消息目的用，每个Velocity必须不一样，无其他要求）
+6. 重新加载插件后，在一个Velocity端接入的玩家发送的消息可以在其他Velocity端接入的玩家处看到
+
+### 配置文件
+YinwuChat-Velocity的配置文件内容为：
+```yaml
+#是否开启WebSocket
 openwsserver: false
 
-#WebSocket鐩戝惉绔彛
+#WebSocket监听端口
 wsport: 8888
 
-#WebSocket鍙戦€佹秷鎭椂闂撮棿闅旓紙姣锛?wsCooldown: 1000
+#WebSocket发送消息时间间隔（毫秒）
+wsCooldown: 1000
 
-#瀹夎浜咮ungeeAdminTools鎻掍欢鏃讹紝
-#鍦╓eb绔彂閫佹秷鎭紝浣跨敤鍝釜鏈嶅姟鍣ㄤ綔涓虹瑷€/ban鐨勬湇鍔″櫒
+#安装了BungeeAdminTools插件时，
+#在Web端发送消息，使用哪个服务器作为禁言/ban的服务器
 webBATserver: lobby
 
-#@鐜╁鏃剁殑鍐峰嵈鏃堕棿锛堢锛?atcooldown: 10
+#@玩家时的冷却时间（秒）
+atcooldown: 10
 
-#@鍏ㄤ綋鐜╁鐨勫叧閿瘝
-#榛樿涓篴ll锛屽彲浠ヤ娇鐢ˊall鏉鎵€鏈変汉
-#濡傛灉浣犳湁涓€涓湇鍔″櫒鍙仛lobby
-#閭ｄ箞鍙互浣跨敤@lobbyall鏉lobby鏈嶅姟鍣ㄧ殑鎵€鏈変汉
-#@lobbyall鍙互绠€鍐欎负@lall鎴朄loball绛夛紙鏈嶅姟鍣ㄥ悕鍓嶉潰涓€閮ㄥ垎锛?atAllKey: all
+#@全体玩家的关键词
+#默认为all，可以使用@all来@所有人
+#如果你有一个服务器叫做lobby
+#那么可以使用@lobbyall来@lobby服务器的所有人
+#@lobbyall可以简写为@lall或@loball等（服务器名前面一部分）
+atAllKey: all
 
-#閾炬帴璇嗗埆姝ｅ垯琛ㄨ揪寮忥紝绗﹀悎璇ユ鍒欑殑鑱婂ぉ鍐呭浼氳鏇挎崲锛屽苟涓斿彲浠ョ偣鍑?linkRegex: ((https?|ftp|file)://[-A-Za-z0-9+&@#/%?=~_|!:,.;]+[-A-Za-z0-9+&@#/%=~_|])
+#链接识别正则表达式，符合该正则的聊天内容会被替换，并且可以点击
+linkRegex: ((https?|ftp|file)://[-A-Za-z0-9+&@#/%?=~_|!:,.;]+[-A-Za-z0-9+&@#/%=~_|])
 
-#鑱婂ぉ灞忚斀妯″紡锛岀洰鍓?涓哄皢鑱婂ぉ鍐呭鏇挎崲涓簊hieldedReplace鐨勫唴瀹癸紝鍏朵粬涓虹洿鎺ユ嫤鎴?shieldedMode: 1
+#聊天屏蔽模式，目前1为将聊天内容替换为shieldedReplace的内容，其他为直接拦截
+shieldedMode: 1
 
-#澶氬皯绉掑唴鎬诲叡鍙戦€佸睆钄藉叧閿瘝`shieldedKickCount`娆″氨浼氳韪㈠嚭鏈嶅姟鍣紙鍖呮嫭web绔級
+#多少秒内总共发送屏蔽关键词shieldedKickCount次就会被踢出服务器（包括web端）
 shieldedKickTime: 60
 
-#`shieldedKickTime`绉掑唴鍙戦€佸睆钄藉叧閿瘝澶氬皯娆′細琚涪鍑烘湇鍔″櫒
+#shieldedKickTime秒内发送屏蔽关键词多少次会被踢出服务器
 shieldedKickCount: 3
 
-#閰嶇疆鏂囦欢鐨勭増鏈紝璇峰嬁淇敼
+#配置文件的版本，请勿修改
 configVersion: 4
 
-#浠巜eb椤甸潰鍙戦€佹秷鎭埌娓告垙涓椂绂佺敤鐨勬牱寮忎唬鐮?webDenyStyle: klmnor
+#从web页面发送消息到游戏中时禁用的样式代码
+webDenyStyle: klmnor
 
-#鑱婂ぉ鍐呭灞忚斀鍏抽敭璇嶏紝list鏍煎紡锛屼綘闇€瑕佽嚜宸辨坊鍔犺繖涓缃?shieldeds:
-#姣忎釜鍏抽敭璇嶄竴琛?- keyword
+#聊天内容屏蔽关键词，list格式，你需要自己添加这个设置
+shieldeds:
+#每个关键词一行
+- keyword
 
 tipsConfig:
-  shieldedKickTip: 浣犲洜涓哄彂閫佸睆钄借瘝璇紝琚涪鍑烘湇鍔″櫒
+  shieldedKickTip: 你因为发送屏蔽词语，被踢出服务器
   
-  #鑱婂ぉ鍐呭涓惈鏈夊睆钄藉叧閿瘝鏃讹紝鏁翠釜娑堟伅浼氳鏇挎崲涓鸿繖涓?  shieldedReplace: 瀵屽己銆佹皯涓汇€佹枃鏄庛€佸拰璋愩€佽嚜鐢便€佸钩绛夈€佸叕姝ｃ€佹硶娌汇€佺埍鍥姐€佹暚涓氥€佽瘹淇°€佸弸鍠?  atyouselfTip: '&c浣犱笉鑳紷浣犺嚜宸?
-  atyouTip: '&e{player}&b@浜嗕綘'
-  cooldownTip: '&c姣忔浣跨敤@鍔熻兘涔嬮棿闇€瑕佺瓑寰?0绉?
-  ignoreTip: '&c瀵规柟蹇界暐浜嗕綘锛屽苟鍚戜綘浠嶄簡涓€涓儰鍦熻眴'
-  banatTip: '&c瀵规柟涓嶆兂琚獲锛屽彧鎯冲畨瀹夐潤闈欑殑鍋氫竴涓編鐢峰瓙'
-  toPlayerNoOnlineTip: '&c瀵规柟涓嶅湪绾匡紝鏃犳硶鍙戦€佺鑱?
-  msgyouselfTip: '&c浣犱笉鑳界鑱婁綘鑷繁'
-  youismuteTip: '&c浣犳鍦ㄧ瑷€涓紝涓嶈兘璇磋瘽'
-  youisbanTip: '&c浣犺ban浜嗭紝涓嶈兘璇磋瘽'
+  #聊天内容中含有屏蔽关键词时，整个消息会被替换为这个
+  shieldedReplace: 富强、民主、文明、和谐、自由、平等、公正、法治、爱国、敬业、诚信、友善
+  atyouselfTip: '&c你不能@你自己'
+  atyouTip: '&e{player}&b@了你'
+  cooldownTip: '&c每次使用@功能之间需要等待10秒'
+  ignoreTip: '&c对方忽略了你，并向你仍了一个烤土豆'
+  banatTip: '&c对方不想被@，只想安安静静的做一个美男子'
+  toPlayerNoOnlineTip: '&c对方不在线，无法发送私聊'
+  msgyouselfTip: '&c你不能私聊你自己'
+  youismuteTip: '&c你正在禁言中，不能说话'
+  youisbanTip: '&c你被ban了，不能说话'
   
-  #鍙戦€佺殑鑱婂ぉ娑堟伅涓惈鏈夊睆钄界殑鍏抽敭璇嶆椂浼氭敹鍒扮殑鎻愰啋
-  shieldedTip: '&c鍙戦€佺殑淇℃伅涓湁琚睆钄界殑璇嶈锛屾棤娉曞彂閫侊紝缁х画鍙戦€佸皢琚涪鍑烘湇鍔″櫒'
+  #发送的聊天消息中含有屏蔽的关键词时会收到的提醒
+  shieldedTip: '&c发送的信息中有被屏蔽的词语，无法发送，继续发送将被踢出服务器'
   
-  #鑱婂ぉ鍐呭涓殑閾炬帴灏嗚鏇挎崲涓鸿繖涓枃鏈?  linkText: '&7[&f&l閾炬帴&r&7]&r'
+  #聊天内容中的链接将被替换为这个文本
+  linkText: '&7[&f&l链接&r&7]&r'
   
-#鍚勭娑堟伅鐨勬牸寮忓寲璁剧疆
+#各种消息的格式化设置
 formatConfig:
-  #WebSocket鍙戦€佽繃鏉ョ殑娑堟伅鏍煎紡鍖栧唴瀹癸紝
-  #鐢眑ist鏋勬垚锛屾瘡娈靛唴瀹归兘鍒唌essage銆乭over銆乧lick 3椤硅缃?  format:
-  #鐩存帴鏄剧ず鍦ㄨ亰澶╂爮鐨勬枃瀛楋紝
-  #{displayName}灏嗚鏇挎崲涓虹帺瀹跺悕
-  #hover鍜宑lick瀛楁涓殑{displayName}涔熶細鏇挎崲
+  #WebSocket发送过来的消息格式化内容，
+  #由list构成，每段内容都分message、hover、click 3项设置
+  format:
+  #直接显示在聊天栏的文字，
+  #{displayName}将被替换为玩家名
+  #hover和click字段中的{displayName}也会替换
   - message: '&b[Web]'
-    #榧犳爣绉诲姩鍒拌繖娈垫秷鎭笂鏃舵樉绀虹殑鎮诞鍐呭
-    hover: 鐐瑰嚮鎵撳紑YinwuChat缃戦〉
-    #鐐瑰嚮杩欐娑堟伅鏃剁殑鍔ㄤ綔锛岃嚜鍔ㄨ瘑鍒槸鍚﹂摼鎺ワ紝濡傛灉鏄摼鎺ュ垯鎵撳紑閾炬帴
-    #鍚﹀垯濡傛灉鏄互!寮€澶村氨鎵ц鍛戒护锛屽惁鍒欏氨灏嗗唴瀹瑰～鍏呭埌鑱婂ぉ妗?    #姣斿璁╃湅鍒版秷鎭殑浜虹偣鍑诲氨鐩存帴缁欏彂娑堟伅鐨勪汉鍙戦€乼pa璇锋眰锛?    #灏卞彲浠ュ啓鎴?/tpa {displayName}锛堜笉鍐欐枩鏉犱細鎸夊彂閫佹秷鎭鐞嗭級
+    #鼠标移动到这段消息上时显示的悬浮内容
+    hover: 点击打开YinwuChat网页
+    #点击这段消息时的动作，自动识别是否链接，如果是链接则打开链接
+    #否则如果是以!开头就执行命令，否则就将内容填充到聊天框
+    #比如让看到消息的人点击就直接给发消息的人发送tpa请求，
+    #就可以写成 /tpa {displayName}（不写斜杠会按发送消息处理）
     click: https://chat.yinwurealm.org
   - message: '&e{displayName}'
-    hover: 鐐瑰嚮绉佽亰
+    hover: 点击私聊
     click: /msg {displayName}
   - message: ' &6>>> '
   - message: '&r{message}'
   
-  #QQ缇ょ兢鍛樺彂閫佺殑娑堟伅锛屾父鎴忓唴灞曠ず鐨勬牱寮?  qqFormat:
-  - message: '&b[QQ缇'
-    hover: 鐐瑰嚮鍔犲叆QQ缇xxxx
-    #杩欓噷鍙互鏇挎崲涓轰綘QQ缇ょ殑鐢宠閾炬帴
+  #QQ群群员发送的消息，游戏内展示的样式
+  qqFormat:
+  - message: '&b[QQ群]'
+    hover: 点击加入QQ群xxxxx
+    #这里可以替换为你QQ群的申请链接
     click: https://xxxxxx.xxxx.xxx
   - message: '&e{displayName}'
   - message: ' &6>>> '
   - message: '&r{message}'
   
-  #绉佽亰鏃讹紝鑷繁鏀跺埌鐨勬秷鎭殑鏍煎紡
+  #私聊时，自己收到的消息的格式
   toFormat:
-  - message: '&7鎴?&6-> '
+  - message: '&7我 &6-> '
   - message: '&e{displayName}'
-    hover: 鐐瑰嚮绉佽亰
+    hover: 点击私聊
     click: /msg {displayName}
   - message: ' &6>>> '
   - message: '&r{message}'
   
-  #绉佽亰鏃讹紝瀵规柟鏀跺埌鐨勬秷鎭殑鏍煎紡
+  #私聊时，对方收到的消息的格式
   fromFormat:
   - message: '&b[Web]'
-    hover: 鐐瑰嚮鎵撳紑YinwuChat缃戦〉
+    hover: 点击打开YinwuChat网页
     click: https://xxxxxx.xxxx.xxx
   - message: '&e{displayName}'
-    hover: 鐐瑰嚮绉佽亰
+    hover: 点击私聊
     click: /msg {displayName}
-  - message: ' &6-> &7鎴?
+  - message: ' &6-> &7我'
   - message: ' &6>>> '
   - message: '&r{message}'
   
-  #鍏朵粬鐜╁绉佽亰鏃讹紝鏈夋潈闄愮殑鐜╁鐪嬪埌鐨勭洃鍚秷鎭殑鏍峰紡
+  #其他玩家私聊时，有权限的玩家看到的监听消息的样式
   monitorFormat:
   - message: '&7{formPlayer} &6-> '
   - message: '&e{toPlayer}'
   - message: ' &6>>> '
   - message: '&r{message}'
 
-# AQQBot 閰嶇疆锛堟帹鑽愪娇鐢紝鏀寔 Lagrange銆丩LoneBot銆丯apCat 绛夊熀浜?OneBot 鏍囧噯鐨勫悗绔級
+# AQQBot 配置（推荐使用，支持 Lagrange、LLoneBot、NapCat 等基于 OneBot 标准的后端）
 aqqBotConfig:
-  # QQ缇ゆ湁鏂版秷鎭椂鏄惁鍙戦€佸埌娓告垙鍐?  qqToGame: true
+  # QQ群有新消息时是否发送到游戏内
+  qqToGame: true
   
-  # QQ缇ゆ湁鏂版秷鎭椂锛屽彧鏈夊紑澶磋窡杩欓噷涓€鏍锋墠鍙戦€佸埌娓告垙涓紙涓虹┖鍒欐墍鏈夋秷鎭兘杞彂锛?  qqToGameStart: ''
+  # QQ群有新消息时，只有开头跟这里一样才发送到游戏中（为空则所有消息都转发）
+  qqToGameStart: ''
   
-  # 娓告垙涓湁鏂版秷鎭椂鏄惁鍙戦€佸埌QQ缇や腑
+  # 游戏中有新消息时是否发送到QQ群中
   gameToQQ: true
   
-  # 娓告垙涓湁鏂版秷鎭椂锛屽彧鏈夊紑澶磋窡杩欓噷涓€鏍锋墠鍙戦€佸埌QQ缇や腑锛堜负绌哄垯鎵€鏈夋秷鎭兘杞彂锛?  gameToQQStart: ''
+  # 游戏中有新消息时，只有开头跟这里一样才发送到QQ群中（为空则所有消息都转发）
+  gameToQQStart: ''
   
-  # 杞彂QQ缇ゆ秷鎭埌娓告垙鏃剁鐢ㄧ殑鏍峰紡浠ｇ爜
+  # 转发QQ群消息到游戏时禁用的样式代码
   qqDenyStyle: 0-9a-fklmnor
   
-  # 鐩戝惉鐨凲Q缇ょ殑缇ゅ彿锛孉QQBot鎺ユ敹鍒版秷鎭椂锛屽鏋滄槸QQ缇わ紝涓旂兢鍙峰拰杩欓噷涓€鑷达紝灏变細杞彂鍒版父鎴忎腑
+  # 监听的QQ群的群号，AQQBot接收到消息时，如果是QQ群，且群号和这里一致，就会转发到游戏中
   qqGroup: 0
   
-  # 涓?AQQBot WebSocket 閫氫俊鏃朵娇鐢ㄧ殑 Access Token锛屼负绌烘椂涓嶉獙璇侊紝寮虹儓寤鸿璁剧疆涓轰竴涓鏉傜殑瀛楃涓?  accessToken: ''
+  # 与 AQQBot WebSocket 通信时使用的 Access Token，为空时不验证，强烈建议设置为一个复杂的字符串
+  accessToken: ''
   
-  # QQ缇や腑缇ゅ憳鍙戦€佺殑@淇℃伅灏嗚鏇挎崲涓鸿繖涓枃鏈?  # {qq}灏嗚鏇挎崲涓鸿@鐨勪汉鐨凲Q鍙?  qqAtText: '&7[@{qq}]&r'
+  # QQ群中群员发送的@信息将被替换为这个文本
+  # {qq}将被替换为被@的人的QQ号
+  qqAtText: '&7[@{qq}]&r'
   
-  # QQ缇や腑缇ゅ憳鍙戦€佺殑鍥剧墖灏嗚鏇挎崲涓鸿繖涓枃鏈?  qqImageText: '&7[鍥剧墖]&r'
+  # QQ群中群员发送的图片将被替换为这个文本
+  qqImageText: '&7[图片]&r'
   
-  # QQ缇や腑缇ゅ憳鍙戦€佺殑璇煶灏嗚鏇挎崲涓鸿繖涓枃鏈?  qqRecordText: '&7[璇煶]&r'
+  # QQ群中群员发送的语音将被替换为这个文本
+  qqRecordText: '&7[语音]&r'
 
-# CoolQ HTTP API 閰嶇疆锛堟棫鐗堬紝宸插純鐢紝淇濈暀浠ュ悜鍚庡吋瀹癸級
+# CoolQ HTTP API 配置（旧版，已弃用，保留以向后兼容）
 coolQConfig:
-  #qq缇ゆ湁鏂版秷鎭椂鏄惁鍙戦€佸埌娓告垙鍐?  coolQQQToGame: true
+  #qq群有新消息时是否发送到游戏内
+  coolQQQToGame: true
   
-  #qq缇ゆ湁鏂版秷鎭椂锛屽彧鏈夊紑澶磋窡杩欓噷涓€鏍锋墠鍙戦€佸埌娓告垙鍐?  coolqToGameStart: ''
+  #qq群有新消息时，只有开头跟这里一样才发送到游戏内
+  coolqToGameStart: ''
   
-  #娓告垙涓湁鏂版秷鎭椂鏄惁鍙戦€佸埌QQ缇や腑
+  #游戏中有新消息时是否发送到QQ群中
   coolQGameToQQ: true
   
-  #娓告垙涓湁鏂版秷鎭椂锛屽彧鏈夊紑澶磋窡杩欓噷涓€鏍锋墠鍙戦€佸埌QQ缇や腑
+  #游戏中有新消息时，只有开头跟这里一样才发送到QQ群中
   gameToCoolqStart: ''
   
-  #杞彂QQ缇ゆ秷鎭埌娓告垙鏃剁鐢ㄧ殑鏍峰紡浠ｇ爜
+  #转发QQ群消息到游戏时禁用的样式代码
   qqDenyStyle: 0-9a-fklmnor
   
-  #鐩戝惉鐨凲Q缇ょ殑缇ゅ彿锛岄叿Q鎺ユ敹鍒版秷鎭椂锛屽鏋滄槸QQ缇わ紝涓旂兢鍙峰拰杩欓噷涓€鑷达紝灏变細杞彂鍒版父鎴忎腑
+  #监听的QQ群的群号，酷Q接收到消息时，如果是QQ群，且群号和这里一致，就会转发到游戏中
   coolQGroup: 0
   
-  #鍜岄叿Q HTTP API鎻掍欢閫氫俊鏃朵娇鐢ㄧ殑accesstoken锛屼负绌烘椂涓嶉獙璇侊紝寮虹儓寤鸿璁剧疆涓轰竴涓鏉傜殑瀛楃涓?  coolQAccessToken: ''
+  #和酷Q HTTP API插件通信时使用的accesstoken，为空时不验证，强烈建议设置为一个复杂的字符串
+  coolQAccessToken: ''
   
-  #QQ缇や腑缇ゅ憳鍙戦€佺殑@淇℃伅灏嗚鏇挎崲涓鸿繖涓枃鏈?  #{qq}灏嗚鏇挎崲涓鸿@鐨勪汉鐨凲Q鍙?  qqAtText: '&7[@{qq}]&r'
+  #QQ群中群员发送的@信息将被替换为这个文本
+  #{qq}将被替换为被@的人的QQ号
+  qqAtText: '&7[@{qq}]&r'
   
-  #QQ缇や腑缇ゅ憳鍙戦€佺殑鍥剧墖灏嗚鏇挎崲涓鸿繖涓枃鏈?  qqImageText: '&7[鍥剧墖]&r'
+  #QQ群中群员发送的图片将被替换为这个文本
+  qqImageText: '&7[图片]&r'
   
-  #QQ缇や腑缇ゅ憳鍙戦€佺殑璇煶灏嗚鏇挎崲涓鸿繖涓枃鏈?  qqRecordText: '&7[璇煶]&r'
+  #QQ群中群员发送的语音将被替换为这个文本
+  qqRecordText: '&7[语音]&r'
 
-#鍒╃敤redis鍋氳法bc鑱婂ぉ鍚屾鐨勯厤缃?redisConfig:
-  #鏄惁寮€鍚痳edis鑱婂ぉ鍚屾
+#利用redis做跨bc聊天同步的配置
+redisConfig:
+  #是否开启redis聊天同步
   openRedis: false
   
-  #redis鏈嶅姟鍣ㄧ殑ip鍦板潃鎴栧煙鍚?  ip: ''
+  #redis服务器的ip地址或域名
+  ip: ''
   
-  #redis鐨勭鍙?  port: 0
+  #redis的端口
+  port: 0
   
-  #涓€鑸笉瑕佷慨鏀?  maxConnection: 8
+  #一般不要修改
+  maxConnection: 8
   
-  #redis鐨勫瘑鐮?  password: ''
+  #redis的密码
+  password: ''
   
-  #鏈嶅姟鍣ㄦ爣璇嗭紝姣忎釜bc绔殑YinwuChat鎻掍欢鐨勬爣璇嗚璁剧疆涓轰笉涓€鏍?  selfName: bc1
-```
-`webBATserver`鍙互瀹炵幇WebSocket绔殑绂佽█锛堝綋浣犵殑鏈嶅姟鍣ㄥ畨瑁呬簡BungeeAdminTools鏃讹紝鐜╁鍦╓ebSocket鍙戦€佷俊鎭紝浼氫互杩欎釜椤圭洰鐨勫唴瀹逛綔涓虹帺瀹舵墍鍦ㄦ湇鍔″櫒锛屽幓BungeeAdminTools鏌ヨ璇ョ帺瀹舵槸鍚﹁绂佽█鎴栬ban锛屽綋浠栬绂佽█鎴栬ban鏃舵棤娉曡璇濓紝鐢变簬BungeeAdminTools绂佽█銆乥an浜哄彧鑳介€夋嫨Bungee鐨勯厤缃枃浠朵腑瀹為檯瀛樺湪鐨勬湇鍔″櫒锛屾墍浠ヨ繖閲岄渶瑕佸～涓€涓疄闄呭瓨鍦ㄧ殑鏈嶅姟鍣ㄧ殑鍚嶅瓧锛屽缓璁娇鐢ㄥぇ鍘呮湇鐨勫悕瀛楋級
-
-Bungee-Task閰嶇疆鏂囦欢(tasks.yml):
-```yaml
-tasks:
-- enable: true    #鏄惁寮€鍚繖涓换鍔?  interval: 30    #浠诲姟闂撮殧鏃堕棿
-  list:           #鏍煎紡鍜孊ungee鐨勯厤缃枃浠朵腑鐨勬秷鎭牸寮忎竴鑷?  - message: '&e[甯姪]'
-    hover: 鏈嶅姟鍣ㄥ府鍔╂枃妗?    click: ''
-  - message: '&r 鍦ㄨ亰澶╀腑杈撳叆'
-  - message: '&b[i]'
-    hover: 鍦ㄨ亰澶╂枃鏈腑鍖呭惈杩欎笁涓瓧绗﹀嵆鍙?    click: ''
-  - message: '&r鍙互灞曠ず浣犳墜涓殑鐗╁搧锛岃緭鍏?
-  - message: '&b[i:x]'
-    hover: |-
-      &b:&r鍐掑彿涓嶅尯鍒嗕腑鑻辨枃
-      &bx&r涓鸿儗鍖呮牸瀛愮紪鍙?      鐗╁搧鏍忎负0-8锛岀劧鍚庝粠鑳屽寘宸︿笂瑙?      浠庡乏鑷冲彸浠庝笂鑷充笅涓?-35
-      瑁呭鏍忎负36-39锛屽壇鎵嬩负40
-    click: ''
-  - message: '&r鍙互灞曠ず鑳屽寘涓瓁浣嶇疆瀵瑰簲鐨勭墿鍝侊紝涓€鏉℃秷鎭腑鍙互灞曠ず澶氫釜鐗╁搧'
-  server: all     #浠诲姟瀵瑰簲鐨勬湇鍔″櫒锛屼笉鍖哄垎澶у皬鍐欙紝鍙湁瀵瑰簲鐨勬湇鍔″櫒鐨勭帺瀹舵墠浼氭敹鍒版秷鎭紝涓?all"鏃舵墍鏈夋湇鍔″櫒閮戒細骞挎挱锛屼负"web"鏃跺彧鏈墂eb绔墠浼氭敹鍒伴€氱煡
+  #服务器标识，每个bc端的YinwuChat插件的标识请设置为不一样
+  selfName: bc1
 ```
 
-YinwuChat-Spigot鐨勯厤缃枃浠跺唴瀹逛负锛?```yaml
-format:         #鏍煎紡鍜孊ungee鐨勯厤缃枃浠朵腑鐨勬秷鎭牸寮忎竴鑷达紝浣嗘槸杩欓噷鐨勫唴瀹规敮鎸丳laceholderAPI鍙橀噺
-- message: '&b[%player_server%]'
-  hover: 鎵€鍦ㄦ湇鍔″櫒锛?player_server%
-  click: /server %player_server%
-- message: '&e{displayName}'
-  hover: 鐐瑰嚮绉佽亰
-  click: /msg {displayName}
-- message: ' &6>>> '
-- message: '&r{message}'
-toFormat:
-- message: '&b[%player_server%]'
-  hover: 鎵€鍦ㄦ湇鍔″櫒锛?player_server%
-  click: /server %player_server%
-- message: '&e{displayName}'
-  hover: 鐐瑰嚮绉佽亰
-  click: /msg {displayName}
-- message: ' &6-> &7鎴?
-- message: '&r{message}'
-fromFormat:
-- message: '&7鎴?&6-> '
-- message: '&e{displayName}'
-  hover: 鐐瑰嚮绉佽亰
-  click: /msg {displayName}
-- message: '&r{message}'
-eventDelayTime: 50    #鎺ユ敹娑堟伅澶勭悊寤舵椂锛屽崟浣嶄负姣锛岀敤浜庡鐞嗛儴鍒嗛渶瑕佷娇鐢ㄨ亰澶╂爮淇℃伅鏉ヤ氦浜掔殑鎻掍欢鐨勮繍琛岋紙姣斿绠卞瓙鍟嗗簵绛夛級锛屽欢鏃舵椂闂村氨鏄瓑寰呭叾浠栨彃浠跺鐞嗙殑鏃堕棿
-messageHandles:       #鑷畾涔夋秷鎭唴瀹规浛鎹紝姣斿涓嬮潰榛樿鐨勮缃紝鍙戦€佹秷鎭椂锛屾秷鎭腑鍚湁[p]鐨勶紝[p]浼氳鏇挎崲涓轰綅缃?- placeholder: \[p\]    #娑堟伅涓殑鍝簺鍐呭浼氳鏇挎崲锛屽啓娉曟槸姝ｅ垯琛ㄨ揪寮忥紝鎵€浠ユ湰鏉ユ槸鏇挎崲[p]鐨勶紝鐢变簬鏄鍒欒〃杈惧紡锛屼袱涓柟鎷彿閮介渶瑕佸姞鍙嶆枩鏉犺浆涔?  format:               #鏇挎崲鎴愮殑娑堟伅鏍峰紡锛屾牸寮忓拰鍓嶉潰鐨刦ormat鏍煎紡涓€鑷达紝鏀寔papi鍙橀噺
-  - message: '&7[浣嶇疆]'
-    hover: |-
-      鎵€鍦ㄦ湇鍔″櫒锛歋erverName
-      鎵€鍦ㄤ笘鐣岋細%player_world%
-      鍧愭爣锛歑:%player_x% Y:%player_y% Z:%player_z%
-    click: ''
-configVersion: 1  #閰嶇疆鏂囦欢鐨勭増鏈紝璇峰嬁淇敼
-```
+### 接口
 
+本插件所有信息均由WebSocket通信，格式均为JSON格式，具体数据如下：
 
-### 鎺ュ彛
-
-鏈彃浠舵墍鏈変俊鎭潎鐢盬ebSocket閫氫俊锛屾牸寮忓潎涓篔SON鏍煎紡锛屽叿浣撴暟鎹涓嬶細
-
-#### 鍙戝線鏈彃浠剁殑鏁版嵁锛?1. 妫€鏌oken
+#### 发往本插件的数据：
+1. 检查token
 ```json
 {
     "action": "check_token",
-    "token": "寰呮鏌ョ殑token锛宼oken鐢辨湇鍔″櫒涓嬪彂锛屽垵娆¤繛鎺ユ椂鍙互浣跨敤绌哄瓧绗︿覆"
+    "token": "待检查的token，token由服务器下发，初次连接时可以使用空字符串"
 }
 ```
-2. 鍙戦€佹秷鎭?```json
+2. 发送消息
+```json
 {
     "action": "send_message",
-    "message": "闇€瑕佸彂閫佺殑娑堟伅锛屾敞鎰忥紝鏍煎紡浠ｇ爜蹇呴』浣跨敤搂"
+    "message": "需要发送的消息，注意，格式代码必须使用§"
 }
 ```
 
-#### 鍙戝線Web瀹㈡埛绔殑鏁版嵁锛?1. 鏇存柊token锛堟帴鏀跺埌瀹㈡埛绔彂閫佺殑check_token鏁版嵁锛岀劧鍚庢鏌oken澶辫触鏃朵笅鍙戯紝鏀跺埌璇ユ暟鎹簲鎻愰啋鐜╁鍦ㄦ父鎴忓唴杈撳叆/yinwuchat token title鍛戒护缁戝畾token锛?```json
+#### 发往Web客户端的数据：
+1. 更新token（接收到客户端发送的check_token数据，然后检查token失败时下发，收到该数据应提醒玩家在游戏内输入/yinwuchat token title命令绑定token）
+```json
 {
     "action": "update_token",
-    "token": "涓€涓殢鏈虹殑token"
+    "token": "一个随机的token"
 }
 ```
-2. token鏍￠獙缁撴灉锛堟鏌oken鎴愬姛鍚庤繑鍥烇紝鎴栫帺瀹跺湪娓告垙鍐呯粦瀹氭垚鍔熷悗锛宼oken瀵瑰簲鐨刉ebSocket鍦ㄧ嚎鏃朵富鍔ㄥ彂閫侊紝鍙湁鎺ユ敹鍒颁簡杩欎釜鏁版嵁锛屼笖鏁版嵁涓殑status涓簍rue锛屼笖鏁版嵁涓殑isbind涓簍rue鏃舵墠鍙互鍚戞湇鍔″櫒鍙戦€乻end_message鏁版嵁锛?```json5
+2. token校验结果（检查token成功后返回，或玩家在游戏内绑定成功后，token对应的WebSocket在线时主动发送，只有接收到了这个数据，且数据中的status为true，且数据中的isbind为true时才可以向服务器发送send_message数据）
+```json5
 {
     "action": "check_token",
-    "status": true,        //琛ㄧず璇oken鏄惁鏈夋晥
-    "message": "鎴愬姛鏃朵负success锛屽け璐ユ椂涓哄師鍥狅紝骞跺悓鏃跺彂閫佷竴涓洿鏂皌oken鏁版嵁",
-    "isbind": false         //琛ㄧず璇oken鏄惁琚帺瀹剁粦瀹?}
+    "status": true,        //表示该token是否有效
+    "message": "成功时为success，失败时为原因，并同时发送一个更新token数据",
+    "isbind": false         //表示该token是否被玩家绑定
+}
 ```
-3. 鐜╁鍦ㄦ父鎴忓唴鍙戦€佷簡娑堟伅
+3. 玩家在游戏内发送了消息
 ```json
 {
     "action": "send_message",
-    "message": "娑堟伅鍐呭"
+    "message": "消息内容"
 }
 ```
-4. 娓告垙鐜╁鍒楄〃
+4. 游戏玩家列表
 ```json
 {
     "action": "game_player_list",
     "player_list":[
         {
-            "player_name": "鐜╁娓告垙鍚?,
-            "server_name": "鐜╁鎵€鍦ㄦ湇鍔″櫒"
+            "player_name": "玩家游戏名",
+            "server_name": "玩家所在服务器"
         }
     ]
 }
 ```
-5. WebClient鐜╁鍒楄〃
+5. WebClient玩家列表
 ```json
 {
     "action": "web_player_list",
     "player_list":[
-        "鐜╁鍚?",
-        "鐜╁鍚?"
+        "玩家名1",
+        "玩家名2"
     ]
 }
 ```
-6. 鏈嶅姟鍣ㄦ彁绀烘秷鎭紙涓€鑸负鍜屾湇鍔″櫒鍙戦€佹暟鎹寘鍚庣殑閿欒鍙嶉淇℃伅锛?```json5
+6. 服务器提示消息（一般为和服务器发送数据包后的错误反馈信息）
+```json5
 {
     "action": "server_message",
-    "message": "娑堟伅鍐呭",
-    "time": 1, //unix鏃堕棿鎴?    "status": 1 //鐘舵€佺爜锛岃鎯呰涓嬫柟琛ㄦ牸(int)
+    "message": "消息内容",
+    "time": 1, //unix时间戳
+    "status": 1 //状态码，详情见下方表格(int)
 }
 ```
 
-#### 鏈嶅姟鍣ㄦ秷鎭姸鎬佺爜
-鐘舵€佺爜|鍏蜂綋鍚箟
--:|-
-0|涓€鑸垚鍔熸垨鎻愮ず娑堟伅
-1|涓€鑸敊璇秷鎭?1001|鑾峰彇鍘嗗彶鑱婂ぉ璁板綍鏃讹紝鍐呭涓虹┖锛堜笉鍙户缁幏鍙栧巻鍙叉秷鎭級
+#### 服务器消息状态码
+| 状态码 | 具体含义 |
+|-------|---------|
+| 0 | 一般成功或提示消息 |
+| 1 | 一般错误消息 |
+| 1001 | 获取历史聊天记录时，内容为空（不可继续获取历史消息） |
 
-### Velocity绔懡浠?#### 绂佽█鍛戒护锛堢鐞嗗憳锛?| 鍛戒护 | 璇存槑 | 鏉冮檺 |
+### Velocity端命令
+#### 禁言命令（管理员）
+| 命令 | 说明 | 权限 |
 |------|------|------|
-| `/mute <鐜╁> [鏃堕暱] [鍘熷洜]` | 绂佽█鐜╁ | `yinwuchat.admin.mute`锛堟帶鍒跺彴鏃犻渶鏉冮檺锛?|
-| `/unmute <鐜╁>` | 瑙ｉ櫎绂佽█ | `yinwuchat.admin.mute`锛堟帶鍒跺彴鏃犻渶鏉冮檺锛?|
-| `/muteinfo <鐜╁>` | 鏌ョ湅绂佽█淇℃伅 | `yinwuchat.admin.mute`锛堟帶鍒跺彴鏃犻渶鏉冮檺锛?|
+| `/mute <玩家> [时长] [原因]` | 禁言玩家 | `yinwuchat.admin.mute`（控制台无需权限） |
+| `/unmute <玩家>` | 解除禁言 | `yinwuchat.admin.mute`（控制台无需权限） |
+| `/muteinfo <玩家>` | 查看禁言信息 | `yinwuchat.admin.mute`（控制台无需权限） |
 
-**鏃堕暱鏍煎紡锛?*
-- `1d` - 1澶?- `2h` - 2灏忔椂
-- `30m` - 30鍒嗛挓
-- `60s` 鎴?`60` - 60绉?- `1d2h30m` - 鍙粍鍚堜娇鐢?- 涓嶆寚瀹氭椂闀垮垯涓?*姘镐箙绂佽█**
+**时长格式：**
+- `1d` - 1天
+- `2h` - 2小时
+- `30m` - 30分钟
+- `60s` 或 `60` - 60秒
+- `1d2h30m` - 可组合使用
+- 不指定时长则为**永久禁言**
 
-**浣跨敤绀轰緥锛?*
+**使用示例：**
 ```
-mute Steve              # 姘镐箙绂佽█
-mute Steve 1h           # 绂佽█1灏忔椂
-mute Steve 30m 鍒峰睆     # 绂佽█30鍒嗛挓锛屽師鍥狅細鍒峰睆
-mute Steve 1d2h 澶氭杩濊  # 绂佽█1澶?灏忔椂
-unmute Steve            # 瑙ｉ櫎绂佽█
-muteinfo Steve          # 鏌ョ湅绂佽█鐘舵€?```
+mute Steve              # 永久禁言
+mute Steve 1h           # 禁言1小时
+mute Steve 30m 刷屏     # 禁言30分钟，原因：刷屏
+mute Steve 1d2h 多次违规  # 禁言1天2小时
+unmute Steve            # 解除禁言
+muteinfo Steve          # 查看禁言状态
+```
 
-#### 鍏朵粬鍛戒护
+#### 其他命令
 
-1. 鎺у埗鍙板懡浠?    - `yinwuchat reload [config|ws]`锛氶噸鏂板姞杞芥彃浠堕厤缃?2. 娓告垙鍐呭懡浠?    - `/yinwuchat`锛氭彃浠跺府鍔?    - `/yinwuchat reload [config|ws]`锛氶噸鏂板姞杞介厤缃枃浠讹紙闇€瑕?`yinwuchat.admin.reload` 鏉冮檺锛?    - `/msg <鐜╁鍚? <娑堟伅>`锛氬悜鐜╁鍙戦€佺鑱婃秷鎭?    - `/qq <娑堟伅>`锛氬悜QQ缇ゅ彂閫佹秷鎭紙闇€閰嶇疆QQ鏈哄櫒浜猴級
-    - `/yinwuchat vanish`锛氬垏鎹㈣亰澶╃郴缁熼殣韬ā寮忥紙闇€瑕?`yinwuchat.admin.vanish` 鏉冮檺锛?    - `/yinwuchat ignore <鐜╁鍚?`锛氬拷鐣?鍙栨秷蹇界暐鐜╁娑堟伅锛堥渶瑕?`yinwuchat.default.ignore` 鏉冮檺锛?    - `/yinwuchat noat`锛氱姝?鍏佽鑷繁琚獲锛堥渶瑕?`yinwuchat.default.noat` 鏉冮檺锛?    - `/yinwuchat muteat`锛氬垏鎹㈣嚜宸辫@鏃舵湁娌℃湁澹伴煶锛堥渶瑕?`yinwuchat.default.muteat` 鏉冮檺锛?    - `/yinwuchat format edit`锛氱紪杈戣亰澶╁墠鍚庣紑
-    - `/yinwuchat format show`锛氭樉绀哄綋鍓嶅墠鍚庣紑
-    - `/yinwuchat atalladmin`锛氭姤鍛婄獊鍙戜簨浠剁粰鎵€鏈夌鐞嗗憳锛堥渶瑕?`yinwuchat.default.atalladmin` 鏉冮檺锛屾瘡鏃ラ檺涓€娆★級
-    - `/yinwuchat atalladmin confirm <鐜╁鍚?`锛氶噸缃帺瀹舵姤鍛婂喎鍗存椂闂达紙浠呯鐞嗗憳锛?
-### Velocity绔潈闄?| 鏉冮檺鑺傜偣 | 璇存槑 |
+1. 控制台命令
+    - `yinwuchat reload [config|ws]`：重新加载插件配置
+2. 游戏内命令
+    - `/yinwuchat`：插件帮助
+    - `/yinwuchat reload [config|ws]`：重新加载配置文件（需要 `yinwuchat.admin.reload` 权限）
+    - `/msg <玩家名> <消息>`：向玩家发送私聊消息
+    - `/qq <消息>`：向QQ群发送消息（需配置QQ机器人）
+    - `/yinwuchat vanish`：切换聊天系统隐身模式（需要 `yinwuchat.admin.vanish` 权限）
+    - `/yinwuchat ignore <玩家名>`：忽略/取消忽略玩家消息（需要 `yinwuchat.default.ignore` 权限）
+    - `/yinwuchat noat`：禁止/允许自己被@（需要 `yinwuchat.default.noat` 权限）
+    - `/yinwuchat muteat`：切换自己被@时有没有声音（需要 `yinwuchat.default.muteat` 权限）
+    - `/yinwuchat format edit`：编辑聊天前后缀
+    - `/yinwuchat format show`：显示当前前后缀
+    - `/yinwuchat atalladmin`：报告突发事件给所有管理员（需要 `yinwuchat.default.atalladmin` 权限，每日限一次）
+    - `/yinwuchat atalladmin confirm <玩家名>`：重置玩家报告冷却时间（仅管理员）
+
+### Velocity端权限
+| 权限节点 | 说明 |
 |---------|------|
-| `yinwuchat.admin` | 閫氱敤绠＄悊鏉冮檺锛堟嫢鏈夋墍鏈夌鐞嗘潈闄愶級 |
-| `yinwuchat.admin.mute` | 绂佽█/瑙ｉ櫎绂佽█鐜╁锛堟帶鍒跺彴榛樿鎷ユ湁锛?|
-| `yinwuchat.admin.reload` | 閲嶆柊鍔犺浇閰嶇疆 |
-| `yinwuchat.admin.vanish` | 鑱婂ぉ闅愯韩妯″紡 |
-| `yinwuchat.admin.atall` | @鎵€鏈変汉 |
-| `yinwuchat.admin.monitor` | 鐩戝惉绉佽亰娑堟伅 |
-| `yinwuchat.admin.badword` | 绠＄悊灞忚斀璇?|
-| `yinwuchat.admin.cooldown.bypass` | @浜烘棤鍐峰嵈鏃堕棿 |
-| `yinwuchat.default` | 閫氱敤鍩虹鏉冮檺锛堟嫢鏈夋墍鏈夊熀纭€鏉冮檺锛?|
-| `yinwuchat.default.ws` | 鏌ョ湅 WebSocket 鍦板潃 |
-| `yinwuchat.default.bind` | 缁戝畾 Web 璐﹀彿 |
-| `yinwuchat.default.list` | 鏌ョ湅宸茬粦瀹氳处鍙?|
-| `yinwuchat.default.unbind` | 瑙ｇ粦璐﹀彿 |
-| `yinwuchat.default.ignore` | 蹇界暐鐜╁娑堟伅 |
-| `yinwuchat.default.noat` | 绂佹琚獲 |
-| `yinwuchat.default.muteat` | 琚獲闈欓煶 |
-| `yinwuchat.default.format` | 鑷畾涔夎亰澶╁墠鍚庣紑 |
-| `yinwuchat.default.atalladmin` | 鎶ュ憡绐佸彂浜嬩欢缁欑鐞嗗憳 |
-| `yinwuchat.style.*` | 浣跨敤鑱婂ぉ鏍峰紡浠ｇ爜 |
+| `yinwuchat.admin` | 通用管理权限（拥有所有管理权限） |
+| `yinwuchat.admin.mute` | 禁言/解除禁言玩家（控制台默认拥有） |
+| `yinwuchat.admin.reload` | 重新加载配置 |
+| `yinwuchat.admin.vanish` | 聊天隐身模式 |
+| `yinwuchat.admin.atall` | @所有人 |
+| `yinwuchat.admin.monitor` | 监听私聊消息 |
+| `yinwuchat.admin.badword` | 管理屏蔽词 |
+| `yinwuchat.admin.cooldown.bypass` | @人无冷却时间 |
+| `yinwuchat.default` | 通用基础权限（拥有所有基础权限） |
+| `yinwuchat.default.ws` | 查看 WebSocket 地址 |
+| `yinwuchat.default.bind` | 绑定 Web 账号 |
+| `yinwuchat.default.list` | 查看已绑定账号 |
+| `yinwuchat.default.unbind` | 解绑账号 |
+| `yinwuchat.default.ignore` | 忽略玩家消息 |
+| `yinwuchat.default.noat` | 禁止被@ |
+| `yinwuchat.default.muteat` | 被@静音 |
+| `yinwuchat.default.format` | 自定义聊天前后缀 |
+| `yinwuchat.default.atalladmin` | 报告突发事件给管理员 |
+| `yinwuchat.style.*` | 使用聊天样式代码 |
 
-#### 鏉冮檺缁勯厤缃缓璁?LuckPerms)
+#### 权限组配置建议(LuckPerms)
 
-涓轰簡鏂逛究绠＄悊锛屽缓璁湪 LuckPerms 涓垱寤轰袱涓潈闄愮粍銆備綘鍙互鐩存帴鍦?LuckPerms 浠ｇ悊绔紙Velocity/Bungee锛夋垨鍚勫瓙鏈嶆墽琛屼互涓嬪懡浠わ細
+为了方便管理，建议在 LuckPerms 中创建两个权限组。你可以直接在 LuckPerms 代理端（Velocity/Bungee）或各子服执行以下命令：
 
-**1. 璁剧疆绠＄悊鍛樼粍 (admin)**
-璇ョ粍鍖呭惈 YinwuChat 鐨勬墍鏈夌鐞嗗姛鑳斤細
+**1. 设置管理员组 (admin)**
+该组包含 YinwuChat 的所有管理功能：
 ```bash
 /lp creategroup admin
 /lp group admin permission set yinwuchat.admin true
 /lp group admin permission set yinwuchat.admin.atalladmin.reset true
 ```
 
-**2. 璁剧疆鏅€氱帺瀹剁粍 (default)**
-鏅€氱帺瀹跺彲浠ユ嫢鏈夊熀纭€鍔熻兘鏉冮檺锛?```bash
+**2. 设置普通玩家组 (default)**
+普通玩家可以拥有基础功能权限：
+```bash
 /lp creategroup default
 /lp group default permission set yinwuchat.default true
 /lp group default permission set yinwuchat.default.atalladmin true
 ```
 
-**3. 鍒嗛厤鐜╁鍒扮粍**
+**3. 分配玩家到组**
 ```bash
-# 灏嗘煇鐜╁璁句负绠＄悊鍛?/lp user <鐜╁鍚? parent add admin
+# 将某玩家设为管理员
+/lp user <玩家名> parent add admin
 ```
 
-**鏂瑰紡浜岋細浣跨敤閰嶇疆鏂囦欢 admins 鍒楄〃**
+**方式二：使用配置文件 admins 列表**
 
-濡傛灉 LuckPerms 鏉冮檺妗ユ帴瀛樺湪闂锛堟煇浜?Velocity 蹇収鐗堟湰鍙兘鍑虹幇锛夛紝鍙互浣跨敤閰嶇疆鏂囦欢涓殑 `admins` 鍒楄〃鏉ユ巿鏉冪鐞嗗憳銆?
-缂栬緫 `plugins/yinwuchat-velocity/config.yml`锛?```yaml
-# 绠＄悊鍛樺垪琛紙缁曡繃鏉冮檺妫€鏌ワ級
-# 鍒楄〃涓殑鐜╁鑷姩鎷ユ湁 vanish銆乵ute銆乺eload 绛夌鐞嗘潈闄?# 鐜╁鍚嶄笉鍖哄垎澶у皬鍐?admins:
+如果 LuckPerms 权限桥接存在问题（某些 Velocity 快照版本可能出现），可以使用配置文件中的 `admins` 列表来授权管理员。
+
+编辑 `plugins/yinwuchat-velocity/config.yml`：
+```yaml
+# 管理员列表（绕过权限检查）
+# 列表中的玩家自动拥有 vanish、mute、reload 等管理权限
+# 玩家名不区分大小写
+admins:
   - Xx_Kirov_xX
   - Steve
-  - 鍏朵粬绠＄悊鍛樺悕瀛?```
+  - 其他管理员名字
+```
 
-淇敼鍚庢墽琛?`/yinwuchat reload` 鎴栭噸鍚?Velocity 鐢熸晥銆?
-**鏉冮檺妫€鏌ヤ紭鍏堢骇锛?*
-1. 鎺у埗鍙?鈫?鑷姩鎷ユ湁鎵€鏈夋潈闄?2. LuckPerms 鏉冮檺鑺傜偣 鈫?妫€鏌ュ搴旀潈闄?3. admins 閰嶇疆鍒楄〃 鈫?鍒楄〃涓殑鐜╁鎷ユ湁绠＄悊鏉冮檺
+修改后执行 `/yinwuchat reload` 或重启 Velocity 生效。
+
+**权限检查优先级：**
+1. 控制台 - 自动拥有所有权限
+2. LuckPerms 权限节点 - 检查对应权限
+3. admins 配置列表 - 列表中的玩家拥有管理权限
 
 ---
 
-### Bungeecord绔懡浠わ紙鏃х増锛?1. 鎺у埗鍙板懡浠?    - `yinwuchat reload [config|ws]`锛氶噸鏂板姞杞芥彃浠讹紝鎴栦粎閲嶆柊鍔犺浇閰嶇疆锛堝湪ws閰嶇疆鏈夊彉鍔ㄦ椂鑷姩閲嶅惎ws锛夛紝鎴栧彧閲嶅惎ws
-2. 娓告垙鍐呭懡浠?    - `/yinwuchat`锛氭彃浠跺府鍔╋紙鍏朵粬鏈瘑鍒殑鍛戒护涔熼兘灏嗘樉绀哄府鍔╋級
-    - `/yinwuchat reload [config|ws]`锛氶噸鏂板姞杞介厤缃枃浠讹紝闇€瑕佸叿鏈塦yinwuchat.admin.reload`鏉冮檺
-    - `/yinwuchat bind <token>`锛氱粦瀹歵oken锛岄渶瑕佸叿鏈塦yinwuchat.default.bind`鏉冮檺
-    - `/yinwuchat list`锛氬垪鍑虹帺瀹跺凡缁戝畾鐨則oken锛岄渶瑕佸叿鏈塦yinwuchat.default.list`鏉冮檺
-    - `/yinwuchat unbind <token>`锛氳В缁憈oken锛岄渶瑕佸叿鏈塦yinwuchat.default.unbind`鏉冮檺
-    - `/msg <鐜╁鍚? <娑堟伅>`锛氬悜鐜╁鍙戦€佺鑱婃秷鎭?    - `/yinwuchat vanish`锛氬垏鎹㈣亰澶╃郴缁熼殣韬ā寮忥紝闇€瑕佸叿鏈塦yinwuchat.admin.vanish`鏉冮檺
-    - `/yinwuchat ignore <鐜╁鍚?`锛氬拷鐣?鍙栨秷蹇界暐鐜╁娑堟伅锛岄渶瑕佸叿鏈塦yinwuchat.default.ignore`鏉冮檺
-    - `/yinwuchat noat`锛氱姝?鍏佽鑷繁琚獲锛岄渶瑕佸叿鏈塦yinwuchat.default.noat`鏉冮檺
-    - `/yinwuchat muteat`锛氬垏鎹㈣嚜宸辫@鏃舵湁娌℃湁澹伴煶锛岄渶瑕佸叿鏈塦yinwuchat.default.muteat`鏉冮檺
-    - `/yinwuchat monitor`锛氬垏鎹㈡槸鍚︾洃鍚叾浠栫帺瀹剁殑绉佽亰娑堟伅锛岄渶瑕佸叿鏈塦yinwuchat.admin.monitor`鏉冮檺
-3. WebClient鍛戒护
-    - `/msg <鐜╁鍚? <娑堟伅>`锛氬悜鐜╁鍙戦€佺鑱婃秷鎭?
-### Bukkit绔潈闄?`yinwuchat.admin.reload`鐜╁鍙互鍦ㄦ父鎴忎腑浣跨敤`/yinwuchat-bukkit reload`鍛戒护閲嶆柊鍔犺浇bukkit绔痽inwuchat鐨勯厤缃紝榛樿鏉冮檺锛氫粎OP鍙互浣跨敤
-`yinwuchat.style.x`鏄惁鍏佽鐜╁浣跨敤瀵瑰簲鐨勬牱寮忎唬鐮侊紝`x`涓哄叿浣撴牱寮忎唬鐮侊紝鍏蜂綋涓篳0-9`,`a-f`,`klmnor`鍏?2涓牱寮忎唬鐮侊紝榛樿璁剧疆鏃禶0-9`,`a-f`,`r`涓哄厑璁革紝鍏朵粬涓轰笉鍏佽
+### Bungeecord端命令（旧版）
+1. 控制台命令
+    - `yinwuchat reload [config|ws]`：重新加载插件，或仅重新加载配置（在ws配置有变动时自动重启ws），或只重启ws
+2. 游戏内命令
+    - `/yinwuchat`：插件帮助（其他未识别的命令也都将显示帮助）
+    - `/yinwuchat reload [config|ws]`：重新加载配置文件，需要具有`yinwuchat.admin.reload`权限
+    - `/yinwuchat bind <token>`：绑定token，需要具有`yinwuchat.default.bind`权限
+    - `/yinwuchat list`：列出玩家已绑定的token，需要具有`yinwuchat.default.list`权限
+    - `/yinwuchat unbind <token>`：解绑token，需要具有`yinwuchat.default.unbind`权限
+    - `/msg <玩家名> <消息>`：向玩家发送私聊消息
+    - `/yinwuchat vanish`：切换聊天系统隐身模式，需要具有`yinwuchat.admin.vanish`权限
+    - `/yinwuchat ignore <玩家名>`：忽略/取消忽略玩家消息，需要具有`yinwuchat.default.ignore`权限
+    - `/yinwuchat noat`：禁止/允许自己被@，需要具有`yinwuchat.default.noat`权限
+    - `/yinwuchat muteat`：切换自己被@时有没有声音，需要具有`yinwuchat.default.muteat`权限
+    - `/yinwuchat monitor`：切换是否监听其他玩家的私聊消息，需要具有`yinwuchat.admin.monitor`权限
+3. WebClient命令
+    - `/msg <玩家名> <消息>`：向玩家发送私聊消息
 
-### Bungee绔潈闄?- `yinwuchat.admin.reload`鐜╁鍙互鍦ㄦ父鎴忎腑浣跨敤`/yinwuchat reload`鍛戒护閲嶆柊鍔犺浇鎻掍欢閰嶇疆
-- `yinwuchat.admin.cooldown.bypass`@浜烘病鏈夊喎鍗存椂闂?- `yinwuchat.admin.atall`鍏佽@鎵€鏈変汉
-- `yinwuchat.admin.vanish`鍏佽杩涘叆鑱婂ぉ闅愯韩妯″紡
-- `yinwuchat.admin.badword`鍏佽缂栬緫鑱婂ぉ绯荤粺鍏抽敭璇嶅垪琛?- `yinwuchat.admin.monitor`鍏佽鐜╁浣跨敤`/yinwuchat monitor`鍛戒护锛屽苟鍏佽鐜╁鐩戝惉鍏朵粬鐜╁鐨勭鑱婃秷鎭?- `yinwuchat.default.*`鍩虹鍔熻兘鏉冮檺鑺傜偣锛坆ind, list, unbind, ignore, noat, muteat, ws锛?* 鏉冮檺闇€瑕佸湪Bungeecord涓缃紝鐜╁鍙互鍦˙ungeecord杩炴帴鍒扮殑浠讳綍鏈嶅姟鍣ㄤ娇鐢ㄨ繖涓懡浠?
-### @鎵€鏈変汉
-@鎵€鏈変汉鍙互@鏁翠釜鏈嶅姟鍣ㄦ墍鏈変汉锛堜笉鍖呮嫭WebSocket锛夛紝鎴栬€呭垎鏈嶅姟鍣ˊ璇ユ湇鍔″櫒鎵€鏈変汉锛堜笉鍖呮嫭WebSocket锛?鍏蜂綋浣跨敤鏂规硶涓猴細
-鍋囧閰嶇疆鏂囦欢涓殑`atAllKey`鏄粯璁ょ殑`all`锛岄偅涔堣亰澶╁唴瀹逛腑鍚湁`@all`鏃跺嵆鍙疈鏁翠釜鏈嶅姟鍣ㄧ殑浜猴紙all鍚庨潰涓嶈兘绱ф帴鐫€鑻辨枃鎴栨暟瀛楋紝鍙互鏄腑鏂囥€佺┖鏍肩瓑锛?鍋囧浣犳湁涓€涓湇鍔″櫒鍚嶅瓧涓篳lobby`锛岄偅涔堣亰澶╁唴瀹逛腑鍚湁`@lall`鎴朻@lobbyall`鏃讹紝鍗冲彲@lobby鏈嶅姟鍣ㄧ殑鎵€鏈変汉锛堝嵆鏈嶅姟鍣ㄥ悕鍙渶瑕佽緭鍏ュ墠闈㈤儴鍒嗗嵆鍙紝璇ユ湇鍔″櫒鍚嶄负BungeeCord閰嶇疆鏂囦欢涓殑鍚嶅瓧锛?
-### 閿欒淇℃伅
-鏈変簺鏃跺€欙紝鐜╁鎵ц鍛戒护鐨勬椂鍊欏彲鑳戒細纰板埌涓€浜涢敊璇紙涓昏涓烘暟鎹簱閿欒锛夛紝鍏蜂綋鍚箟涓猴細
+### Bukkit端权限
+`yinwuchat.admin.reload`玩家可以在游戏中使用`/yinwuchat-bukkit reload`命令重新加载bukkit端yinwuchat的配置，默认权限：仅OP可以使用
+`yinwuchat.style.x`是否允许玩家使用对应的样式代码，`x`为具体样式代码，具体为`0-9`,`a-f`,`klmnor`共22个样式代码，默认设置时`0-9`,`a-f`,`r`为允许，其他为不允许
 
-閿欒浠ｇ爜|鍏蜂綋鍚箟
--:|-
-001|鏍规嵁UUID鏌ユ壘鐢ㄦ埛澶辫触锛屼笖鏂板澶辫触
+### Bungee端权限
+- `yinwuchat.admin.reload`玩家可以在游戏中使用`/yinwuchat reload`命令重新加载插件配置
+- `yinwuchat.admin.cooldown.bypass`@人没有冷却时间
+- `yinwuchat.admin.atall`允许@所有人
+- `yinwuchat.admin.vanish`允许进入聊天隐身模式
+- `yinwuchat.admin.badword`允许编辑聊天系统关键词列表
+- `yinwuchat.admin.monitor`允许玩家使用`/yinwuchat monitor`命令，并允许玩家监听其他玩家的私聊消息
+- `yinwuchat.default.*`基础功能权限节点（bind, list, unbind, ignore, noat, muteat, ws）
+* 权限需要在Bungeecord中设置，玩家可以在Bungeecord连接到的任何服务器使用这个命令
 
-### 鍏朵粬淇℃伅
-鏈彃浠剁敱鍥藉唴姝ｇ増Minecraft鏈嶅姟鍣╗YinwuRealm](https://www.yinwurealm.org/)鐜╁[LinTx](https://mine.ly/LinTx.1)涓烘湇鍔″櫒寮€鍙?
+### @所有人
+@所有人可以@整个服务器所有人（不包括WebSocket），或者分服务器@该服务器所有人（不包括WebSocket）
+具体使用方法为：
+假如配置文件中的`atAllKey`是默认的`all`，那么聊天内容中含有`@all`时即可@整个服务器的人（all后面不能紧接着英文或数字，可以是中文、空格等）
+假如你有一个服务器名字为`lobby`，那么聊天内容中含有`@lall`或`@lobbyall`时，即可@lobby服务器的所有人（即服务器名只需要输入前面部分即可，该服务器名为BungeeCord配置文件中的名字）
+
+### 错误信息
+有些时候，玩家执行命令的时候可能会碰到一些错误（主要为数据库错误），具体含义为：
+
+| 错误代码 | 具体含义 |
+|---------|---------|
+| 001 | 根据UUID查找用户失败，且新增失败 |
+
+### 其他信息
+本插件由国内正版Minecraft服务器[YinwuRealm](https://www.yinwurealm.org/)玩家[LinTx](https://mine.ly/LinTx.1)为服务器开发
