@@ -26,6 +26,8 @@ import org.lintx.plugins.yinwuchat.velocity.json.OutputAQQBot;
 import org.lintx.plugins.yinwuchat.velocity.util.VelocityItemUtil;
 import org.lintx.plugins.yinwuchat.velocity.util.RedisUtil;
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.netty.channel.Channel;
 import net.kyori.adventure.text.Component;
@@ -592,8 +594,8 @@ public class MessageManage {
         // 构建最终消息
         Component messageComponent = chat.buildPublicMessage(publicMessage.format);
         
-        // 广播消息到所有玩家
-        broadcast(player.getUniqueId(), messageComponent, notQQ);
+        // 广播消息到所有玩家，并向 Web 端附带结构化物品数据
+        broadcast(player.getUniqueId(), messageComponent, notQQ, publicMessage.items, publicMessage.chat);
         
         // 处理 @ 提及：发送声音提示和消息给被@的玩家
         handleAtMentionNotifications(player, publicMessage.chat);
@@ -864,10 +866,33 @@ public class MessageManage {
             }
         }
         
-        broadcast(senderUUID, senderName, serverName, component, notQQ);
+        broadcast(senderUUID, senderName, serverName, component, notQQ, null, null);
+    }
+
+    public void broadcast(java.util.UUID senderUUID, Component component, boolean notQQ,
+                          List<String> rawItems, String rawChat) {
+        String senderName = "";
+        String serverName = "";
+        if (senderUUID != null) {
+            Optional<Player> playerOpt = plugin.getProxy().getPlayer(senderUUID);
+            if (playerOpt.isPresent()) {
+                Player p = playerOpt.get();
+                senderName = p.getUsername();
+                serverName = p.getCurrentServer().map(s -> s.getServerInfo().getName()).orElse("");
+            }
+        }
+        broadcast(senderUUID, senderName, serverName, component, notQQ, rawItems, rawChat);
     }
 
     public void broadcast(java.util.UUID senderUUID, String senderName, String serverName, Component component, boolean notQQ) {
+        broadcast(senderUUID, senderName, serverName, component, notQQ, null, null);
+    }
+
+    /**
+     * 广播消息到所有在线玩家，并可选附带 Web 端结构化物品数据
+     */
+    public void broadcast(java.util.UUID senderUUID, String senderName, String serverName, Component component, boolean notQQ,
+                          List<String> rawItems, String rawChat) {
         // 发送给所有在线玩家，包括发送者
         // Bukkit 端已经取消了原始聊天事件，所以不会有重复显示
         for (Player p : plugin.getProxy().getAllPlayers()) {
@@ -894,6 +919,17 @@ public class MessageManage {
                     json.addProperty("player", senderName != null ? senderName : "");
                     if (serverName != null && !serverName.isEmpty()) {
                         json.addProperty("server", serverName);
+                    }
+
+                    // 向新版本 Web 客户端附带结构化物品信息；旧端仅使用 message 字段
+                    if (rawChat != null && !rawChat.isEmpty()) {
+                        json.addProperty("raw_chat", buildWebChatTemplate(rawChat, rawItems == null ? 0 : rawItems.size()));
+                    }
+                    if (rawItems != null && !rawItems.isEmpty()) {
+                        JsonArray webItems = buildWebItems(rawItems);
+                        if (!webItems.isEmpty()) {
+                            json.add("items", webItems);
+                        }
                     }
                     
                     if (util != null && util.getUuid() != null) {
@@ -938,6 +974,83 @@ public class MessageManage {
                 }
             }
         }
+    }
+
+    /**
+     * 将原始聊天内容中的 [i] 占位符替换为 Web 端可识别占位符。
+     */
+    private String buildWebChatTemplate(String rawChat, int itemCount) {
+        if (rawChat == null || rawChat.isEmpty()) {
+            return "";
+        }
+        Pattern itemPattern = Pattern.compile(Const.ITEM_PLACEHOLDER);
+        Matcher matcher = itemPattern.matcher(rawChat);
+        StringBuffer sb = new StringBuffer();
+        int itemIndex = 0;
+        while (matcher.find()) {
+            if (itemIndex < itemCount) {
+                matcher.appendReplacement(sb, Matcher.quoteReplacement("[[ITEM:" + itemIndex + "]]"));
+                itemIndex++;
+            } else {
+                matcher.appendReplacement(sb, Matcher.quoteReplacement(matcher.group()));
+            }
+        }
+        matcher.appendTail(sb);
+        return sb.toString();
+    }
+
+    /**
+     * 将 Bukkit 传来的物品 JSON 列表转换为 Web 端可直接渲染的结构化数据。
+     */
+    private JsonArray buildWebItems(List<String> rawItems) {
+        JsonArray arr = new JsonArray();
+        for (String itemJson : rawItems) {
+            if (itemJson == null || itemJson.trim().isEmpty()) {
+                continue;
+            }
+            try {
+                JsonObject raw = com.google.gson.JsonParser.parseString(itemJson).getAsJsonObject();
+                JsonObject webItem = new JsonObject();
+                webItem.addProperty("name", VelocityItemUtil.parseItemName(itemJson));
+                webItem.addProperty("count", VelocityItemUtil.parseItemAmount(itemJson));
+                if (raw.has("id")) {
+                    webItem.addProperty("id", raw.get("id").getAsString());
+                }
+                if (raw.has("displayId")) {
+                    webItem.addProperty("displayId", raw.get("displayId").getAsString());
+                }
+
+                JsonArray lore = new JsonArray();
+                if (raw.has("lore") && raw.get("lore").isJsonArray()) {
+                    for (JsonElement elem : raw.getAsJsonArray("lore")) {
+                        lore.add(elem.getAsString());
+                    }
+                }
+                // 将药水效果也追加到展示细节中（支持多效果）
+                List<String> potionEffectLabels = VelocityItemUtil.parsePotionEffectLabels(itemJson);
+                for (String label : potionEffectLabels) {
+                    lore.add(label);
+                }
+                webItem.add("lore", lore);
+
+                JsonArray enchants = new JsonArray();
+                if (raw.has("enchantments") && raw.get("enchantments").isJsonObject()) {
+                    for (Map.Entry<String, JsonElement> entry : raw.getAsJsonObject("enchantments").entrySet()) {
+                        String label = VelocityItemUtil.formatEnchantmentLabel(
+                                entry.getKey(),
+                                entry.getValue().getAsInt()
+                        );
+                        enchants.add(label);
+                    }
+                }
+                webItem.add("enchantments", enchants);
+
+                arr.add(webItem);
+            } catch (Exception ignored) {
+                // 单个物品解析失败不影响整条消息
+            }
+        }
+        return arr;
     }
 
     /**

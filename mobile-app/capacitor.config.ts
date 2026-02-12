@@ -5,8 +5,13 @@ const config: CapacitorConfig = {
   appName: 'YinwuChat',
   webDir: 'www',
   server: {
-    androidScheme: 'http',
+    androidScheme: 'https',
     cleartext: true
+  },
+  plugins: {
+    CapacitorHttp: {
+      enabled: true
+    }
   }
 };
 

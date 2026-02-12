@@ -39,7 +39,7 @@ import java.nio.file.Path;
 @Plugin(
     id = "yinwuchat-velocity",
     name = "YinwuChat",
-    version = "2.12.72",
+    version = "2.12.73",
     description = "Cross-server chat synchronization for Velocity",
     authors = {"LinTx"}
 )
@@ -191,9 +191,13 @@ public class YinwuChat {
         }
         
         try {
-            metricsFactory.make(this, 10357);
+            if (metricsFactory != null) {
+                metricsFactory.make(this, 10357);
+            } else {
+                logger.info("bStats metrics factory unavailable, skipping metrics initialization");
+            }
         } catch (Exception e) {
-            logger.warn("Failed to initialize bStats metrics");
+            logger.info("bStats metrics unavailable: {}", e.getMessage());
         }
         
         extractWebFiles();

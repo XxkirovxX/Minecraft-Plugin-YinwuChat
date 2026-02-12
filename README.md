@@ -37,6 +37,7 @@
 - 2.12.70：UI优化：移除私聊窗口顶部头像图标，精简界面；Web端侧边栏交互优化：支持手机端左侧侧滑呼出/关闭玩家列表，实现平滑跟随效果；修复 Android App 手势兼容性；加入/chatban、/chatunban，实现封禁管理，并加入了APP/web端双端同时登录功能
 - 2.12.71：支持 Web 端与 APP 同时使用同一账号登录，消息实时同步；web端头像改为 /helm/ 端点，显示双层皮肤（底层+头盔层）；新增 /chatban指令，实现 web 端封禁同步游戏端禁言，新增 /chatunban 解封指令，支持解除 /chatban 的封禁
 - 2.12.72：Web端UI优化，新增快捷选人功能，支持点击玩家列表快速发起私聊；新增 HarmonyOS（鸿蒙）原生应用支持，基于 ArkTS 开发，支持 HarmonyOS NEXT 5.0.0+，实现与 Web 端/Android 端相同的聊天功能
+- 2.12.73：增加了 Web 端物品展示功能，现在可以在游戏内向玩家和 Web 端玩家展示物品；修正服务器反代环境下 App 无法连接服务器的问题，现在可以正常连接
 
 YinwuChat是Velocity代理插件和Spigot插件，主要功能有：
 1. 跨服聊天同步
@@ -219,19 +220,19 @@ mvn clean package -P bukkit
 ### 输出文件
 
 构建完成后，在 `target/` 目录下会生成：
-- `YinwuChat-Velocity-2.12.72.jar` - Velocity 代理专用版本
-- `YinwuChat-Bukkit-2.12.72.jar` - Bukkit/Spigot 后端专用版本
-- `YinwuChat-2.12.72.jar` - 包含所有平台代码（向后兼容）
+- `YinwuChat-Velocity-2.12.73.jar` - Velocity 代理专用版本
+- `YinwuChat-Bukkit-2.12.73.jar` - Bukkit/Spigot 后端专用版本
+- `YinwuChat-2.12.73.jar` - 包含所有平台代码（向后兼容）
 
 ### 部署说明
 
 1. **Velocity 代理服务器**
-   - 安装：`YinwuChat-Velocity-2.12.72.jar`
-   - 位置：`plugins/YinwuChat-Velocity-2.12.72.jar`
+   - 安装：`YinwuChat-Velocity-2.12.73.jar`
+   - 位置：`plugins/YinwuChat-Velocity-2.12.73.jar`
 
 2. **Bukkit/Spigot 后端服务器**
-   - 安装：`YinwuChat-Bukkit-2.12.72.jar`
-   - 位置：`plugins/YinwuChat-Bukkit-2.12.72.jar`
+   - 安装：`YinwuChat-Bukkit-2.12.73.jar`
+   - 位置：`plugins/YinwuChat-Bukkit-2.12.73.jar`
 
 3. **配置文件**
    - 首次运行后会在相应插件目录生成配置文件

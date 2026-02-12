@@ -10,7 +10,11 @@ import org.bukkit.block.ShulkerBox;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BlockStateMeta;
 import org.bukkit.inventory.meta.BookMeta;
+import org.bukkit.inventory.meta.EnchantmentStorageMeta;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.PotionMeta;
+import org.bukkit.potion.PotionData;
+import org.bukkit.potion.PotionEffect;
 
 import java.lang.reflect.Method;
 import java.util.Collections;
@@ -666,29 +670,74 @@ public class ModernItemUtil {
             json.add("lore", loreArray);
         }
         
-        // 附魔
+        // 附魔（包含普通附魔 + 附魔书存储附魔）
+        com.google.gson.JsonObject enchants = new com.google.gson.JsonObject();
+        boolean hasEnchantments = false;
+
         if (!itemStack.getEnchantments().isEmpty()) {
-            com.google.gson.JsonObject enchants = new com.google.gson.JsonObject();
             itemStack.getEnchantments().forEach((ench, level) -> {
-                // 使用反射获取附魔 key
-                String enchKey;
-                try {
-                    Method getKeyMethod = ench.getClass().getMethod("getKey");
-                    enchKey = getKeyMethod.invoke(ench).toString();
-                    // 确保 key 格式正确（minecraft:knockback -> knockback）
-                    if (enchKey.startsWith("minecraft:")) {
-                        enchKey = enchKey.substring(10);
-                    }
-                } catch (Exception e) {
-                    // 使用附魔名称作为备选，但要清理格式
-                    enchKey = ench.toString().toLowerCase().replace("enchantment{", "").replace("}", "");
-                    if (enchKey.contains("minecraft:")) {
-                        enchKey = enchKey.substring(enchKey.lastIndexOf(":") + 1);
-                    }
-                }
+                String enchKey = normalizeEnchantmentKey(ench);
                 enchants.addProperty(enchKey, level);
             });
+            hasEnchantments = true;
+        }
+
+        if (itemStack.hasItemMeta() && itemStack.getItemMeta() instanceof EnchantmentStorageMeta) {
+            EnchantmentStorageMeta storageMeta = (EnchantmentStorageMeta) itemStack.getItemMeta();
+            if (!storageMeta.getStoredEnchants().isEmpty()) {
+                storageMeta.getStoredEnchants().forEach((ench, level) -> {
+                    String enchKey = normalizeEnchantmentKey(ench);
+                    enchants.addProperty(enchKey, level);
+                });
+                hasEnchantments = true;
+            }
+        }
+
+        if (hasEnchantments) {
             json.add("enchantments", enchants);
+        }
+
+        // 药水信息（包含基础药水类型与自定义效果，支持多效果）
+        if (itemStack.hasItemMeta() && itemStack.getItemMeta() instanceof PotionMeta) {
+            PotionMeta potionMeta = (PotionMeta) itemStack.getItemMeta();
+
+            try {
+                PotionData base = potionMeta.getBasePotionData();
+                if (base != null && base.getType() != null) {
+                    String potionType = base.getType().name().toLowerCase();
+                    if (base.isExtended()) {
+                        potionType = "long_" + potionType;
+                    } else if (base.isUpgraded()) {
+                        potionType = "strong_" + potionType;
+                    }
+                    json.addProperty("potionType", potionType);
+                }
+            } catch (Exception ignored) {
+            }
+
+            if (potionMeta.hasCustomEffects()) {
+                com.google.gson.JsonArray effects = new com.google.gson.JsonArray();
+                for (PotionEffect effect : potionMeta.getCustomEffects()) {
+                    com.google.gson.JsonObject effectObj = new com.google.gson.JsonObject();
+                    String effectKey;
+                    try {
+                        Method getKeyMethod = effect.getType().getClass().getMethod("getKey");
+                        effectKey = String.valueOf(getKeyMethod.invoke(effect.getType()));
+                        if (effectKey.startsWith("minecraft:")) {
+                            effectKey = effectKey.substring("minecraft:".length());
+                        }
+                    } catch (Exception e) {
+                        effectKey = effect.getType().getName().toLowerCase();
+                    }
+                    effectObj.addProperty("type", effectKey);
+                    effectObj.addProperty("amplifier", effect.getAmplifier());
+                    effectObj.addProperty("duration", effect.getDuration());
+                    effects.add(effectObj);
+                }
+                if (effects.size() > 0) {
+                    json.add("potionEffects", effects);
+                }
+            }
         }
         
         // 尝试添加 NBT/组件数据（用于原版 Hover）
@@ -722,5 +771,22 @@ public class ModernItemUtil {
             Bukkit.getLogger().log(Level.FINE, "Failed to fully serialize item", e);
             return null;
         }
+    }
+
+    private static String normalizeEnchantmentKey(org.bukkit.enchantments.Enchantment ench) {
+        String enchKey;
+        try {
+            Method getKeyMethod = ench.getClass().getMethod("getKey");
+            enchKey = getKeyMethod.invoke(ench).toString();
+            if (enchKey.startsWith("minecraft:")) {
+                enchKey = enchKey.substring(10);
+            }
+        } catch (Exception e) {
+            enchKey = ench.toString().toLowerCase().replace("enchantment{", "").replace("}", "");
+            if (enchKey.contains("minecraft:")) {
+                enchKey = enchKey.substring(enchKey.lastIndexOf(":") + 1);
+            }
+        }
+        return enchKey;
     }
 }

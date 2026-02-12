@@ -1014,11 +1014,17 @@ public class YinwuChatCommand implements SimpleCommand {
             host = "服务器IP或域名";
         }
         int port = config.wsport;
+        // 直接连接地址（无SSL）
         String wsUrl = "ws://" + host + ":" + port + "/ws";
-        source.sendMessage(Component.text("WebSocket 地址: ").color(NamedTextColor.GOLD)
+        // 反代连接地址（有SSL）
+        String wssUrl = "wss://" + host + ":31115/new-ws";
+        source.sendMessage(Component.text("直接连接地址: ").color(NamedTextColor.GOLD)
             .append(Component.text(wsUrl).color(NamedTextColor.AQUA)
                 .clickEvent(ClickEvent.copyToClipboard(wsUrl))));
-        source.sendMessage(Component.text("如果网页使用 HTTPS，请将 ws:// 改为 wss://").color(NamedTextColor.GRAY));
+        source.sendMessage(Component.text("反代连接地址 (SSL): ").color(NamedTextColor.GOLD)
+            .append(Component.text(wssUrl).color(NamedTextColor.GREEN)
+                .clickEvent(ClickEvent.copyToClipboard(wssUrl))));
+        source.sendMessage(Component.text("提示: 使用反代地址需要配置 Nginx 反向代理").color(NamedTextColor.GRAY));
     }
 
     /**

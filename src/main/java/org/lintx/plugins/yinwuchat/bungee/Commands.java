@@ -327,9 +327,13 @@ public class Commands extends Command {
                         host = "服务器IP或域名";
                     }
                     int port = Config.getInstance().wsport;
+                    // 直接连接地址（无SSL）
                     String wsUrl = "ws://" + host + ":" + port + "/ws";
-                    sender.sendMessage(MessageUtil.newTextComponent(ChatColor.GOLD + "WebSocket 地址: " + ChatColor.AQUA + wsUrl));
-                    sender.sendMessage(MessageUtil.newTextComponent(ChatColor.GRAY + "如果网页使用 HTTPS，请将 ws:// 改为 wss://"));
+                    // 反代连接地址（有SSL）
+                    String wssUrl = "wss://" + host + ":31115/new-ws";
+                    sender.sendMessage(MessageUtil.newTextComponent(ChatColor.GOLD + "直接连接地址: " + ChatColor.AQUA + wsUrl));
+                    sender.sendMessage(MessageUtil.newTextComponent(ChatColor.GOLD + "反代连接地址 (SSL): " + ChatColor.GREEN + wssUrl));
+                    sender.sendMessage(MessageUtil.newTextComponent(ChatColor.GRAY + "提示: 使用反代地址需要配置 Nginx 反向代理"));
                 } else {
                     sender.sendMessage(MessageUtil.newTextComponent(ChatColor.RED + "权限不足"));
                 }

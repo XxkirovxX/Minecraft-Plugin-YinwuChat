@@ -6,7 +6,7 @@
 
     <groupId>org.lintx.plugins.yinwuchat</groupId>
     <artifactId>YinwuChat</artifactId>
-    <version>2.12.72</version>
+    <version>2.12.73</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -37,11 +37,6 @@
                         <configuration>
                             <relocations>
                                 <relocation>
-                                    <pattern>org.bstats</pattern>
-<!--                                    <shadedPattern>org.lintx.plugins.yinwuchat.utils</shadedPattern>-->
-                                    <shadedPattern>org.lintx.plugins.yinwuchat.maven.bstats</shadedPattern>
-                                </relocation>
-                                <relocation>
                                     <pattern>org.lintx.plugins.modules</pattern>
                                     <shadedPattern>org.lintx.plugins.yinwuchat.maven.modules</shadedPattern>
                                 </relocation>
@@ -59,7 +54,7 @@
                                     <shadedPattern>org.lintx.plugins.yinwuchat.maven.commonspool</shadedPattern>
                                 </relocation>
                             </relocations>
-                            <minimizeJar>true</minimizeJar>
+                            <minimizeJar>false</minimizeJar>
                             <artifactSet>
                                 <includes>
                                     <include>org.bstats</include>
@@ -139,10 +134,6 @@
                                 <configuration>
                                     <relocations>
                                         <relocation>
-                                            <pattern>org.bstats</pattern>
-                                            <shadedPattern>org.lintx.plugins.yinwuchat.maven.bstats</shadedPattern>
-                                        </relocation>
-                                        <relocation>
                                             <pattern>org.lintx.plugins.modules</pattern>
                                             <shadedPattern>org.lintx.plugins.yinwuchat.maven.modules</shadedPattern>
                                         </relocation>
@@ -159,7 +150,7 @@
                                             <shadedPattern>org.lintx.plugins.yinwuchat.maven.commonspool</shadedPattern>
                                         </relocation>
                                     </relocations>
-                                    <minimizeJar>true</minimizeJar>
+                                    <minimizeJar>false</minimizeJar>
                                     <artifactSet>
                                         <includes>
                                             <include>org.bstats</include>

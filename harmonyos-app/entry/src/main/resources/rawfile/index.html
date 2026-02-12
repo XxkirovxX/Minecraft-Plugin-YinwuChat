@@ -23,6 +23,25 @@
         .chat-scroll::-webkit-scrollbar { width: 4px; }
         .chat-scroll::-webkit-scrollbar-thumb { background: rgba(156, 163, 175, 0.5); border-radius: 2px; }
         .dark .chat-scroll::-webkit-scrollbar-thumb { background: rgba(75, 85, 99, 0.5); }
+        
+        /* Custom scrollbar for item preview */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(156, 163, 175, 0.5);
+            border-radius: 3px;
+        }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(75, 85, 99, 0.6);
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(156, 163, 175, 0.8);
+        }
             [v-cloak] { display: none; }
             
             /* 处理移动端键盘弹出时的滚动 */
@@ -518,6 +537,50 @@
             </div>
         </transition>
 
+        <!-- 物品详情弹窗 -->
+        <transition name="fade">
+            <div v-if="itemPreview" class="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" @click.self="closeItemPreview">
+                <div class="w-auto max-w-[90vw] bg-beige-100 dark:bg-gray-900 rounded-2xl shadow-2xl border border-beige-200 dark:border-gray-700 p-6 space-y-4 animate-in zoom-in-95 duration-200">
+                    <div class="flex items-center justify-between gap-4">
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2 shrink-0">
+                            <i data-lucide="package-search" class="w-5 h-5 text-primary-500"></i>
+                            物品详情
+                        </h3>
+                        <button @click="closeItemPreview" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                            <i data-lucide="x" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                    <div class="text-sm text-gray-600 dark:text-gray-300 space-y-2">
+                        <div class="flex items-center gap-3">
+                            <img :src="getItemIconUrl(itemPreview)" @error="handleItemIconError"
+                                class="w-12 h-12 rounded-lg border border-beige-300 dark:border-gray-700 bg-beige-50 dark:bg-gray-800 p-1 object-contain shrink-0"
+                                alt="物品图标" />
+                            <div class="min-w-0">
+                                <div>名称：<span class="font-semibold text-gray-900 dark:text-white break-all" v-html="formatMinecraftInline(itemPreview.name || '物品')"></span></div>
+                                <div class="mt-1">数量：<span class="font-semibold text-gray-900 dark:text-white">{{ itemPreview.count || 1 }}</span></div>
+                            </div>
+                        </div>
+                        <div v-if="itemPreview.enchantments && itemPreview.enchantments.length > 0">
+                            附魔：
+                            <ul class="mt-1 space-y-1 pl-4 list-disc max-h-40 overflow-auto pr-1 custom-scrollbar">
+                                <li v-for="(ench, idx) in itemPreview.enchantments" :key="'ench-' + idx" class="text-gray-800 dark:text-gray-200 whitespace-nowrap" v-html="formatMinecraftInline(ench)"></li>
+                            </ul>
+                        </div>
+                        <div v-if="itemPreview.lore && itemPreview.lore.length > 0">
+                            描述：
+                            <ul class="mt-1 space-y-1 pl-4 list-disc max-h-[60vh] overflow-auto pr-1 custom-scrollbar">
+                                <li v-for="(line, idx) in itemPreview.lore" :key="'lore-' + idx" class="text-gray-800 dark:text-gray-200 whitespace-nowrap" v-html="formatMinecraftInline(line)"></li>
+                            </ul>
+                        </div>
+                    </div>
+                    <button @click="closeItemPreview"
+                        class="w-full py-3 bg-beige-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-sm font-bold rounded-xl hover:bg-beige-300 dark:hover:bg-gray-700 transition-all">
+                        关闭
+                    </button>
+                </div>
+            </div>
+        </transition>
+
                 <!-- 主聊天界面 -->
         <div v-if="isConnected" class="flex h-screen w-full overflow-hidden">
             <!-- 左侧玩家列表 (电脑端常驻 / 手机端侧滑) -->
@@ -701,7 +764,7 @@
                                     msg.isSelf 
                                         ? 'bg-primary-600 text-white rounded-tr-none text-left' 
                                         : 'bg-beige-200 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-tl-none border border-beige-300 dark:border-gray-700 text-left'
-                                ]" v-html="formatMessage(msg.chat)">
+                                ]" v-html="formatMessage(msg.chat, msg.items)">
                                 </div>
                                 <!-- 时间 -->
                                 <div class="text-[9px] text-gray-400 mt-1 opacity-60 px-1">
@@ -815,7 +878,7 @@
     </div>
 
     <script>
-        const { createApp, ref, onMounted, nextTick, computed, watch } = Vue;
+        const { createApp, ref, onMounted, onBeforeUnmount, nextTick, computed, watch } = Vue;
 
         createApp({
             setup() {
@@ -837,13 +900,16 @@
                 };
                 // ========== 鸿蒙APP服务器配置 ==========
                 // 请将下方地址修改为您的YinwuChat服务器地址
-                // 格式: 域名或IP:端口, 例如: mc.example.com:8888 或 192.168.1.100:8888
-                const HARMONY_DEFAULT_SERVER = '';
+                // 格式1: wss://域名:端口/new-chat/ws (推荐, 使用Nginx反代+SSL)
+                // 格式2: ws://域名:端口/ws (直接连接, 无SSL)
+                // 格式3: 域名 (自动发现)
+                const HARMONY_DEFAULT_SERVER = 'wss://server.yinwurealm.org:31115/new-chat/ws';
+                const HARMONY_DEFAULT_API_BASE = 'https://server.yinwurealm.org:31115';
                 // ==========================================
                 
                 const getDiscoveryBase = () => {
-                    // 优先使用鸿蒙APP配置的服务器地址
-                    if (HARMONY_DEFAULT_SERVER) return HARMONY_DEFAULT_SERVER;
+                    // 优先使用鸿蒙 APP 的默认 HTTP 基址
+                    if (HARMONY_DEFAULT_API_BASE) return HARMONY_DEFAULT_API_BASE;
                     const trimmed = String(defaultDomain.value || '').trim();
                     if (trimmed) return trimmed;
                     const injected = getInjectedDiscoveryBase();
@@ -885,11 +951,28 @@
                     if (!base) return '';
                     const normalized = normalizeWsUrl(base);
                     if (normalized.startsWith('ws://') || normalized.startsWith('wss://')) {
-                        return normalized.endsWith('/ws') ? normalized : normalized.replace(/\/+$/, '') + '/ws';
+                        // 已经是完整 WS 路径时直接返回（兼容 /new-chat/ws、/new-ws、/ws）
+                        if (/\/new-chat\/ws\/?$/i.test(normalized) || /\/new-ws\/?$/i.test(normalized) || /\/ws\/?$/i.test(normalized)) {
+                            return normalized.replace(/\/+$/, '');
+                        }
+                        return normalized.replace(/\/+$/, '') + '/new-chat/ws';
                     }
                     return '';
                 };
+                const buildHttpBaseFromWsSource = (source) => {
+                    if (!source) return '';
+                    const wsUrl = buildWsUrlFromBase(source);
+                    if (!wsUrl) return '';
+                    return wsUrl
+                        .replace(/^wss:\/\//i, 'https://')
+                        .replace(/^ws:\/\//i, 'http://')
+                        .replace(/\/new-chat\/ws\/?$/i, '')
+                        .replace(/\/new-ws\/?$/i, '')
+                        .replace(/\/ws\/?$/i, '')
+                        .replace(/\/+$/, '');
+                };
                 const discoveredWsUrl = ref('');
+                const discoveredHttpBase = ref('');
                 const discoverWsUrl = async () => {
                     if (!isLocalHostEnv()) return '';
                     const domain = getDiscoveryBase();
@@ -898,16 +981,17 @@
                     // 尝试几种常见的基准 URL 格式
                     const basesToTry = [
                         normalizeHttpBase(domain),
-                        normalizeHttpBase(domain + ':8888'), // 默认插件端口
-                        normalizeHttpBase(domain + ':8080')
+                        normalizeHttpBase(domain.includes(':') ? domain : domain + ':31115'), // 默认反代端口
+                        normalizeHttpBase(domain.includes(':') ? domain : domain + ':8888')   // 默认插件端口
                     ];
 
                     for (const base of basesToTry) {
                         try {
-                            const res = await fetchWithFallback(base, '/api/wsinfo', { signal: AbortSignal.timeout(3000) });
+                            const res = await fetchWithFallback(base, '/new-chat/api/wsinfo', { signal: AbortSignal.timeout(3000) });
                             const data = await res.json();
                             if (data && data.ok && data.wsUrl) {
                                 discoveredWsUrl.value = data.wsUrl;
+                                discoveredHttpBase.value = base;
                                 return data.wsUrl;
                             }
                         } catch (e) {
@@ -917,17 +1001,22 @@
                     return '';
                 };
                 const getAutoWsUrl = () => {
+                    // 本地 APP 环境优先固定默认地址
+                    if (isLocalHostEnv()) return HARMONY_DEFAULT_SERVER;
+
+                    // 优先使用注入的配置
                     const injectedWs = getInjectedWsUrl();
                     if (injectedWs) return buildWsUrlFromBase(injectedWs);
                     const injectedBase = getInjectedServerBase();
                     if (injectedBase) return buildWsUrlFromBase(injectedBase);
                     if (discoveredWsUrl.value) return buildWsUrlFromBase(discoveredWsUrl.value);
+
+                    // Web 环境：使用当前页面的协议和主机
                     if (window.location && window.location.host) {
-                        if (isLocalHostEnv()) return '';
-                        const proto = window.location.protocol === 'https:' ? 'wss' : 'ws';
-                        return `${proto}://${window.location.host}/ws`;
+                        const protocol = window.location.protocol.toLowerCase() === 'https:' ? 'wss' : 'ws';
+                        return `${protocol}://${window.location.host}/new-chat/ws`;
                     }
-                    return '';
+                    return HARMONY_DEFAULT_SERVER;
                 };
                 const autoWsUrl = ref(getAutoWsUrl());
                 const authStep = ref('login');
@@ -937,6 +1026,7 @@
                 const showClearCacheConfirm = ref(false);
                 const banNotice = ref(null);
                 const adminAlert = ref(null);
+                const itemPreview = ref(null);
                 const atAllAdminConfirm = ref(null);
                 const bindAccountSent = ref(false);
                 const deleteAccountForm = ref({
@@ -1202,6 +1292,96 @@
                     adminAlert.value = null;
                 };
 
+                const closeItemPreview = () => {
+                    itemPreview.value = null;
+                };
+
+                const openItemPreview = (item) => {
+                    if (!item || typeof item !== 'object') return;
+                    itemPreview.value = item;
+                    nextTick(() => lucide.createIcons());
+                };
+
+                const escapeHtml = (value) => String(value || '')
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#39;');
+
+                const getItemIconCandidates = (item) => {
+                    const rawId = item && item.id ? String(item.id) : '';
+                    const namespaced = rawId.startsWith('minecraft:') ? rawId.slice(10) : rawId;
+                    const key = namespaced.trim().toLowerCase();
+                    if (!key) return ['./logo.png'];
+                    return [
+                        `https://assets.mcasset.cloud/latest/assets/minecraft/textures/item/${key}.png`,
+                        `https://assets.mcasset.cloud/latest/assets/minecraft/textures/block/${key}.png`,
+                        `https://api.mineatar.io/item/${key}`,
+                        './logo.png'
+                    ];
+                };
+
+                const getItemIconUrl = (item) => {
+                    const list = getItemIconCandidates(item);
+                    return list[0];
+                };
+
+                const handleItemIconError = (event) => {
+                    const img = event && event.target;
+                    if (!img) return;
+                    const item = itemPreview.value;
+                    const list = getItemIconCandidates(item);
+                    const current = img.getAttribute('src');
+                    const idx = list.indexOf(current);
+                    const next = idx >= 0 ? list[idx + 1] : list[1];
+                    if (next && next !== current) {
+                        img.setAttribute('src', next);
+                    }
+                };
+
+                const formatMinecraftInline = (value) => {
+                    let html = escapeHtml(value);
+                    let opened = 0;
+                    html = html.replace(/§(.)/g, (match, code) => {
+                        const lower = code.toLowerCase();
+                        if (lower === 'r') {
+                            if (opened === 0) return '';
+                            const closing = '</span>'.repeat(opened);
+                            opened = 0;
+                            return closing;
+                        }
+                        const colors = {
+                            '0': '#000000', '1': '#0000AA', '2': '#00AA00', '3': '#00AAAA',
+                            '4': '#AA0000', '5': '#AA00AA', '6': '#FFAA00', '7': '#AAAAAA',
+                            '8': '#555555', '9': '#5555FF', 'a': '#55FF55', 'b': '#55FFFF',
+                            'c': '#FF5555', 'd': '#FF55FF', 'e': '#FFFF55', 'f': '#FFFFFF'
+                        };
+                        if (colors[lower]) {
+                            opened += 1;
+                            return `<span style="color: ${colors[lower]}">`;
+                        }
+                        return ''; // Hide unknown codes like §t
+                    });
+                    if (opened > 0) {
+                        html += '</span>'.repeat(opened);
+                    }
+                    return html.replace(/\n/g, '<br>');
+                };
+
+                const handleItemTagClick = (event) => {
+                    const target = event.target && event.target.closest
+                        ? event.target.closest('.item-preview-tag')
+                        : null;
+                    if (!target) return;
+                    const raw = target.getAttribute('data-item');
+                    if (!raw) return;
+                    try {
+                        const item = JSON.parse(decodeURIComponent(raw));
+                        openItemPreview(item);
+                    } catch (e) {}
+                };
+
                 const closeAtAllAdminConfirm = () => {
                     atAllAdminConfirm.value = null;
                 };
@@ -1308,6 +1488,10 @@
                             resolvedWsUrl = autoWsUrl.value;
                         }
                     }
+                    // 自动发现失败时，回退到默认服务器地址，避免完全不可用
+                    if (!resolvedWsUrl && isLocalHostEnv()) {
+                        resolvedWsUrl = HARMONY_DEFAULT_SERVER;
+                    }
                     if (!resolvedWsUrl) {
                         autoWsUrl.value = getAutoWsUrl();
                         resolvedWsUrl = autoWsUrl.value;
@@ -1369,7 +1553,7 @@
                         const encryptedPayload = await encryptPayloadHybrid(payload, handshake.publicKey, oaepHash);
                         const hmac = await signHmac(handshake.hmacKey, `${encryptedPayload.payloadEnc}.${encryptedPayload.iv}`);
                         const base = getHttpBaseUrl();
-                        const res = await fetchWithFallback(base, '/api/auth/reset/request', {
+                        const res = await fetchWithFallback(base, '/new-chat/api/auth/reset/request', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
@@ -1401,7 +1585,7 @@
                     resetStatusInterval = setInterval(async () => {
                         try {
                             const base = getHttpBaseUrl();
-                            const res = await fetchWithFallback(base, `/api/auth/reset/status/${forgotForm.value.username}`);
+                            const res = await fetchWithFallback(base, `/new-chat/api/auth/reset/status/${forgotForm.value.username}`);
                             const data = await res.json();
                             if (data.ok && data.verified) {
                                 clearInterval(resetStatusInterval);
@@ -1445,7 +1629,7 @@
                         const encryptedPayload = await encryptPayloadHybrid(payload, handshake.publicKey, oaepHash);
                         const hmac = await signHmac(handshake.hmacKey, `${encryptedPayload.payloadEnc}.${encryptedPayload.iv}`);
                         const base = getHttpBaseUrl();
-                        const res = await fetchWithFallback(base, '/api/auth/reset/submit', {
+                        const res = await fetchWithFallback(base, '/new-chat/api/auth/reset/submit', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
@@ -1473,41 +1657,90 @@
                 const getHttpBaseUrl = () => {
                     // 优先从手动输入框或已保存的地址中提取基址
                     let rawUrl = manualWsUrl.value.trim() || savedManualWsUrl.value || '';
-                    if (!rawUrl) {
-                        if (isLocalHostEnv()) {
-                            rawUrl = getDiscoveryBase();
+                    
+                    // 有手动配置时使用配置的地址
+                    if (rawUrl) {
+                        let url = normalizeHttpBase(rawUrl);
+                        if (url) {
+                            url = url.replace(/\/ws\/?$/i, '').replace(/\/+$/, '');
+                            return url;
                         }
-                        const auto = getAutoWsUrl();
-                        if (auto) rawUrl = auto;
                     }
 
-                    if (!rawUrl) return '';
+                    // 本地 APP 环境优先固定默认 API 基址
+                    if (isLocalHostEnv()) return HARMONY_DEFAULT_API_BASE;
 
-                    let url = normalizeHttpBase(rawUrl);
-                    if (!url) return '';
-                    url = url.replace(/\/ws\/?$/i, '');
-                    return url.replace(/\/+$/, '');
+                    // 优先使用自动发现成功时的 HTTP 基址（避免 WS 端口与 API 端口不一致）
+                    if (discoveredHttpBase.value) return discoveredHttpBase.value;
+
+                    // 次优先使用自动发现到的 WS 地址推导 HTTP 基址
+                    const discoveredBase = buildHttpBaseFromWsSource(discoveredWsUrl.value);
+                    if (discoveredBase) return discoveredBase;
+
+                    // 次优先使用当前自动 WS 地址推导 HTTP 基址
+                    const autoBase = buildHttpBaseFromWsSource(autoWsUrl.value);
+                    if (autoBase) return autoBase;
+                    
+                    // 本地 APP 环境：尝试从发现基址推导 HTTP 地址
+                    if (!rawUrl && isLocalHostEnv()) {
+                        rawUrl = getDiscoveryBase();
+                        if (rawUrl) {
+                            let url = normalizeHttpBase(rawUrl);
+                            if (url) {
+                                url = url.replace(/\/ws\/?$/i, '').replace(/\/+$/, '');
+                                return url;
+                            }
+                        }
+                        // 兜底回退默认 API 地址，避免相对路径在 APP 内请求失败
+                        return HARMONY_DEFAULT_API_BASE;
+                    }
+                    
+                    // Web 环境：返回空字符串，使用相对路径
+                    return '';
                 };
 
                 const fetchWithFallback = async (base, path, options) => {
-                    const primary = base + path;
-                    try {
-                        return await fetch(primary, options);
-                    } catch (err) {
-                        if (base.startsWith('https://')) {
-                            return await fetch(base.replace('https://', 'http://') + path, options);
+                    const fetchByBaseAndPath = async (targetBase, targetPath) => {
+                        const primary = targetBase ? (targetBase + targetPath) : targetPath;
+                        try {
+                            return await fetch(primary, options);
+                        } catch (err) {
+                            // 如果是相对路径，不进行协议切换尝试
+                            if (!targetBase) throw err;
+                            // 尝试切换协议
+                            if (targetBase.startsWith('https://')) {
+                                return await fetch(targetBase.replace('https://', 'http://') + targetPath, options);
+                            }
+                            if (targetBase.startsWith('http://')) {
+                                return await fetch(targetBase.replace('http://', 'https://') + targetPath, options);
+                            }
+                            throw err;
                         }
-                        if (base.startsWith('http://')) {
-                            return await fetch(base.replace('http://', 'https://') + path, options);
+                    };
+                    const mapAlternativeApiPath = (targetPath) => {
+                        if (targetPath.startsWith('/new-chat/api/')) {
+                            return targetPath.replace('/new-chat/api/', '/api/');
                         }
-                        throw err;
-                    }
+                        if (targetPath.startsWith('/api/')) {
+                            return targetPath.replace('/api/', '/new-chat/api/');
+                        }
+                        return '';
+                    };
+
+                    let res = await fetchByBaseAndPath(base, path);
+                    if (res.status !== 404) return res;
+
+                    // 兼容两种部署路径：/new-chat/api/* 与 /api/*
+                    const altPath = mapAlternativeApiPath(path);
+                    if (!altPath) return res;
+                    const altRes = await fetchByBaseAndPath(base, altPath);
+                    return altRes.status === 404 ? res : altRes;
                 };
 
                 const refreshCaptcha = async () => {
                     try {
                         const base = getHttpBaseUrl();
-                        const res = await fetchWithFallback(base, '/api/auth/captcha');
+                        const res = await fetchWithFallback(base, '/new-chat/api/auth/captcha');
                         const data = await res.json();
                         if (data.ok) {
                             captchaImage.value = data.image || '';
@@ -1522,7 +1755,7 @@
 
                 const fetchHandshake = async () => {
                     const base = getHttpBaseUrl();
-                    const res = await fetchWithFallback(base, '/api/auth/handshake');
+                    const res = await fetchWithFallback(base, '/new-chat/api/auth/handshake');
                     const data = await res.json();
                     if (!data.ok) {
                         throw new Error(data.message || '无法初始化加密握手');
@@ -1671,7 +1904,7 @@
                         const encryptedPayload = await encryptPayloadHybrid(payload, handshake.publicKey, oaepHash);
                         const hmac = await signHmac(handshake.hmacKey, `${encryptedPayload.payloadEnc}.${encryptedPayload.iv}`);
                         const base = getHttpBaseUrl();
-                        const res = await fetchWithFallback(base, '/api/auth/login', {
+                        const res = await fetchWithFallback(base, '/new-chat/api/auth/login', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
@@ -1745,7 +1978,7 @@
                         const encryptedPayload = await encryptPayloadHybrid(payload, handshake.publicKey, oaepHash);
                         const hmac = await signHmac(handshake.hmacKey, `${encryptedPayload.payloadEnc}.${encryptedPayload.iv}`);
                         const base = getHttpBaseUrl();
-                        const res = await fetchWithFallback(base, '/api/auth/register', {
+                        const res = await fetchWithFallback(base, '/new-chat/api/auth/register', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
@@ -1806,7 +2039,7 @@
                         const encryptedPayload = await encryptPayloadHybrid(payload, handshake.publicKey, oaepHash);
                         const hmac = await signHmac(handshake.hmacKey, `${encryptedPayload.payloadEnc}.${encryptedPayload.iv}`);
                         const base = getHttpBaseUrl();
-                        const res = await fetchWithFallback(base, '/api/auth/delete', {
+                        const res = await fetchWithFallback(base, '/new-chat/api/auth/delete', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
@@ -1967,10 +2200,15 @@
                         }
                         const resolvedPlayer = data.player || (data.is_self ? selfName.value : '') || '';
                         const isPublicMessage = data.action === 'send_message' && !data.to;
-                        const displayChat = isPublicMessage ? extractPublicContent(text) : text;
+                        const structuredItems = Array.isArray(data.items) ? data.items : [];
+                        const templateChat = typeof data.raw_chat === 'string' ? data.raw_chat : '';
+                        const displayChat = isPublicMessage
+                            ? (templateChat || extractPublicContent(text))
+                            : text;
                         const msg = {
                             player: resolvedPlayer || data.from || data.sender || '',
                             chat: displayChat,
+                            items: structuredItems,
                             server: data.server,
                             isSelf: data.is_self || data.player === 'You',
                             to: data.to,
@@ -2182,9 +2420,13 @@
                     });
                 };
 
-                const formatMessage = (chat) => {
+                const formatMessage = (chat, items = []) => {
                     if (!chat) return '';
                     let html = String(chat).replace(/§/g, '&');
+                    const hasItems = Array.isArray(items) && items.length > 0;
+                    if (hasItems) {
+                        html = html.replace(/\[\[ITEM:(\d+)\]\]/g, (match, idx) => `{{ITEM:${idx}}}`);
+                    }
                     let opened = 0;
                     html = html.replace(/&([0-9a-fk-or])/gi, (match, code) => {
                         if (code.toLowerCase() === 'r') {
@@ -2208,6 +2450,18 @@
                     }
                     html = html.replace(/\n/g, '<br>');
                     html = html.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" class="text-primary-500 hover:underline break-all">$1</a>');
+                    if (hasItems) {
+                        html = html.replace(/\{\{ITEM:(\d+)\}\}/g, (match, idxText) => {
+                            const idx = Number(idxText);
+                            const item = items[idx];
+                            if (!item) return '[物品]';
+                            const safeName = formatMinecraftInline(item.name || '物品');
+                            const amount = Number(item.count || 1);
+                            const amountSuffix = amount > 1 ? ` x${amount}` : '';
+                            const payload = encodeURIComponent(JSON.stringify(item));
+                            return `<span class="item-preview-tag inline-flex items-center px-2 py-0.5 rounded-md bg-black/10 dark:bg-white/10 border border-black/10 dark:border-white/20 cursor-pointer hover:opacity-85 transition-opacity" data-item="${payload}">[${safeName}]${amountSuffix}</span>`;
+                        });
+                    }
                     return html;
                 };
 
@@ -2380,8 +2634,10 @@
 
                 onMounted(async () => {
                     if (isDark.value) document.documentElement.classList.add('dark');
-                    lucide.createIcons();
+                    // 使用 nextTick 确保 Vue 完成条件渲染后再初始化图标
+                    nextTick(() => lucide.createIcons());
                     syncSidebarPosition();
+                    document.addEventListener('click', handleItemTagClick);
                     
                     // App 环境下初始化
                     if (window.Capacitor) {
@@ -2419,6 +2675,10 @@
                         const input = document.querySelector('input');
                         if (input) input.focus();
                     }, 500);
+                });
+
+                onBeforeUnmount(() => {
+                    document.removeEventListener('click', handleItemTagClick);
                 });
 
                 watch(isConnected, (val) => {
@@ -2480,16 +2740,21 @@
                     nextTick(() => lucide.createIcons());
                 });
 
+                // 监听认证步骤变化，确保切换页面时图标正确渲染
+                watch(authStep, () => {
+                    nextTick(() => lucide.createIcons());
+                });
+
                 return {
                     token, authStep, authLoading, loginForm, registerForm, captchaImage, captchaId, currentUser,
                     advancedOpen, manualWsUrl, savedManualWsUrl, fillSavedWsUrl,
                     isConnected, connecting, isDark, showSidebar, currentChat, inputMsg, 
                     isMobile, messages, playerRoster, unreadCount, toasts, wsStatus, currentMessages,
                     isAdmin, quickCommands, isVanished,
-                    showDeleteAccount, showAppKeepAliveTips, showClearCacheConfirm, banNotice, closeBanNotice, adminAlert, closeAdminAlert, atAllAdminConfirm, closeAtAllAdminConfirm, sendAtAllAdminExecute, deleteAccountForm, submitDeleteAccount,
+                    showDeleteAccount, showAppKeepAliveTips, showClearCacheConfirm, banNotice, closeBanNotice, adminAlert, closeAdminAlert, itemPreview, closeItemPreview, atAllAdminConfirm, closeAtAllAdminConfirm, sendAtAllAdminExecute, deleteAccountForm, submitDeleteAccount,
                     forgotForm, resetPasswordForm, resetCode, goToForgot, submitForgotRequest, submitResetPassword,
                     connect, submitLogin, submitRegister, goToRegister, goToLogin, refreshCaptcha,
-                    sendMessage, selectChat, mentionPlayer, logout, toggleDarkMode, clearCache, confirmClearCache, formatMessage,
+                    sendMessage, selectChat, mentionPlayer, logout, toggleDarkMode, clearCache, confirmClearCache, formatMessage, formatMinecraftInline, getItemIconUrl, handleItemIconError,
                     handleTouchStart, handleTouchEnd, getAvatarName, getAvatarUrl, getTargetStatus,
                     showSettings, defaultDomain, saveDefaultDomain,
                     sidebarWidth, sidebarTranslateX, sidebarDragging, sidebarOverlayOpacity, sidebarOverlayVisible, sidebarBlur, sidebarAnimationActive,

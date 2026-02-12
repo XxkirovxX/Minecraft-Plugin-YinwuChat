@@ -1,12 +1,21 @@
 package org.lintx.plugins.yinwuchat.velocity.util;
 
-import net.kyori.adventure.key.Key;
-import net.kyori.adventure.nbt.api.BinaryTagHolder;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
+
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Velocity 物品工具类
@@ -14,6 +23,8 @@ import net.kyori.adventure.text.format.TextDecoration;
  * 参考 InteractiveChat 的实现方式
  */
 public class VelocityItemUtil {
+    private static final Map<String, String> LANG_ZH_CN = loadZhLangMap();
+    private static final Map<String, String> ITEM_NAME_ZH_FALLBACK = createItemNameZhFallbackMap();
 
     /**
      * 创建物品显示组件
@@ -37,13 +48,9 @@ public class VelocityItemUtil {
                 .color(NamedTextColor.YELLOW));
         }
 
-        // 创建悬停事件 - 优先使用原版物品展示格式
-        HoverEvent<?> hoverEvent = createVanillaHoverEvent(itemJson, amount);
-        if (hoverEvent == null) {
+        // 始终使用服务端文本悬停，确保中英文显示统一且可控（不依赖客户端语言包）
         Component hoverText = createItemHoverText(itemJson, itemName, amount);
-            hoverEvent = HoverEvent.showText(hoverText);
-        }
-        itemText = itemText.hoverEvent(hoverEvent);
+        itemText = itemText.hoverEvent(HoverEvent.showText(hoverText));
         
         // 尝试提取物品展示ID并添加点击事件
         String displayId = extractDisplayId(itemJson);
@@ -78,84 +85,6 @@ public class VelocityItemUtil {
     }
 
     /**
-     * 创建原版风格的物品 Hover 展示
-     * 注意：原版 ShowItem 需要正确格式的 SNBT 数据，而我们的数据可能是 JSON 格式
-     * 如果有自定义名称、lore 或附魔，优先使用文本悬停以确保正确显示
-     */
-    private static HoverEvent<?> createVanillaHoverEvent(String itemJson, int amount) {
-        if (itemJson == null || itemJson.isEmpty()) {
-            return null;
-        }
-        
-        try {
-            com.google.gson.JsonObject json = com.google.gson.JsonParser.parseString(itemJson).getAsJsonObject();
-            
-            // 如果有自定义显示名称、lore 或附魔，优先使用文本悬停以正确显示
-            // 因为原版 ShowItem 的 NBT 解析在跨版本时可能不稳定
-            boolean hasCustomData = json.has("displayName") || json.has("lore") || json.has("enchantments");
-            if (hasCustomData) {
-                // 返回 null 让调用者使用文本悬停
-                return null;
-            }
-            
-            // 对于普通物品（无自定义数据），尝试使用原版 ShowItem
-            String itemId = extractItemId(itemJson);
-            if (itemId == null || itemId.isEmpty()) {
-                return null;
-            }
-            
-            String itemTag = extractItemTag(itemJson);
-            HoverEvent.ShowItem showItem;
-            if (itemTag != null && !itemTag.isEmpty()) {
-                @SuppressWarnings("deprecation")
-                BinaryTagHolder tagHolder = BinaryTagHolder.of(itemTag);
-                @SuppressWarnings("deprecation")
-                HoverEvent.ShowItem tempShowItem = HoverEvent.ShowItem.of(Key.key(itemId), amount, tagHolder);
-                showItem = tempShowItem;
-            } else {
-                @SuppressWarnings("deprecation")
-                HoverEvent.ShowItem tempShowItem = HoverEvent.ShowItem.of(Key.key(itemId), amount);
-                showItem = tempShowItem;
-            }
-            return HoverEvent.showItem(showItem);
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
-    /**
-     * 从传输 JSON 中提取物品 ID
-     */
-    private static String extractItemId(String itemJson) {
-        if (itemJson == null || itemJson.isEmpty()) {
-            return null;
-        }
-        try {
-            com.google.gson.JsonObject json = com.google.gson.JsonParser.parseString(itemJson).getAsJsonObject();
-            if (json.has("id")) {
-                return json.get("id").getAsString();
-            }
-        } catch (Exception ignored) {}
-        return null;
-    }
-
-    /**
-     * 从传输 JSON 中提取 NBT/组件数据
-     */
-    private static String extractItemTag(String itemJson) {
-        if (itemJson == null || itemJson.isEmpty()) {
-            return null;
-        }
-        try {
-            com.google.gson.JsonObject json = com.google.gson.JsonParser.parseString(itemJson).getAsJsonObject();
-            if (json.has("nbt")) {
-                return json.get("nbt").getAsString();
-            }
-        } catch (Exception ignored) {}
-        return null;
-    }
-
-    /**
      * 创建物品悬停文本
      * 参考 InteractiveChat 的悬停信息显示方式
      * 支持解析 ModernItemUtil.getItemDataForTransfer 返回的 JSON 格式
@@ -165,6 +94,7 @@ public class VelocityItemUtil {
         String customDisplayName = null;
         java.util.List<String> loreLines = null;
         String enchantmentsText = null;
+        java.util.List<String> potionEffectLabels = java.util.Collections.emptyList();
         
         if (itemJson != null && !itemJson.isEmpty()) {
             try {
@@ -186,6 +116,7 @@ public class VelocityItemUtil {
                 
                 // 提取附魔
                 enchantmentsText = parseEnchantments(itemJson);
+                potionEffectLabels = parsePotionEffectLabels(itemJson);
             } catch (Exception ignored) {}
         }
         
@@ -210,6 +141,15 @@ public class VelocityItemUtil {
                 hoverComponent = hoverComponent
                     .append(Component.text("\n"))
                     .append(Component.text(ench, NamedTextColor.GRAY));
+            }
+        }
+
+        // 药水效果（支持多效果）
+        if (potionEffectLabels != null && !potionEffectLabels.isEmpty()) {
+            for (String effectLabel : potionEffectLabels) {
+                hoverComponent = hoverComponent
+                        .append(Component.text("\n"))
+                        .append(Component.text(effectLabel, NamedTextColor.AQUA));
             }
         }
         
@@ -366,62 +306,38 @@ public class VelocityItemUtil {
      * 支持 ModernItemUtil.getItemDataForTransfer 生成的 JSON 格式
      */
     public static String parseItemName(String itemJson) {
-        System.out.println("DEBUG VelocityItemUtil: parseItemName called with: " + itemJson);
         if (itemJson == null || itemJson.isEmpty()) {
-            System.out.println("DEBUG VelocityItemUtil: itemJson is null or empty");
             return "未知物品";
         }
 
         try {
-            // 使用 Gson 进行更可靠的 JSON 解析
             com.google.gson.JsonObject json = com.google.gson.JsonParser.parseString(itemJson).getAsJsonObject();
-            System.out.println("DEBUG VelocityItemUtil: Parsed JSON successfully");
 
             // 优先使用 displayName（自定义显示名称）
             if (json.has("displayName")) {
-                String displayName = json.get("displayName").getAsString();
-                System.out.println("DEBUG VelocityItemUtil: Using displayName: " + displayName);
-                return displayName;
+                return json.get("displayName").getAsString();
             }
 
-            // 提取物品 ID（忽略 _raw 等复杂字段）
             String id = null;
             if (json.has("id")) {
                 id = json.get("id").getAsString();
-                System.out.println("DEBUG VelocityItemUtil: Found item ID: " + id);
             } else {
-                // 检查是否是组件序列化格式（没有 id 字段）
-                System.out.println("DEBUG VelocityItemUtil: No 'id' field found, checking for component format");
-                System.out.println("DEBUG VelocityItemUtil: JSON has hoverEvent: " + json.has("hoverEvent"));
-                System.out.println("DEBUG VelocityItemUtil: JSON has text: " + json.has("text"));
-
                 if (json.has("hoverEvent")) {
-                    System.out.println("DEBUG VelocityItemUtil: Detected component format, extracting name from hoverEvent");
-                    // 尝试从 hoverEvent 中提取物品名称
                     com.google.gson.JsonObject hoverEvent = json.getAsJsonObject("hoverEvent");
                     if (hoverEvent.has("contents") && hoverEvent.get("contents").isJsonArray()) {
                         com.google.gson.JsonArray contents = hoverEvent.getAsJsonArray("contents");
-                        System.out.println("DEBUG VelocityItemUtil: Contents array size: " + contents.size());
                         if (contents.size() > 0 && contents.get(0).isJsonObject()) {
                             com.google.gson.JsonObject content = contents.get(0).getAsJsonObject();
                             if (content.has("text")) {
-                                String text = content.get("text").getAsString();
-                                System.out.println("DEBUG VelocityItemUtil: Extracted name from component: " + text);
-                                return text;
+                                return content.get("text").getAsString();
                             }
                         }
-                    } else {
-                        System.out.println("DEBUG VelocityItemUtil: No contents array in hoverEvent");
                     }
                 }
 
-                // 如果是简单的 text 字段，直接返回
                 if (json.has("text")) {
                     String text = json.get("text").getAsString();
-                    System.out.println("DEBUG VelocityItemUtil: Using simple text field: " + text);
-                    // 如果是物品组件格式，如 "§7[§f物品§7]"
                     if (text.contains("物品")) {
-                        // 尝试从 extra 字段提取实际物品名称
                         if (json.has("extra") && json.get("extra").isJsonArray()) {
                             com.google.gson.JsonArray extra = json.getAsJsonArray("extra");
                             for (int i = 0; i < extra.size(); i++) {
@@ -435,21 +351,8 @@ public class VelocityItemUtil {
                                                 if (innerObj.has("translate")) {
                                                     String translate = innerObj.get("translate").getAsString();
                                                     if (translate.startsWith("block.") || translate.startsWith("item.")) {
-                                                        // 从翻译键提取物品名称
-                                                        String itemName = translate.substring(translate.lastIndexOf('.') + 1).replace('_', ' ');
-                                                        // 首字母大写
-                                                        String[] words = itemName.split(" ");
-                                                        StringBuilder result = new StringBuilder();
-                                                        for (String word : words) {
-                                                            if (word.length() > 0) {
-                                                                result.append(Character.toUpperCase(word.charAt(0)))
-                                                                     .append(word.substring(1).toLowerCase())
-                                                                     .append(" ");
-                                                            }
-                                                        }
-                                                        String finalName = result.toString().trim();
-                                                        System.out.println("DEBUG VelocityItemUtil: Extracted name from translate: " + finalName);
-                                                        return finalName;
+                                                        String itemName = translate.substring(translate.lastIndexOf('.') + 1);
+                                                        return formatItemName(itemName);
                                                     }
                                                 }
                                             }
@@ -462,23 +365,18 @@ public class VelocityItemUtil {
                     }
                     return text;
                 }
-
-                System.out.println("DEBUG VelocityItemUtil: No 'id' field found in JSON and not a recognized component format");
             }
 
             if (id != null && !id.isEmpty()) {
-                // 转换 minecraft:stone 这样的 ID 为可读名称
-                String formattedName = formatItemName(id);
-                System.out.println("DEBUG VelocityItemUtil: Formatted item name: " + formattedName);
-                return formattedName;
+                String detailedName = tryBuildSpecialItemName(json, id, itemJson);
+                if (detailedName != null && !detailedName.isEmpty()) {
+                    return detailedName;
+                }
+                return formatItemName(id);
             }
 
-            // 如果无法解析，返回默认名称
-            System.out.println("DEBUG VelocityItemUtil: Returning default name '物品'");
             return "物品";
         } catch (Exception e) {
-            // 如果 JSON 解析失败，返回默认名称
-            System.out.println("DEBUG VelocityItemUtil: Exception during parsing: " + e.getMessage());
             return "未知物品";
         }
     }
@@ -497,13 +395,11 @@ public class VelocityItemUtil {
                 if (!entries.isEmpty()) {
                     StringBuilder result = new StringBuilder();
                     for (java.util.Map.Entry<String, com.google.gson.JsonElement> entry : entries) {
-                        String enchName = formatEnchantmentName(entry.getKey());
                         int level = entry.getValue().getAsInt();
-
                         if (result.length() > 0) {
                             result.append(", ");
                         }
-                        result.append(enchName).append(" ").append(level);
+                        result.append(formatEnchantmentLabel(entry.getKey(), level));
                     }
                     return result.toString();
                 }
@@ -516,15 +412,12 @@ public class VelocityItemUtil {
                     StringBuilder result = new StringBuilder();
                     for (int i = 0; i < enchArray.size(); i++) {
                         com.google.gson.JsonObject ench = enchArray.get(i).getAsJsonObject();
-                        String enchName = "未知附魔";
+                        String enchNameId = "未知附魔";
                         int level = 1;
 
                         if (ench.has("id")) {
                             String id = ench.get("id").getAsString();
-                            if (id.startsWith("minecraft:")) {
-                                id = id.substring(10);
-                            }
-                            enchName = formatEnchantmentName(id);
+                            enchNameId = id;
                         }
 
                         if (ench.has("lvl")) {
@@ -534,10 +427,15 @@ public class VelocityItemUtil {
                         if (result.length() > 0) {
                             result.append(", ");
                         }
-                        result.append(enchName).append(" ").append(level);
+                        result.append(formatEnchantmentLabel(enchNameId, level));
                     }
                     return result.toString();
                 }
+            }
+
+            String stored = parseStoredEnchantmentsFromNbt(json, itemJson);
+            if (stored != null && !stored.isEmpty()) {
+                return stored;
             }
 
             return null;
@@ -546,12 +444,69 @@ public class VelocityItemUtil {
         }
     }
 
+    private static String parseStoredEnchantmentsFromNbt(com.google.gson.JsonObject json, String itemJson) {
+        String nbt = null;
+        if (json != null && json.has("nbt")) {
+            try {
+                nbt = json.get("nbt").getAsString();
+            } catch (Exception ignored) {
+            }
+        }
+
+        String source = (nbt == null ? "" : nbt + " ") + (itemJson == null ? "" : itemJson);
+        if (!source.contains("StoredEnchantments") && !source.contains("stored_enchantments")) {
+            return null;
+        }
+
+        java.util.List<String> labels = new java.util.ArrayList<>();
+        java.util.regex.Pattern p1 = java.util.regex.Pattern.compile(
+                "id\\s*[:=]\\s*\"?([a-z0-9_:.]+)\"?\\s*,\\s*(?:lvl|level)\\s*[:=]\\s*([0-9]+)s?",
+                java.util.regex.Pattern.CASE_INSENSITIVE
+        );
+        java.util.regex.Matcher m1 = p1.matcher(source);
+        while (m1.find()) {
+            labels.add(formatEnchantmentLabel(m1.group(1), parseSafeInt(m1.group(2), 1)));
+        }
+
+        if (labels.isEmpty()) {
+            java.util.regex.Pattern p2 = java.util.regex.Pattern.compile(
+                    "(?:lvl|level)\\s*[:=]\\s*([0-9]+)s?\\s*,\\s*id\\s*[:=]\\s*\"?([a-z0-9_:.]+)\"?",
+                    java.util.regex.Pattern.CASE_INSENSITIVE
+            );
+            java.util.regex.Matcher m2 = p2.matcher(source);
+            while (m2.find()) {
+                labels.add(formatEnchantmentLabel(m2.group(2), parseSafeInt(m2.group(1), 1)));
+            }
+        }
+
+        if (labels.isEmpty()) {
+            return null;
+        }
+        return String.join(", ", labels);
+    }
+
     /**
      * 格式化附魔名称，使其更易读
      */
     private static String formatEnchantmentName(String enchId) {
+        if (enchId == null || enchId.isEmpty()) {
+            return "未知附魔";
+        }
+        String normalized = enchId.toLowerCase();
+        if (normalized.startsWith("minecraft:")) {
+            normalized = normalized.substring("minecraft:".length());
+        } else if (normalized.contains(":")) {
+            normalized = normalized.substring(normalized.indexOf(':') + 1);
+        }
+
+        // 优先使用最新语言表词条，确保新附魔（如 lunge -> 突刺）可及时生效
+        String localized = LANG_ZH_CN.get("enchantment.minecraft." + normalized);
+        if (localized != null && !localized.isEmpty()) {
+            return localized;
+        }
+
         // 常见的附魔名称映射
-        switch (enchId.toLowerCase()) {
+        switch (normalized) {
             case "protection": return "保护";
             case "fire_protection": return "火焰保护";
             case "feather_falling": return "摔落保护";
@@ -595,7 +550,7 @@ public class VelocityItemUtil {
             case "mending": return "经验修补";
             default:
                 // 对于未知附魔，将下划线替换为空格并首字母大写
-                String[] parts = enchId.split("_");
+                String[] parts = normalized.split("_");
                 StringBuilder result = new StringBuilder();
                 for (int i = 0; i < parts.length; i++) {
                     if (i > 0) result.append(" ");
@@ -606,6 +561,315 @@ public class VelocityItemUtil {
                     }
                 }
                 return result.toString();
+        }
+    }
+
+    public static String formatEnchantmentLabel(String enchId, int level) {
+        return formatEnchantmentName(enchId) + " " + toRoman(level);
+    }
+
+    private static String tryBuildSpecialItemName(com.google.gson.JsonObject json, String itemId, String itemJson) {
+        if (itemId == null || itemId.isEmpty()) {
+            return null;
+        }
+        String normalizedId = itemId.toLowerCase();
+        if (normalizedId.startsWith("minecraft:")) {
+            normalizedId = normalizedId.substring("minecraft:".length());
+        }
+
+        if ("potion".equals(normalizedId) || "splash_potion".equals(normalizedId) || "lingering_potion".equals(normalizedId)) {
+            String potionKey = extractPotionKey(json, itemJson);
+            if (potionKey != null && !potionKey.isEmpty()) {
+                String exactKey = "item.minecraft." + normalizedId + ".effect." + potionKey;
+                String localized = LANG_ZH_CN.get(exactKey);
+                if (localized != null && !localized.isEmpty()) {
+                    return localized;
+                }
+            }
+        }
+
+        if ("enchanted_book".equals(normalizedId)) {
+            // 按需求：附魔信息只在详情/hover 展示，名称保持“附魔书”
+            return formatItemName(normalizedId);
+        }
+        return null;
+    }
+
+    private static String extractPotionKey(com.google.gson.JsonObject json, String itemJson) {
+        if (json != null && json.has("potionType")) {
+            try {
+                String raw = json.get("potionType").getAsString();
+                if (raw != null && !raw.isEmpty()) {
+                    return raw;
+                }
+            } catch (Exception ignored) {
+            }
+        }
+
+        if (json != null && json.has("Potion")) {
+            try {
+                String raw = json.get("Potion").getAsString();
+                if (raw.startsWith("minecraft:")) {
+                    return raw.substring("minecraft:".length());
+                }
+                return raw;
+            } catch (Exception ignored) {
+            }
+        }
+
+        String nbt = null;
+        if (json != null && json.has("nbt")) {
+            try {
+                nbt = json.get("nbt").getAsString();
+            } catch (Exception ignored) {
+            }
+        }
+
+        String source = (nbt == null ? "" : nbt + " ") + (itemJson == null ? "" : itemJson);
+        java.util.regex.Pattern p = java.util.regex.Pattern.compile(
+                "Potion\\s*[:=]\\s*\"minecraft:([a-z0-9_]+)\"",
+                java.util.regex.Pattern.CASE_INSENSITIVE
+        );
+        java.util.regex.Matcher m = p.matcher(source);
+        if (m.find()) {
+            return m.group(1);
+        }
+        return null;
+    }
+
+    public static java.util.List<String> parsePotionEffectLabels(String itemJson) {
+        java.util.List<String> labels = new java.util.ArrayList<>();
+        if (itemJson == null || itemJson.isEmpty()) {
+            return labels;
+        }
+
+        try {
+            com.google.gson.JsonObject json = com.google.gson.JsonParser.parseString(itemJson).getAsJsonObject();
+            java.util.List<PotionEffectData> effectDataList = new java.util.ArrayList<>();
+
+            String potionType = extractPotionKey(json, itemJson);
+            if (potionType != null && !potionType.isEmpty()) {
+                effectDataList.addAll(buildBasePotionEffects(potionType));
+            }
+
+            if (json.has("potionEffects") && json.get("potionEffects").isJsonArray()) {
+                com.google.gson.JsonArray effects = json.getAsJsonArray("potionEffects");
+                for (int i = 0; i < effects.size(); i++) {
+                    if (!effects.get(i).isJsonObject()) continue;
+                    com.google.gson.JsonObject effect = effects.get(i).getAsJsonObject();
+                    String type = effect.has("type") ? effect.get("type").getAsString() : "";
+                    int amplifier = effect.has("amplifier") ? effect.get("amplifier").getAsInt() : 0;
+                    int duration = effect.has("duration") ? effect.get("duration").getAsInt() : 0;
+                    effectDataList.add(new PotionEffectData(type, amplifier, duration));
+                }
+            }
+
+            for (PotionEffectData data : effectDataList) {
+                labels.add(formatPotionEffectLabel(data.type, data.amplifier, data.durationTicks));
+            }
+            labels.addAll(buildPotionModifierLines(effectDataList));
+        } catch (Exception ignored) {
+        }
+
+        // 去重，保持顺序
+        java.util.LinkedHashSet<String> uniq = new java.util.LinkedHashSet<>(labels);
+        return new java.util.ArrayList<>(uniq);
+    }
+
+    private static java.util.List<PotionEffectData> buildBasePotionEffects(String potionType) {
+        java.util.List<PotionEffectData> list = new java.util.ArrayList<>();
+        String key = potionType == null ? "" : potionType.toLowerCase();
+        if (key.startsWith("minecraft:")) {
+            key = key.substring("minecraft:".length());
+        }
+
+        switch (key) {
+            case "swiftness":
+                list.add(new PotionEffectData("speed", 0, 180 * 20));
+                break;
+            case "long_swiftness":
+                list.add(new PotionEffectData("speed", 0, 480 * 20));
+                break;
+            case "strong_swiftness":
+                list.add(new PotionEffectData("speed", 1, 90 * 20));
+                break;
+            case "slowness":
+                list.add(new PotionEffectData("slowness", 0, 90 * 20));
+                break;
+            case "long_slowness":
+                list.add(new PotionEffectData("slowness", 0, 240 * 20));
+                break;
+            case "strong_slowness":
+                list.add(new PotionEffectData("slowness", 3, 20 * 20));
+                break;
+            case "strength":
+                list.add(new PotionEffectData("strength", 0, 180 * 20));
+                break;
+            case "long_strength":
+                list.add(new PotionEffectData("strength", 0, 480 * 20));
+                break;
+            case "strong_strength":
+                list.add(new PotionEffectData("strength", 1, 90 * 20));
+                break;
+            case "healing":
+                list.add(new PotionEffectData("instant_health", 0, 0));
+                break;
+            case "strong_healing":
+                list.add(new PotionEffectData("instant_health", 1, 0));
+                break;
+            case "harming":
+                list.add(new PotionEffectData("instant_damage", 0, 0));
+                break;
+            case "strong_harming":
+                list.add(new PotionEffectData("instant_damage", 1, 0));
+                break;
+            case "poison":
+                list.add(new PotionEffectData("poison", 0, 45 * 20));
+                break;
+            case "long_poison":
+                list.add(new PotionEffectData("poison", 0, 120 * 20));
+                break;
+            case "strong_poison":
+                list.add(new PotionEffectData("poison", 1, 22 * 20));
+                break;
+            case "regeneration":
+                list.add(new PotionEffectData("regeneration", 0, 45 * 20));
+                break;
+            case "long_regeneration":
+                list.add(new PotionEffectData("regeneration", 0, 120 * 20));
+                break;
+            case "strong_regeneration":
+                list.add(new PotionEffectData("regeneration", 1, 22 * 20));
+                break;
+            case "leaping":
+                list.add(new PotionEffectData("jump_boost", 0, 180 * 20));
+                break;
+            case "long_leaping":
+                list.add(new PotionEffectData("jump_boost", 0, 480 * 20));
+                break;
+            case "strong_leaping":
+                list.add(new PotionEffectData("jump_boost", 1, 90 * 20));
+                break;
+            case "night_vision":
+                list.add(new PotionEffectData("night_vision", 0, 180 * 20));
+                break;
+            case "long_night_vision":
+                list.add(new PotionEffectData("night_vision", 0, 480 * 20));
+                break;
+            case "invisibility":
+                list.add(new PotionEffectData("invisibility", 0, 180 * 20));
+                break;
+            case "long_invisibility":
+                list.add(new PotionEffectData("invisibility", 0, 480 * 20));
+                break;
+            case "water_breathing":
+                list.add(new PotionEffectData("water_breathing", 0, 180 * 20));
+                break;
+            case "long_water_breathing":
+                list.add(new PotionEffectData("water_breathing", 0, 480 * 20));
+                break;
+            case "fire_resistance":
+                list.add(new PotionEffectData("fire_resistance", 0, 180 * 20));
+                break;
+            case "long_fire_resistance":
+                list.add(new PotionEffectData("fire_resistance", 0, 480 * 20));
+                break;
+            case "slow_falling":
+                list.add(new PotionEffectData("slow_falling", 0, 90 * 20));
+                break;
+            case "long_slow_falling":
+                list.add(new PotionEffectData("slow_falling", 0, 240 * 20));
+                break;
+            case "weakness":
+                list.add(new PotionEffectData("weakness", 0, 90 * 20));
+                break;
+            case "long_weakness":
+                list.add(new PotionEffectData("weakness", 0, 240 * 20));
+                break;
+            case "luck":
+                list.add(new PotionEffectData("luck", 0, 300 * 20));
+                break;
+            case "turtle_master":
+                list.add(new PotionEffectData("slowness", 3, 20 * 20));
+                list.add(new PotionEffectData("resistance", 2, 20 * 20));
+                break;
+            case "long_turtle_master":
+                list.add(new PotionEffectData("slowness", 3, 40 * 20));
+                list.add(new PotionEffectData("resistance", 2, 40 * 20));
+                break;
+            case "strong_turtle_master":
+                list.add(new PotionEffectData("slowness", 5, 20 * 20));
+                list.add(new PotionEffectData("resistance", 3, 20 * 20));
+                break;
+            default:
+                break;
+        }
+        return list;
+    }
+
+    private static String formatPotionEffectLabel(String type, int amplifier, int durationTicks) {
+        String normalized = type == null ? "" : type.toLowerCase();
+        if (normalized.startsWith("minecraft:")) {
+            normalized = normalized.substring("minecraft:".length());
+        }
+        String zh = LANG_ZH_CN.get("effect.minecraft." + normalized);
+        if (zh == null || zh.isEmpty()) {
+            zh = normalized.isEmpty() ? "未知效果" : normalized.replace('_', ' ');
+        }
+
+        StringBuilder sb = new StringBuilder(zh);
+        if (amplifier >= 0) {
+            sb.append(" ").append(toRoman(amplifier + 1));
+        }
+        if (durationTicks > 0) {
+            int total = durationTicks / 20;
+            int min = total / 60;
+            int sec = total % 60;
+            sb.append(" (").append(min).append(":").append(String.format("%02d", sec)).append(")");
+        }
+        return sb.toString();
+    }
+
+    private static java.util.List<String> buildPotionModifierLines(java.util.List<PotionEffectData> effects) {
+        java.util.List<String> lines = new java.util.ArrayList<>();
+        java.util.List<String> modifiers = new java.util.ArrayList<>();
+        for (PotionEffectData data : effects) {
+            String effectKey = data.type == null ? "" : data.type.toLowerCase();
+            if (effectKey.startsWith("minecraft:")) {
+                effectKey = effectKey.substring("minecraft:".length());
+            }
+            if ("slowness".equals(effectKey)) {
+                int percent = -15 * (data.amplifier + 1);
+                modifiers.add(percent + "% 速度");
+            } else if ("speed".equals(effectKey)) {
+                int percent = 20 * (data.amplifier + 1);
+                modifiers.add("+" + percent + "% 速度");
+            }
+        }
+        if (!modifiers.isEmpty()) {
+            lines.add("当生效后：");
+            lines.addAll(modifiers);
+        }
+        return lines;
+    }
+
+    private static final class PotionEffectData {
+        private final String type;
+        private final int amplifier;
+        private final int durationTicks;
+
+        private PotionEffectData(String type, int amplifier, int durationTicks) {
+            this.type = type;
+            this.amplifier = amplifier;
+            this.durationTicks = durationTicks;
+        }
+    }
+
+    private static int parseSafeInt(String text, int fallback) {
+        try {
+            return Integer.parseInt(text);
+        } catch (Exception ignored) {
+            return fallback;
         }
     }
 
@@ -685,6 +949,18 @@ public class VelocityItemUtil {
             itemId = itemId.substring(10);
         }
 
+        String normalizedId = itemId.toLowerCase();
+        String mapped = LANG_ZH_CN.get("item.minecraft." + normalizedId);
+        if (mapped == null) {
+            mapped = LANG_ZH_CN.get("block.minecraft." + normalizedId);
+        }
+        if (mapped == null) {
+            mapped = ITEM_NAME_ZH_FALLBACK.get(normalizedId);
+        }
+        if (mapped != null) {
+            return mapped;
+        }
+
         // 将下划线替换为空格，并首字母大写
         String[] parts = itemId.split("_");
         StringBuilder result = new StringBuilder();
@@ -699,6 +975,130 @@ public class VelocityItemUtil {
         }
 
         return result.toString();
+    }
+
+    private static String toRoman(int value) {
+        if (value <= 0) {
+            return String.valueOf(value);
+        }
+        if (value > 20) {
+            return String.valueOf(value);
+        }
+        String[] romans = {
+            "", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X",
+            "XI", "XII", "XIII", "XIV", "XV", "XVI", "XVII", "XVIII", "XIX", "XX"
+        };
+        return romans[value];
+    }
+
+    private static Map<String, String> loadZhLangMap() {
+        Map<String, String> map = new HashMap<>();
+        try (InputStream in = VelocityItemUtil.class.getClassLoader().getResourceAsStream("lang/zh_cn.json")) {
+            if (in != null) {
+                mergeLangJson(map, new InputStreamReader(in, StandardCharsets.UTF_8));
+            }
+        } catch (Exception ignored) {
+        }
+
+        // 尝试拉取最新语言资源覆盖本地词条（网络异常时自动回退本地资源）
+        try {
+            HttpClient client = HttpClient.newBuilder()
+                    .connectTimeout(java.time.Duration.ofSeconds(4))
+                    .build();
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create("https://assets.mcasset.cloud/latest/assets/minecraft/lang/zh_cn.json"))
+                    .timeout(java.time.Duration.ofSeconds(6))
+                    .GET()
+                    .build();
+            HttpResponse<String> resp = client.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            if (resp.statusCode() >= 200 && resp.statusCode() < 300 && resp.body() != null && !resp.body().isEmpty()) {
+                mergeLangJson(map, new java.io.StringReader(resp.body()));
+            }
+        } catch (Exception ignored) {
+        }
+
+        return Collections.unmodifiableMap(map);
+    }
+
+    private static void mergeLangJson(Map<String, String> target, java.io.Reader reader) {
+        com.google.gson.JsonObject root = com.google.gson.JsonParser.parseReader(reader).getAsJsonObject();
+        for (Map.Entry<String, com.google.gson.JsonElement> entry : root.entrySet()) {
+            if (entry.getValue() != null && entry.getValue().isJsonPrimitive()
+                    && entry.getValue().getAsJsonPrimitive().isString()) {
+                target.put(entry.getKey(), entry.getValue().getAsString());
+            }
+        }
+    }
+
+    private static Map<String, String> createItemNameZhFallbackMap() {
+        Map<String, String> map = new HashMap<>();
+        map.put("stone", "石头");
+        map.put("cobblestone", "圆石");
+        map.put("dirt", "泥土");
+        map.put("grass_block", "草方块");
+        map.put("sand", "沙子");
+        map.put("gravel", "砂砾");
+        map.put("oak_log", "橡木原木");
+        map.put("birch_log", "白桦原木");
+        map.put("spruce_log", "云杉原木");
+        map.put("jungle_log", "丛林原木");
+        map.put("acacia_log", "金合欢原木");
+        map.put("dark_oak_log", "深色橡木原木");
+        map.put("mangrove_log", "红树原木");
+        map.put("cherry_log", "樱花木原木");
+        map.put("diamond", "钻石");
+        map.put("emerald", "绿宝石");
+        map.put("gold_ingot", "金锭");
+        map.put("iron_ingot", "铁锭");
+        map.put("netherite_ingot", "下界合金锭");
+        map.put("coal", "煤炭");
+        map.put("redstone", "红石");
+        map.put("lapis_lazuli", "青金石");
+        map.put("diamond_sword", "钻石剑");
+        map.put("diamond_pickaxe", "钻石镐");
+        map.put("diamond_axe", "钻石斧");
+        map.put("diamond_shovel", "钻石锹");
+        map.put("diamond_hoe", "钻石锄");
+        map.put("netherite_sword", "下界合金剑");
+        map.put("netherite_pickaxe", "下界合金镐");
+        map.put("netherite_axe", "下界合金斧");
+        map.put("netherite_shovel", "下界合金锹");
+        map.put("netherite_hoe", "下界合金锄");
+        map.put("bow", "弓");
+        map.put("crossbow", "弩");
+        map.put("trident", "三叉戟");
+        map.put("shield", "盾牌");
+        map.put("elytra", "鞘翅");
+        map.put("totem_of_undying", "不死图腾");
+        map.put("enchanted_golden_apple", "附魔金苹果");
+        map.put("golden_apple", "金苹果");
+        map.put("apple", "苹果");
+        map.put("bread", "面包");
+        map.put("carrot", "胡萝卜");
+        map.put("potato", "马铃薯");
+        map.put("cooked_beef", "熟牛肉");
+        map.put("beef", "生牛肉");
+        map.put("golden_carrot", "金胡萝卜");
+        map.put("cake", "蛋糕");
+        map.put("carrot_on_a_stick", "胡萝卜钓竿");
+        map.put("book", "书");
+        map.put("enchanted_book", "附魔书");
+        map.put("anvil", "铁砧");
+        map.put("experience_bottle", "附魔之瓶");
+        map.put("ender_pearl", "末影珍珠");
+        map.put("ender_eye", "末影之眼");
+        map.put("obsidian", "黑曜石");
+        map.put("water_bucket", "水桶");
+        map.put("lava_bucket", "熔岩桶");
+        map.put("bucket", "桶");
+        map.put("torch", "火把");
+        map.put("lantern", "灯笼");
+        map.put("crafting_table", "工作台");
+        map.put("furnace", "熔炉");
+        map.put("chest", "箱子");
+        map.put("ender_chest", "末影箱");
+        map.put("shulker_box", "潜影盒");
+        return Collections.unmodifiableMap(map);
     }
 
     /**

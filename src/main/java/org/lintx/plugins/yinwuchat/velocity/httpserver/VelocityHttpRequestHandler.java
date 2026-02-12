@@ -184,10 +184,27 @@ public class VelocityHttpRequestHandler extends SimpleChannelInboundHandler<Full
         if (host.contains(":")) host = host.split(":")[0];
         String proto = "ws";
         String forwardedProto = request.headers().get("X-Forwarded-Proto");
+        String forwardedPort = request.headers().get("X-Forwarded-Port");
+        boolean isBehindProxy = forwardedProto != null && !forwardedProto.isEmpty();
         if ("https".equalsIgnoreCase(forwardedProto)) proto = "wss";
         int port = org.lintx.plugins.yinwuchat.velocity.YinwuChat.getInstance().getConfig().wsport;
-        String wsUrl = proto + "://" + host + ":" + port + "/ws";
-        String json = "{\"ok\":true,\"wsPort\":" + port + ",\"wsPath\":\"/ws\",\"wsUrl\":\"" + wsUrl + "\"}";
+        // 通过反向代理访问时使用代理端口和新路径
+        String wsUrl;
+        String wsPath;
+        if (isBehindProxy) {
+            wsPath = "/new-ws";
+            String proxyPort = (forwardedPort != null && !forwardedPort.isEmpty()) ? forwardedPort : "31115";
+            // 如果是标准端口（443/80）则不显示端口号
+            if ("443".equals(proxyPort) || "80".equals(proxyPort)) {
+                wsUrl = proto + "://" + host + wsPath;
+            } else {
+                wsUrl = proto + "://" + host + ":" + proxyPort + wsPath;
+            }
+        } else {
+            wsPath = "/ws";
+            wsUrl = proto + "://" + host + ":" + port + wsPath;
+        }
+        String json = "{\"ok\":true,\"wsPort\":" + port + ",\"wsPath\":\"" + wsPath + "\",\"wsUrl\":\"" + wsUrl + "\"}";
         return json;
     }
 
