@@ -89,7 +89,7 @@ public class ViewItemCommand implements CommandExecutor {
             plugin.getLogger().info("Requested item from Velocity: " + itemId + " for player " + player.getName());
             
             // 设置超时清理
-            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            org.lintx.plugins.yinwuchat.Util.SchedulerUtil.runTaskLaterAsynchronously(plugin, () -> {
                 PendingRequest pending = pendingRequests.remove(itemId + ":" + player.getUniqueId());
                 if (pending != null) {
                     Player p = Bukkit.getPlayer(pending.playerUuid);
@@ -413,8 +413,8 @@ public class ViewItemCommand implements CommandExecutor {
      * 打开物品展示界面（静态方法，供外部调用）
      */
     private static void openDisplayInventoryStatic(YinwuChat plugin, Player player, ItemStack item, String ownerName) {
-        // 需要在主线程执行
-        Bukkit.getScheduler().runTask(plugin, () -> {
+        // 需要在玩家所在的区域线程执行（Folia）或主线程执行（Bukkit/Paper）
+        org.lintx.plugins.yinwuchat.Util.SchedulerUtil.runTaskForPlayer(plugin, player, () -> {
             String title = DISPLAY_TITLE_PREFIX + " - " + ownerName;
             Inventory display = Bukkit.createInventory(null, InventoryType.DISPENSER, title);
             

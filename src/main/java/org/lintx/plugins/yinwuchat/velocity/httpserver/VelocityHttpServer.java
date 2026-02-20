@@ -75,7 +75,8 @@ public class VelocityHttpServer {
     public void stop() {
         try {
             if (group != null) {
-                group.shutdownGracefully();
+                // 同步等待关闭完成，确保端口完全释放后再返回
+                group.shutdownGracefully().sync();
             }
         } catch (Exception e) {
             plugin.getLogger().warn("Error stopping WebSocket server", e);

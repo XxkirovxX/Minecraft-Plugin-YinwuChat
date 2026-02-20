@@ -63,6 +63,8 @@ public class VelocityWebSocketFrameHandler extends SimpleChannelInboundHandler<W
                     handlePrivateMessageAction(channel, (InputPrivateMessage) object);
                 } else if (object instanceof InputBindAccount) {
                     handleBindAccount(channel, (InputBindAccount) object);
+                } else if (object instanceof InputReadCursor) {
+                    handleReadCursorAction(channel, (InputReadCursor) object);
                 } else if (object instanceof InputAQQBot) {
                     // AQQBot (OneBot标准) 消息
                     handleAQQBotMessage(request);
@@ -95,7 +97,7 @@ public class VelocityWebSocketFrameHandler extends SimpleChannelInboundHandler<W
                 String playerName = PlayerConfig.getInstance().getTokenManager().getName(tokenCheck.getUuid());
                 if (playerName != null && !playerName.isEmpty()) {
                     org.lintx.plugins.yinwuchat.velocity.message.MessageManage.getInstance()
-                        .deliverOfflineMessagesToWeb(channel, playerName);
+                        .replayMessagesToWeb(channel, playerName);
                 }
                 
                 // 发送玩家列表
@@ -180,6 +182,18 @@ public class VelocityWebSocketFrameHandler extends SimpleChannelInboundHandler<W
         }
 
         MessageManage.getInstance().handleWebPrivateMessage(channel, util, inputPrivateMessage.getTo(), inputPrivateMessage.getMessage());
+    }
+
+    private void handleReadCursorAction(Channel channel, InputReadCursor inputReadCursor) {
+        VelocityWsClientUtil util = VelocityWsClientHelper.get(channel);
+        if (util == null || util.getUuid() == null) {
+            return;
+        }
+        String playerName = PlayerConfig.getInstance().getTokenManager().getName(util.getUuid());
+        if (playerName == null || playerName.isEmpty()) {
+            return;
+        }
+        MessageManage.getInstance().updateWebReadCursor(playerName, inputReadCursor.getChat(), inputReadCursor.getMessageId());
     }
 
     private void handleBindAccount(Channel channel, InputBindAccount input) {
