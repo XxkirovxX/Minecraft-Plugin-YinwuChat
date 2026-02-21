@@ -38,6 +38,8 @@
 - 2.12.71：支持 Web 端与 APP 同时使用同一账号登录，消息实时同步；web端头像改为 /helm/ 端点，显示双层皮肤（底层+头盔层）；新增 /chatban指令，实现 web 端封禁同步游戏端禁言，新增 /chatunban 解封指令，支持解除 /chatban 的封禁
 - 2.12.72：Web端UI优化，新增快捷选人功能，支持点击玩家列表快速发起私聊；新增 HarmonyOS（鸿蒙）原生应用支持，基于 ArkTS 开发，支持 HarmonyOS NEXT 5.0.0+，实现与 Web 端/Android 端相同的聊天功能
 - 2.12.73：增加了 Web 端物品展示功能，现在可以在游戏内向玩家和 Web 端玩家展示物品；修正服务器反代环境下 App 无法连接服务器的问题，现在可以正常连接
+- 2.12.74：新增服务器端消息缓存与重放，Web/App 用户上线后自动补发离线消息；新增未读消息分割线定位；修复 App 端消息重复与 WebSocket 连接问题；内嵌 HarmonyOS Sans 字体统一显示；优化图标自动渲染与 Velocity 控制台日志
+- 2.12.75：修复 Folia 服务端插件启动失败问题，新增 SchedulerUtil 调度工具类，通过反射兼容 Folia AsyncScheduler 与 EntityScheduler；ItemDisplayCache 与 ViewItemCommand 全面适配 Folia 区域线程调度；内嵌完整 HarmonyOS Sans SC 字体（6 字重）
 
 YinwuChat是Velocity代理插件和Spigot插件，主要功能有：
 1. 跨服聊天同步
@@ -167,6 +169,84 @@ format:
 - **生存服务器**: `[survival]玩家B >>> 欢迎来到生存服`
 - **创造服务器**: `[creative]玩家C >>> [物品展示]`
 
+### 定期广播
+
+#### 功能简介
+定期广播功能允许管理员配置多条自动循环广播消息，广播内容支持颜色代码、悬停提示和点击事件（将命令填入聊天栏）。游戏端和 Web 端均可接收广播。
+
+#### 配置文件
+配置文件路径：`velocity/plugins/YinwuChat/broadcast.yml`
+
+首次启动插件后会自动生成带有中文注释的默认配置文件，修改后执行 `/yinwuchat reload` 即可热重载。
+
+#### 字段说明
+
+| 字段 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `enable` | boolean | `false` | 是否启用该广播任务 |
+| `interval` | int | `300` | 广播间隔（秒），300 = 5分钟 |
+| `web` | boolean | `true` | 是否发送到 Web 端（独立控制，不受白名单/黑名单影响） |
+| `includeMode` | boolean | `false` | 白名单模式开关，开启后仅 `includeServers` 中的游戏服务器接收 |
+| `includeServers` | list | `[]` | 白名单服务器列表 |
+| `excludeMode` | boolean | `false` | 黑名单模式开关，开启后 `excludeServers` 中的游戏服务器不接收 |
+| `excludeServers` | list | `[]` | 黑名单服务器列表 |
+| `list` | list | - | 广播内容列表 |
+| `list[].message` | string | - | 显示文本，支持 `&` 颜色码（如 `&e` 黄色、`&b` 青色） |
+| `list[].hover` | string | （可选） | 鼠标悬停提示文本 |
+| `list[].click` | string | （可选） | 点击后填入聊天栏的命令 |
+
+> **注意：** `includeMode` 和 `excludeMode` 都关闭时，所有游戏服务器都接收；两者同时开启时 `includeMode` 优先。
+
+#### 使用场景示例
+
+**场景一：全服广播（默认，所有游戏服务器 + Web 端都接收）**
+```yaml
+tasks:
+  - enable: true
+    interval: 300
+    web: true
+    includeMode: false
+    includeServers: []
+    excludeMode: false
+    excludeServers: []
+    list:
+      - message: "&e[公告] &r欢迎来到服务器！"
+```
+
+**场景二：白名单模式（仅指定服务器接收，Web 端不接收）**
+```yaml
+tasks:
+  - enable: true
+    interval: 600
+    web: false
+    includeMode: true
+    includeServers: [survival, lobby]
+    excludeMode: false
+    excludeServers: []
+    list:
+      - message: "&a[生存/大厅] &r这条广播仅 survival 和 lobby 可见"
+```
+
+**场景三：黑名单模式（排除指定服务器，Web 端接收）**
+```yaml
+tasks:
+  - enable: true
+    interval: 300
+    web: true
+    includeMode: false
+    includeServers: []
+    excludeMode: true
+    excludeServers: [creative]
+    list:
+      - message: "&c[重要] &r这条广播除了 creative 以外的服务器都能收到"
+```
+
+#### 热重载
+修改 `broadcast.yml` 后，在游戏内或控制台执行以下命令即可重载广播配置，无需重启服务器：
+```
+/yinwuchat reload
+```
+
 ### 平台变更
 - **v2.12+**: 从BungeeCord迁移至Velocity代理平台
 - Velocity提供更好的性能和现代化的API设计
@@ -220,19 +300,19 @@ mvn clean package -P bukkit
 ### 输出文件
 
 构建完成后，在 `target/` 目录下会生成：
-- `YinwuChat-Velocity-2.12.73.jar` - Velocity 代理专用版本
-- `YinwuChat-Bukkit-2.12.73.jar` - Bukkit/Spigot 后端专用版本
-- `YinwuChat-2.12.73.jar` - 包含所有平台代码（向后兼容）
+- `YinwuChat-Velocity-2.12.75.jar` - Velocity 代理专用版本
+- `YinwuChat-Bukkit-2.12.75.jar` - Bukkit/Spigot 后端专用版本
+- `YinwuChat-2.12.75.jar` - 包含所有平台代码（向后兼容）
 
 ### 部署说明
 
 1. **Velocity 代理服务器**
-   - 安装：`YinwuChat-Velocity-2.12.73.jar`
-   - 位置：`plugins/YinwuChat-Velocity-2.12.73.jar`
+   - 安装：`YinwuChat-Velocity-2.12.75.jar`
+   - 位置：`plugins/YinwuChat-Velocity-2.12.75.jar`
 
 2. **Bukkit/Spigot 后端服务器**
-   - 安装：`YinwuChat-Bukkit-2.12.73.jar`
-   - 位置：`plugins/YinwuChat-Bukkit-2.12.73.jar`
+   - 安装：`YinwuChat-Bukkit-2.12.75.jar`
+   - 位置：`plugins/YinwuChat-Bukkit-2.12.75.jar`
 
 3. **配置文件**
    - 首次运行后会在相应插件目录生成配置文件

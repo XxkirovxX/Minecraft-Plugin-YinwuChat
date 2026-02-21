@@ -5,6 +5,36 @@
 ## [Unreleased]
 - 尚未整理的改动请先记录在此
 
+## [2.12.75] - 2026-02-20
+### 修复
+- 修复 Folia 服务端因 Bukkit Scheduler 不兼容导致插件启动失败的问题（`UnsupportedOperationException`）
+- 新增 `SchedulerUtil` 调度工具类，通过反射自动识别 Folia/Bukkit 环境并选择对应的任务调度器
+- `ItemDisplayCache` 缓存清理任务改用 `SchedulerUtil`，兼容 Folia 的 `AsyncScheduler`
+- `ViewItemCommand` 物品展示界面改用 Folia 的 `EntityScheduler`（区域线程），确保跨区块/跨服玩家可正常打开展示界面
+- 超时清理任务改用异步调度，兼容 Folia 异步任务机制
+
+### 优化
+- Web 端与 App 端内嵌完整 HarmonyOS Sans SC 字体（6 字重：Thin/Light/Regular/Medium/Bold/Black）
+
+## [2.12.74] - 2026-02-12
+### 新功能
+- 服务器端消息缓存与重放：Web/App 用户上线后自动补发离线期间的公屏与私聊消息（增量存储 + 游标机制）
+- 未读消息分割线：进入聊天界面时自动定位至上次阅读位置，方便快速查看未读消息
+- 内嵌 HarmonyOS Sans 字体：Web 端与 App 端统一使用 HarmonyOS Sans 字体，无需设备本地安装
+
+### 优化
+- 消息去重：App 端多连接/重连场景下不再出现重复消息（基于 messageId 的客户端去重）
+- 广播消息增加 messageId 与 time 字段，支持去重与正确时间戳显示
+- 进入聊天界面时自动滚动至最新消息
+- 功能图标自动渲染：修复首次打开页面时图标不显示的问题（MutationObserver 方案）
+- [i] 物品展示日间模式弹窗可读性优化
+- Velocity 控制台日志简化：[i] 物品展示不再输出大量调试信息
+
+### 修复
+- 修复 App 端 WebSocket 连接 1006 错误，改进连接策略与重试机制
+- 修复消息重放时时间戳显示为连接时间而非实际发送时间的问题
+- 修复未读分割线在重连后不能正确定位至上次阅读位置的问题
+
 ## [2.12.73] - 2026-02-13
 ### 新功能
 - 增加了 Web 端物品展示功能，现在可以在游戏内向玩家和 Web 端玩家展示物品

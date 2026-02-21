@@ -77,7 +77,11 @@ public class VelocityHttpRequestHandler extends SimpleChannelInboundHandler<Full
         String mime = getMimeType(file.getName());
         DefaultHttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
         HttpHeaders heads = response.headers();
-        heads.add(HttpHeaderNames.CONTENT_TYPE, mime + "; charset=UTF-8");
+        if (isTextMime(mime)) {
+            heads.add(HttpHeaderNames.CONTENT_TYPE, mime + "; charset=UTF-8");
+        } else {
+            heads.add(HttpHeaderNames.CONTENT_TYPE, mime);
+        }
         heads.add(HttpHeaderNames.CONTENT_LENGTH, fileLength);
         heads.add(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE);
 
@@ -253,11 +257,21 @@ public class VelocityHttpRequestHandler extends SimpleChannelInboundHandler<Full
             return "image/gif";
         } else if (filename.endsWith(".svg")) {
             return "image/svg+xml";
-        } else if (filename.endsWith(".woff") || filename.endsWith(".woff2")) {
+        } else if (filename.endsWith(".woff")) {
             return "font/woff";
+        } else if (filename.endsWith(".woff2")) {
+            return "font/woff2";
+        } else if (filename.endsWith(".ttf")) {
+            return "font/ttf";
+        } else if (filename.endsWith(".otf")) {
+            return "font/otf";
         } else {
             return "application/octet-stream";
         }
+    }
+
+    private boolean isTextMime(String mime) {
+        return mime != null && (mime.startsWith("text/") || "application/javascript".equals(mime) || "application/json".equals(mime));
     }
 
     @Override

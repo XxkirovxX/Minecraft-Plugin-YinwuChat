@@ -112,7 +112,7 @@ public class ItemDisplayCache {
         if (plugin == null) return;
         
         // 每5分钟清理一次过期缓存
-        Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, this::cleanupExpired, 
+        org.lintx.plugins.yinwuchat.Util.SchedulerUtil.runTaskTimerAsynchronously(plugin, this::cleanupExpired, 
             6000L, 6000L); // 6000 ticks = 5分钟
     }
     

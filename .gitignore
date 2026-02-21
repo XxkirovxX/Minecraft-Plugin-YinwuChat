@@ -20,5 +20,15 @@ Minecraft-Plugin-YinwuChat/
 # Logs
 *.log
 
+# Release artifacts
+release/
+
+# Signing keys
+*.keystore
+*.jks
+
+# HarmonyOS build cache
+**/.hvigor/
+
 # OS
 .DS_Store
