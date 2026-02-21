@@ -130,7 +130,7 @@ public class Config {
             HandleConfig position = new HandleConfig();
             position.placeholder = "\\[p\\]";
             position.format = new ArrayList<>();
-            position.format.add(new MessageFormat("&7[位置]","所在服务器：ServerName\n所在世界：%player_world%\n坐标：X:%player_x% Y:%player_y% Z:%player_z%",""));
+            position.format.add(new MessageFormat("&7[&cX:%player_x% &9Z:%player_z% &aY:%player_y%&7]","所在服务器：ServerName\n所在世界：%player_world%\n坐标：&cX:%player_x% &9Z:%player_z% &aY:%player_y%",""));
             messageHandles.add(position);
         }
         File file = new File(plugin.getDataFolder(),"config.yml");

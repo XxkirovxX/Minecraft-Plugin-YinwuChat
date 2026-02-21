@@ -2,10 +2,13 @@ package org.lintx.plugins.yinwuchat.velocity.httpserver;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
@@ -43,6 +46,22 @@ public class VelocityHttpServer {
                                 .addLast(new HttpServerCodec())
                                 .addLast(new HttpObjectAggregator(65536))
                                 .addLast(new ChunkedWriteHandler())
+                                .addLast("ws-path-rewrite", new ChannelInboundHandlerAdapter() {
+                                    @Override
+                                    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+                                        if (msg instanceof FullHttpRequest) {
+                                            FullHttpRequest req = (FullHttpRequest) msg;
+                                            String uri = req.uri();
+                                            if (uri.startsWith("/new-ws") || uri.startsWith("/new-chat/ws")) {
+                                                String newUri = "/ws";
+                                                int qIdx = uri.indexOf('?');
+                                                if (qIdx >= 0) newUri += uri.substring(qIdx);
+                                                req.setUri(newUri);
+                                            }
+                                        }
+                                        super.channelRead(ctx, msg);
+                                    }
+                                })
                                 .addLast(new WebSocketServerCompressionHandler())
                                 .addLast(new WebSocketServerProtocolHandler("/ws", null, true))
                                 .addLast(new VelocityWebSocketFrameHandler(plugin))

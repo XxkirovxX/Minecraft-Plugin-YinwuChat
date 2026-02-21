@@ -117,12 +117,43 @@ public class VelocityHttpRequestHandler extends SimpleChannelInboundHandler<Full
                 return;
             }
             if (path.equals("/api/auth/login")) {
-                sendJson(ctx, request, authService.toJson(authService.handleLogin(body)));
+                com.google.gson.JsonObject result = authService.handleLogin(body);
+                if (result.has("ok") && result.get("ok").getAsBoolean()) {
+                    String accountName = result.get("username").getAsString();
+                    String playerName = authService.getBoundPlayerName(accountName);
+                    if (playerName != null && !playerName.isEmpty()) {
+                        java.util.UUID uuid = org.lintx.plugins.yinwuchat.velocity.config.PlayerConfig.getInstance().getTokenManager().getUuidByName(playerName);
+                        if (uuid != null) {
+                            String playerToken = org.lintx.plugins.yinwuchat.velocity.config.PlayerConfig.getInstance().getTokenManager().getToken(uuid);
+                            if (playerToken != null) {
+                                result.addProperty("token", playerToken);
+                            }
+                        }
+                    }
+                }
+                sendJson(ctx, request, authService.toJson(result));
+                return;
+            }
+            if (path.equals("/api/auth/reset-token")) {
+                sendJson(ctx, request, authService.toJson(authService.handleResetToken(body, playerName -> {
+                    java.util.UUID uuid = org.lintx.plugins.yinwuchat.velocity.config.PlayerConfig.getInstance().getTokenManager().getUuidByName(playerName);
+                    if (uuid != null) {
+                        String oldToken = org.lintx.plugins.yinwuchat.velocity.config.PlayerConfig.getInstance().getTokenManager().getToken(uuid);
+                        if (oldToken != null) {
+                            io.netty.channel.Channel wsChannel = VelocityWsClientHelper.getWebSocket(oldToken);
+                            if (wsChannel != null) {
+                                NettyChannelMessageHelper.send(wsChannel,
+                                    org.lintx.plugins.yinwuchat.velocity.json.OutputServerMessage.infoJSON("Token 已被重置，连接即将断开").getJSON());
+                                wsChannel.close();
+                            }
+                        }
+                        org.lintx.plugins.yinwuchat.velocity.config.PlayerConfig.getInstance().getTokenManager().removeUuid(uuid);
+                    }
+                })));
                 return;
             }
             if (path.equals("/api/auth/delete")) {
                 sendJson(ctx, request, authService.toJson(authService.handleDeleteAccount(body, playerName -> {
-                    // Velocity 平台的 Token 删除逻辑
                     java.util.UUID uuid = org.lintx.plugins.yinwuchat.velocity.config.PlayerConfig.getInstance().getTokenManager().getUuidByName(playerName);
                     if (uuid != null) {
                         org.lintx.plugins.yinwuchat.velocity.config.PlayerConfig.getInstance().getTokenManager().removeUuid(uuid);
@@ -196,7 +227,7 @@ public class VelocityHttpRequestHandler extends SimpleChannelInboundHandler<Full
         String wsUrl;
         String wsPath;
         if (isBehindProxy) {
-            wsPath = "/new-ws";
+            wsPath = "/new-chat/ws";
             String proxyPort = (forwardedPort != null && !forwardedPort.isEmpty()) ? forwardedPort : "31115";
             // 如果是标准端口（443/80）则不显示端口号
             if ("443".equals(proxyPort) || "80".equals(proxyPort)) {

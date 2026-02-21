@@ -153,6 +153,33 @@ public class AuthService {
         }
     }
 
+    public JsonObject handleResetToken(String body, TokenDeleter tokenDeleter) {
+        try {
+            JsonObject request = parseBody(body);
+            AuthRequest auth = decryptAndVerify(request);
+            if (auth == null) {
+                return error("鉴权失败，请刷新后重试");
+            }
+            if (!userStore.verify(auth.username, auth.passwordHash)) {
+                return error("密码错误");
+            }
+            String playerName = getBoundPlayerName(auth.username);
+            if (playerName == null || playerName.isEmpty()) {
+                return error("该账号尚未绑定玩家，无需重置");
+            }
+            if (tokenDeleter != null) {
+                tokenDeleter.deleteToken(playerName);
+            }
+            JsonObject res = new JsonObject();
+            res.addProperty("ok", true);
+            res.addProperty("message", "Token 已重置，请重新连接并在游戏内绑定");
+            return res;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return error("重置失败: " + safeErrorMessage(e));
+        }
+    }
+
     public JsonObject handleDeleteAccount(String body, TokenDeleter tokenDeleter) {
         try {
             JsonObject request = parseBody(body);

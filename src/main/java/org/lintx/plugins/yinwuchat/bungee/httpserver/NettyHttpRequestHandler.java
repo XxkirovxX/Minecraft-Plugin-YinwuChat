@@ -149,12 +149,31 @@ public class NettyHttpRequestHandler extends SimpleChannelInboundHandler<FullHtt
                 return;
             }
             if (path.equals("/api/auth/login")) {
-                writeJson(ctx, request, authService.toJson(authService.handleLogin(body)));
+                com.google.gson.JsonObject result = authService.handleLogin(body);
+                if (result.has("ok") && result.get("ok").getAsBoolean()) {
+                    String accountName = result.get("username").getAsString();
+                    String playerName = authService.getBoundPlayerName(accountName);
+                    if (playerName != null && !playerName.isEmpty()) {
+                        java.util.UUID uuid = org.lintx.plugins.yinwuchat.bungee.config.PlayerConfig.getTokens().getUuidByName(playerName);
+                        if (uuid != null) {
+                            String playerToken = org.lintx.plugins.yinwuchat.bungee.config.PlayerConfig.getTokens().getToken(uuid);
+                            if (playerToken != null) {
+                                result.addProperty("token", playerToken);
+                            }
+                        }
+                    }
+                }
+                writeJson(ctx, request, authService.toJson(result));
+                return;
+            }
+            if (path.equals("/api/auth/reset-token")) {
+                writeJson(ctx, request, authService.toJson(authService.handleResetToken(body, playerName -> {
+                    org.lintx.plugins.yinwuchat.bungee.config.PlayerConfig.getTokens().removeUuidByName(playerName);
+                })));
                 return;
             }
             if (path.equals("/api/auth/delete")) {
                 writeJson(ctx, request, authService.toJson(authService.handleDeleteAccount(body, playerName -> {
-                    // Bungee 平台的 Token 删除逻辑
                     org.lintx.plugins.yinwuchat.bungee.config.PlayerConfig.getTokens().removeUuidByName(playerName);
                 })));
                 return;

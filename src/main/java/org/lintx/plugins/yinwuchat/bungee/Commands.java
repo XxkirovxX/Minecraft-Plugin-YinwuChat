@@ -265,7 +265,7 @@ public class Commands extends Command {
             else if (first.equalsIgnoreCase("bind")) {
                 if (player.hasPermission(Const.PERMISSION_BIND) || isDefault) {
                     if (args.length>=2) {
-                        String token = args[1];
+                        String token = args[1].trim().replaceAll("[^a-zA-Z0-9-]", "");
                         PlayerConfig.Tokens tokens = PlayerConfig.getTokens();
                         if (tokens.bindToken(token,player)){
                             sender.sendMessage(MessageUtil.newTextComponent(ChatColor.GREEN + "绑定成功"));

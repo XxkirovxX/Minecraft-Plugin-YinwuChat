@@ -383,6 +383,44 @@
             </div>
         </transition>
 
+        <!-- 重置 Token 弹窗 -->
+        <transition name="fade">
+            <div v-if="showResetToken" class="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+                <div class="w-full max-w-sm bg-beige-100 dark:bg-gray-900 rounded-2xl shadow-2xl border border-beige-200 dark:border-gray-700 p-6 space-y-4 animate-in zoom-in-95 duration-200">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                            <i data-lucide="key" class="w-5 h-5 text-amber-500"></i>
+                            重置 Token
+                        </h3>
+                        <button @click="showResetToken = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                            <i data-lucide="x" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                        重置后当前 Token 将失效，你需要重新连接并在游戏内执行 <code class="text-amber-600 dark:text-amber-400">/yinwuchat bind</code> 绑定新 Token。
+                    </p>
+                    <div class="space-y-3">
+                        <div class="relative group">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                                <i data-lucide="lock" class="w-4 h-4"></i>
+                            </div>
+                            <input v-model="resetTokenPassword" type="password" placeholder="输入账户密码以确认" 
+                                class="w-full pl-10 pr-4 py-3 bg-beige-50 dark:bg-gray-800 border-none rounded-xl text-sm focus:ring-2 focus:ring-amber-500 text-gray-900 dark:text-white transition-all outline-none">
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3 pt-2">
+                        <button @click="submitResetToken" :disabled="authLoading"
+                            class="flex-1 py-3 bg-amber-500 hover:bg-amber-600 text-white text-sm font-bold rounded-xl transition-all shadow-lg shadow-amber-500/30 active:scale-95 disabled:opacity-50">
+                            {{ authLoading ? '重置中...' : '确认重置' }}
+                        </button>
+                        <button @click="showResetToken = false" class="flex-1 py-3 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 text-sm font-bold rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all">
+                            取消
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </transition>
+
         <!-- 注销账户弹窗 -->
         <transition name="fade">
             <div v-if="showDeleteAccount" class="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
@@ -700,6 +738,10 @@
                         <i data-lucide="alert-circle" class="w-4 h-4 text-amber-500"></i>
                         后台保持运行
                     </button>
+                    <button @click="showResetToken = true" class="w-full py-2.5 flex items-center justify-center gap-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-900/40 text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/30 rounded-xl text-xs font-bold transition-all active:scale-95">
+                        <i data-lucide="key" class="w-4 h-4"></i>
+                        重置 Token
+                    </button>
                     <button @click="showDeleteAccount = true" class="w-full py-2.5 flex items-center justify-center gap-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/40 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-xl text-xs font-bold transition-all active:scale-95">
                         <i data-lucide="user-x" class="w-4 h-4"></i>
                         注销指定账户
@@ -773,6 +815,29 @@
                     <i data-lucide="alert-triangle" class="w-4 h-4"></i>
                     <span class="text-xs font-bold">你当前处于隐身状态，其他玩家无法在列表中看到你。</span>
                     <button @click="inputMsg = '/vanish'; sendMessage()" class="ml-4 underline text-xs font-medium hover:text-amber-100">点击取消隐身</button>
+                </div>
+
+                <!-- 广播置顶横幅 -->
+                <div v-if="pinnedBroadcastCount > 0" class="relative z-10 shrink-0">
+                    <div @click="broadcastPanelOpen = !broadcastPanelOpen"
+                         class="bg-amber-50 dark:bg-amber-900/30 border-b border-amber-200 dark:border-amber-700/40 px-4 py-2 flex items-center justify-between cursor-pointer hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors select-none">
+                        <div class="flex items-center gap-2">
+                            <span class="text-amber-600 dark:text-amber-400 text-sm">&#x1F4E2;</span>
+                            <span class="text-xs font-bold text-amber-700 dark:text-amber-300">系统广播 ({{ pinnedBroadcastCount }}条)</span>
+                        </div>
+                        <span class="text-[10px] text-amber-500 dark:text-amber-400 transition-transform duration-200"
+                              :class="broadcastPanelOpen ? 'rotate-180' : ''">&#x25BC;</span>
+                    </div>
+                    <div v-if="broadcastPanelOpen"
+                         class="bg-amber-50/90 dark:bg-amber-950/50 border-b border-amber-200 dark:border-amber-700/40 max-h-60 overflow-y-auto chat-scroll">
+                        <div v-for="(bc, idx) in pinnedBroadcastList" :key="bc.taskIndex"
+                             class="px-4 py-2.5" :class="idx < pinnedBroadcastList.length - 1 ? 'border-b border-amber-100 dark:border-amber-800/30' : ''">
+                            <div class="text-sm leading-relaxed text-amber-900 dark:text-amber-100"
+                                 v-html="formatBroadcastSegments(bc.segments || [], bc.chat)">
+                            </div>
+                            <div class="text-[9px] text-amber-400 mt-1 opacity-70">{{ bc.time }}</div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- 消息区域 -->
@@ -1068,6 +1133,8 @@
                 const authStep = ref('login');
                 const authLoading = ref(false);
                 const showDeleteAccount = ref(false);
+                const showResetToken = ref(false);
+                const resetTokenPassword = ref('');
                 const showAppKeepAliveTips = ref(false);
                 const showClearCacheConfirm = ref(false);
                 const banNotice = ref(null);
@@ -1270,6 +1337,15 @@
                 const playerStatusList = ref([]);
                 const selfName = ref('');
                 const isVanished = ref(localStorage.getItem('yinwuchat_vanished') === 'true');
+
+                const pinnedBroadcasts = ref(new Map());
+                const broadcastPanelOpen = ref(false);
+                const pinnedBroadcastCount = computed(() => pinnedBroadcasts.value.size);
+                const pinnedBroadcastList = computed(() => {
+                    return [...pinnedBroadcasts.value.values()]
+                        .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+                });
+
                 const playerRoster = computed(() => {
                     let list = [];
                     if (Array.isArray(playerStatusList.value) && playerStatusList.value.length > 0) {
@@ -1325,7 +1401,7 @@
 
                 const currentMessages = computed(() => {
                     if (currentChat.value === 'public') {
-                        return messages.value.filter(m => !m.to);
+                        return messages.value.filter(m => !m.to && m.type !== 'broadcast');
                     } else {
                         const target = currentChat.value;
                         return messages.value.filter(m => 
@@ -2299,6 +2375,70 @@
                     }
                 };
 
+                const submitResetToken = async () => {
+                    if (!isCryptoAvailable()) {
+                        showToast('浏览器不支持加密操作，请升级浏览器', 'error');
+                        return;
+                    }
+                    if (!resetTokenPassword.value) {
+                        showToast('请输入密码', 'error');
+                        return;
+                    }
+                    if (!currentUser.value) {
+                        showToast('请先登录', 'error');
+                        return;
+                    }
+                    authLoading.value = true;
+                    try {
+                        const handshake = await fetchHandshake();
+                        const passwordHash = await sha256Hex(resetTokenPassword.value);
+                        const saltedHash = await sha256Hex(passwordHash + handshake.nonce);
+                        const oaepHash = handshake.oaepHash || 'SHA-256';
+                        const payload = {
+                            username: currentUser.value,
+                            passwordHash,
+                            saltedHash,
+                            nonce: handshake.nonce
+                        };
+                        const encryptedPayload = await encryptPayloadHybrid(payload, handshake.publicKey, oaepHash);
+                        const hmac = await signHmac(handshake.hmacKey, `${encryptedPayload.payloadEnc}.${encryptedPayload.iv}`);
+                        const base = getHttpBaseUrl();
+                        const res = await fetchWithFallback(base, '/new-chat/api/auth/reset-token', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                handshakeId: handshake.handshakeId,
+                                payloadEnc: encryptedPayload.payloadEnc,
+                                keyEnc: encryptedPayload.keyEnc,
+                                iv: encryptedPayload.iv,
+                                hmac
+                            })
+                        });
+                        const data = await res.json();
+                        if (data.ok) {
+                            showToast(data.message || 'Token 已重置');
+                            showResetToken.value = false;
+                            resetTokenPassword.value = '';
+                            localStorage.removeItem('yinwuchat_token');
+                            localStorage.removeItem('yinwuchat_last_good_ws');
+                            token.value = '';
+                            lastGoodWsUrl.value = '';
+                            if (ws && ws.readyState === WebSocket.OPEN) {
+                                ws.close();
+                            }
+                            isConnected.value = false;
+                            authStep.value = 'connect';
+                            nextTick(() => lucide.createIcons());
+                        } else {
+                            showToast(data.message || '重置失败', 'error');
+                        }
+                    } catch (err) {
+                        showToast('重置请求失败，请稍后重试', 'error');
+                    } finally {
+                        authLoading.value = false;
+                    }
+                };
+
                 const submitDeleteAccount = async () => {
                     if (!isCryptoAvailable()) {
                         showToast('浏览器不支持加密操作，请升级浏览器', 'error');
@@ -2545,23 +2685,24 @@
                         
                         scrollToBottom();
                     } else if (data.action === 'broadcast') {
-                        // --- 消息去重 ---
-                        if (_isDuplicateMsg(data.message_id)) return;
-                        // 处理定期广播消息
+                        // 针对广播：由于多条广播可能共享相同的 messageId（特别是在旧数据结构中），
+                        // 这里我们取消严格的 messageId 去重，改用 task_index 在 map 中的覆盖机制。
+                        // 由于 pinnedBroadcasts.value 已经是根据 task_index 进行覆盖的，
+                        // WebSocket 重连时即使重新收到之前的广播消息，也只会覆盖自己，
+                        // 不会导致同一个任务出现多次。
+                        
+                        const taskIndex = data.task_index !== undefined ? data.task_index : 'default';
                         const segments = Array.isArray(data.segments) ? data.segments : [];
-                        const msg = {
-                            type: 'broadcast',
-                            player: '',
+                        const newMap = new Map(pinnedBroadcasts.value);
+                        newMap.set(taskIndex, {
+                            taskIndex: taskIndex,
                             chat: data.message || '',
                             segments: segments,
                             messageId: Number(data.message_id || 0) || null,
-                            replay: !!data.replay,
-                            isSelf: false,
+                            timestamp: data.time || Date.now(),
                             time: formatMessageTime(data.time || data.timestamp || data.ts)
-                        };
-                        messages.value.push(msg);
-                        saveLocalMessages();
-                        scrollToBottom();
+                        });
+                        pinnedBroadcasts.value = newMap;
                     } else if (data.action === 'player_list') {
                         gamePlayers.value = (data.players || []).map(p => ({
                             name: p.name,
@@ -3223,7 +3364,8 @@
                     isConnected, connecting, isDark, showSidebar, currentChat, inputMsg, 
                     isMobile, messages, playerRoster, unreadCount, toasts, wsStatus, currentMessages, unreadDividerIndex, chatContainer,
                     isAdmin, quickCommands, isVanished,
-                    showDeleteAccount, showAppKeepAliveTips, showClearCacheConfirm, banNotice, closeBanNotice, adminAlert, closeAdminAlert, itemPreview, closeItemPreview, atAllAdminConfirm, closeAtAllAdminConfirm, sendAtAllAdminExecute, deleteAccountForm, submitDeleteAccount,
+                    pinnedBroadcasts, broadcastPanelOpen, pinnedBroadcastCount, pinnedBroadcastList,
+                    showDeleteAccount, showResetToken, resetTokenPassword, submitResetToken, showAppKeepAliveTips, showClearCacheConfirm, banNotice, closeBanNotice, adminAlert, closeAdminAlert, itemPreview, closeItemPreview, atAllAdminConfirm, closeAtAllAdminConfirm, sendAtAllAdminExecute, deleteAccountForm, submitDeleteAccount,
                     forgotForm, resetPasswordForm, resetCode, goToForgot, submitForgotRequest, submitResetPassword,
                     connect, submitLogin, submitRegister, goToRegister, goToLogin, refreshCaptcha,
                     sendMessage, selectChat, acknowledgeUnreadForCurrentChat, mentionPlayer, logout, toggleDarkMode, clearCache, confirmClearCache, formatMessage, formatBroadcastSegments, formatMinecraftInline, getItemIconUrl, handleItemIconError,

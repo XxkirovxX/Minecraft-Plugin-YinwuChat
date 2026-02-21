@@ -9,6 +9,7 @@ import org.lintx.plugins.yinwuchat.Const;
 import org.lintx.plugins.yinwuchat.chat.struct.ChatPlayer;
 import org.lintx.plugins.yinwuchat.chat.struct.ChatSource;
 import org.lintx.plugins.yinwuchat.chat.struct.ChatType;
+import org.lintx.plugins.yinwuchat.json.HandleConfig;
 import org.lintx.plugins.yinwuchat.json.MessageFormat;
 import org.lintx.plugins.yinwuchat.json.PrivateMessage;
 import org.lintx.plugins.yinwuchat.velocity.announcement.AnnouncementTaskConfig;
@@ -610,7 +611,9 @@ public class MessageManage {
         Component messageComponent = chat.buildPublicMessage(publicMessage.format);
         
         // 广播消息到所有玩家，并向 Web 端附带结构化物品数据
-        broadcast(player.getUniqueId(), messageComponent, notQQ, publicMessage.items, publicMessage.chat);
+        // 对 rawChat 应用 handle 替换（如 [p] → 彩色坐标），确保 Web 端与游戏内显示一致
+        String webRawChat = applyHandlesToRawChat(publicMessage.chat, publicMessage.handles);
+        broadcast(player.getUniqueId(), messageComponent, notQQ, publicMessage.items, webRawChat);
         
         // 处理 @ 提及：发送声音提示和消息给被@的玩家
         handleAtMentionNotifications(player, publicMessage.chat);
@@ -1004,6 +1007,28 @@ public class MessageManage {
                 }
             }
         }
+    }
+
+    /**
+     * 将 HandleConfig（如 [p] 位置展示）中的占位符替换为已解析的格式文本，
+     * 使 Web 端 raw_chat 与游戏内显示保持一致。
+     */
+    private String applyHandlesToRawChat(String rawChat, List<HandleConfig> handles) {
+        if (rawChat == null || handles == null || handles.isEmpty()) return rawChat;
+        String result = rawChat;
+        for (HandleConfig handle : handles) {
+            if (handle.placeholder == null || handle.format == null) continue;
+            StringBuilder replacement = new StringBuilder();
+            for (MessageFormat fmt : handle.format) {
+                if (fmt.message != null) {
+                    replacement.append(fmt.message);
+                }
+            }
+            try {
+                result = result.replaceAll(handle.placeholder, Matcher.quoteReplacement(replacement.toString()));
+            } catch (Exception ignored) {}
+        }
+        return result;
     }
 
     /**
@@ -1480,11 +1505,11 @@ public class MessageManage {
         Config config = plugin.getConfig();
         List<MessageFormat> formats = config.formatConfig.format;
         
-        // 创建 VelocityChatPlayer
+        // 创建 VelocityChatPlayer，来源为 Web 时强制服务器名为 "Web"
         org.lintx.plugins.yinwuchat.chat.struct.VelocityChatPlayer fromPlayer;
         Optional<Player> onlinePlayer = plugin.getProxy().getPlayer(playerUuid);
         if (onlinePlayer.isPresent()) {
-            fromPlayer = new org.lintx.plugins.yinwuchat.chat.struct.VelocityChatPlayer(onlinePlayer.get());
+            fromPlayer = new org.lintx.plugins.yinwuchat.chat.struct.VelocityChatPlayer(onlinePlayer.get(), "Web");
         } else {
             fromPlayer = new org.lintx.plugins.yinwuchat.chat.struct.VelocityChatPlayer(playerUuid, playerName, "Web");
         }
@@ -1685,6 +1710,11 @@ public class MessageManage {
         NettyChannelMessageHelper.send(channel, cursorSnapshot.toString());
 
         for (WebChatReplayStore.PublicMessageRecord record : snapshot.publicMessages) {
+            // 跳过历史遗留的“系统广播”，防止它们出现在公屏聊天界面中
+            if (record.player != null && record.player.equals("系统广播")) {
+                continue;
+            }
+            
             JsonObject json = new JsonObject();
             json.addProperty("action", "send_message");
             json.addProperty("message", record.message);
@@ -1798,14 +1828,13 @@ public class MessageManage {
      * 广播公告消息到游戏端和Web端
      * 根据 AnnouncementTaskConfig 中的白名单/黑名单/Web 配置过滤发送目标
      * @param task 广播任务配置
+     * @param taskIndex 该任务在配置列表中的索引，用于Web端按任务去重
      */
-    public void broadcastAnnouncement(AnnouncementTaskConfig task) {
+    public void broadcastAnnouncement(AnnouncementTaskConfig task, int taskIndex) {
         if (task.list == null || task.list.isEmpty()) return;
 
-        // 构建 Adventure Component（用于游戏端）
         Component component = buildAnnouncementComponent(task.list);
 
-        // 游戏端：按白名单/黑名单过滤
         for (Player p : plugin.getProxy().getAllPlayers()) {
             p.getCurrentServer().ifPresent(conn -> {
                 if (task.shouldSendToServer(conn.getServerInfo().getName())) {
@@ -1814,9 +1843,8 @@ public class MessageManage {
             });
         }
 
-        // Web端：独立控制
         if (task.web) {
-            sendAnnouncementToWeb(task.list);
+            sendAnnouncementToWeb(task.list, taskIndex);
         }
     }
 
@@ -1849,9 +1877,9 @@ public class MessageManage {
 
     /**
      * 将广播消息发送到所有 WebSocket 客户端
-     * 使用 "broadcast" action，附带结构化的 segments 数据
+     * 使用 "broadcast" action，附带结构化的 segments 数据和 task_index
      */
-    private void sendAnnouncementToWeb(List<MessageFormat> formats) {
+    private void sendAnnouncementToWeb(List<MessageFormat> formats, int taskIndex) {
         if (!plugin.getConfig().openwsserver || YinwuChat.getWSServer() == null) return;
 
         try {
@@ -1878,20 +1906,14 @@ public class MessageManage {
                 segments.add(seg);
             }
 
-            // 存入 ReplayStore 以获得唯一 messageId
-            WebChatReplayStore store = getReplayStore();
-            long messageId = store != null
-                    ? store.appendPublicMessage("系统广播", "", plainText.toString(), null, null)
-                    : 0L;
+            // 取消存入 ReplayStore，广播不再进入聊天历史流
             long messageTime = System.currentTimeMillis();
 
             JsonObject json = new JsonObject();
             json.addProperty("action", "broadcast");
+            json.addProperty("task_index", taskIndex);
             json.addProperty("message", plainText.toString());
             json.add("segments", segments);
-            if (messageId > 0) {
-                json.addProperty("message_id", messageId);
-            }
             json.addProperty("time", messageTime);
 
             String jsonStr = new Gson().toJson(json);

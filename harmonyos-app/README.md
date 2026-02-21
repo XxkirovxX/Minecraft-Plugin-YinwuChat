@@ -138,8 +138,7 @@ Copy-Item "mobile-app\www\*" -Destination "harmonyos-app\entry\src\main\resource
 
 ## 版本信息
 
-- 应用版本：2.12.75
-- 版本代码：2127500
-- 版本代码：2127400
+- 应用版本：2.12.76
+- 版本代码：2127600
 - 包名：com.lintx.yinwuchat
 - 最低 API：12 (HarmonyOS 5.0.0)

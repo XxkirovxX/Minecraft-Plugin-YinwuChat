@@ -7,7 +7,6 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.lintx.plugins.yinwuchat.Const;
@@ -28,7 +27,7 @@ public class ViewItemCommand implements CommandExecutor {
     private final YinwuChat plugin;
     
     // 展示界面的标题前缀，用于识别展示界面
-    public static final String DISPLAY_TITLE_PREFIX = "§6物品展示";
+    public static final String DISPLAY_TITLE_PREFIX = "物品展示";
     
     // 等待 Velocity 响应的请求
     private static final Map<String, PendingRequest> pendingRequests = new ConcurrentHashMap<>();
@@ -413,23 +412,18 @@ public class ViewItemCommand implements CommandExecutor {
      * 打开物品展示界面（静态方法，供外部调用）
      */
     private static void openDisplayInventoryStatic(YinwuChat plugin, Player player, ItemStack item, String ownerName) {
-        // 需要在玩家所在的区域线程执行（Folia）或主线程执行（Bukkit/Paper）
         org.lintx.plugins.yinwuchat.Util.SchedulerUtil.runTaskForPlayer(plugin, player, () -> {
             String title = DISPLAY_TITLE_PREFIX + " - " + ownerName;
-            Inventory display = Bukkit.createInventory(null, InventoryType.DISPENSER, title);
+            Inventory display = Bukkit.createInventory(null, 27, title);
             
-            // 使用玻璃板填充其他格子
             ItemStack glass = createGlassPaneStatic();
-            for (int i = 0; i < 9; i++) {
-                if (i != 4) {
+            for (int i = 0; i < 27; i++) {
+                if (i != 13) {
                     display.setItem(i, glass);
                 }
             }
             
-            // 在中间位置放置展示的物品
-            display.setItem(4, item.clone());
-            
-            // 打开界面
+            display.setItem(13, item.clone());
             player.openInventory(display);
             
             plugin.getLogger().info("Player " + player.getName() + " viewing cross-server item from " + ownerName);
@@ -438,28 +432,24 @@ public class ViewItemCommand implements CommandExecutor {
     
     /**
      * 打开物品展示界面
-     * 使用类似发射器的 3x3 格界面
      */
     private void openDisplayInventory(Player player, ItemStack item, String ownerName) {
-        // 创建一个发射器类型的 3x3 界面
-        String title = DISPLAY_TITLE_PREFIX + " - " + ownerName;
-        Inventory display = Bukkit.createInventory(null, InventoryType.DISPENSER, title);
-        
-        // 使用玻璃板填充其他格子
-        ItemStack glass = createGlassPane();
-        for (int i = 0; i < 9; i++) {
-            if (i != 4) { // 除了中间格子以外
-                display.setItem(i, glass);
+        org.lintx.plugins.yinwuchat.Util.SchedulerUtil.runTaskForPlayer(plugin, player, () -> {
+            String title = DISPLAY_TITLE_PREFIX + " - " + ownerName;
+            Inventory display = Bukkit.createInventory(null, 27, title);
+            
+            ItemStack glass = createGlassPane();
+            for (int i = 0; i < 27; i++) {
+                if (i != 13) {
+                    display.setItem(i, glass);
+                }
             }
-        }
-        
-        // 在中间位置（索引 4）放置展示的物品
-        display.setItem(4, item.clone());
-        
-        // 打开界面
-        player.openInventory(display);
-        
-        plugin.getLogger().info("Player " + player.getName() + " viewing item from " + ownerName);
+            
+            display.setItem(13, item.clone());
+            player.openInventory(display);
+            
+            plugin.getLogger().info("Player " + player.getName() + " viewing item from " + ownerName);
+        });
     }
     
     /**

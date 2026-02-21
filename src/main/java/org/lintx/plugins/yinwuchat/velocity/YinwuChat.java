@@ -43,7 +43,7 @@ import java.util.concurrent.TimeUnit;
 @Plugin(
     id = "yinwuchat-velocity",
     name = "YinwuChat",
-    version = "2.12.75",
+    version = "2.12.76",
     description = "Cross-server chat synchronization for Velocity",
     authors = {"LinTx"}
 )
@@ -86,10 +86,16 @@ public class YinwuChat {
         
         proxy.getEventManager().register(this, new Listeners(this));
         
-        proxy.getChannelRegistrar().register(MinecraftChannelIdentifier.from(Const.PLUGIN_CHANNEL_VELOCITY));
+        try {
+            proxy.getChannelRegistrar().register(MinecraftChannelIdentifier.from(Const.PLUGIN_CHANNEL_VELOCITY));
+        } catch (Exception e) {
+            logger.warn("Failed to register velocity channel '{}': {}", Const.PLUGIN_CHANNEL_VELOCITY, e.getMessage());
+        }
         try {
             proxy.getChannelRegistrar().register(MinecraftChannelIdentifier.from(Const.PLUGIN_CHANNEL_BUKKIT));
-        } catch (Exception e) {}
+        } catch (Exception e) {
+            logger.warn("Failed to register bukkit channel '{}': {}", Const.PLUGIN_CHANNEL_BUKKIT, e.getMessage());
+        }
         
         CommandManager commandManager = proxy.getCommandManager();
         

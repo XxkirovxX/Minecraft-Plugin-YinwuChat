@@ -19,19 +19,19 @@ public class AnnouncementTask implements Runnable {
         }
 
         LocalDateTime now = LocalDateTime.now();
-        for (AnnouncementTaskConfig task : tasks) {
+        for (int i = 0; i < tasks.size(); i++) {
+            AnnouncementTaskConfig task = tasks.get(i);
             if (!task.enable) {
                 continue;
             }
 
             if (task.lastTime == null) {
-                // 首次执行，直接广播
-                MessageManage.getInstance().broadcastAnnouncement(task);
+                MessageManage.getInstance().broadcastAnnouncement(task, i);
                 task.lastTime = now;
             } else {
                 Duration duration = Duration.between(task.lastTime, now);
                 if (duration.toMillis() >= (long) task.interval * 1000) {
-                    MessageManage.getInstance().broadcastAnnouncement(task);
+                    MessageManage.getInstance().broadcastAnnouncement(task, i);
                     task.lastTime = now;
                 }
             }

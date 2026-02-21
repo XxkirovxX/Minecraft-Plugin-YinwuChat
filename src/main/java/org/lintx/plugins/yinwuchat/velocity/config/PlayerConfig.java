@@ -363,18 +363,22 @@ public class PlayerConfig {
                     Yaml yaml = new Yaml();
                     Map<String, Object> data = new LinkedHashMap<>();
                     Map<String, String> tokenData = new LinkedHashMap<>();
-                    for (Map.Entry<String, UUID> entry : tokens.entrySet()) {
-                        tokenData.put(entry.getKey(), entry.getValue() != null ? entry.getValue().toString() : "");
+                    synchronized (tokens) {
+                        for (Map.Entry<String, UUID> entry : tokens.entrySet()) {
+                            tokenData.put(entry.getKey(), entry.getValue() != null ? entry.getValue().toString() : "");
+                        }
                     }
                     data.put("tokens", tokenData);
                     Map<String, String> nameData = new LinkedHashMap<>();
-                    for (Map.Entry<UUID, String> entry : uuidToName.entrySet()) {
-                        nameData.put(entry.getKey().toString(), entry.getValue());
+                    synchronized (uuidToName) {
+                        for (Map.Entry<UUID, String> entry : uuidToName.entrySet()) {
+                            nameData.put(entry.getKey().toString(), entry.getValue());
+                        }
                     }
                     data.put("names", nameData);
                     yaml.dump(data, writer);
                 }
-            } catch (IOException e) {
+            } catch (Exception e) {
                 e.printStackTrace();
             }
         }
@@ -403,6 +407,10 @@ public class PlayerConfig {
         }
 
         public void bindToken(String token, UUID uuid, String name) {
+            String oldToken = uuidToToken.get(uuid);
+            if (oldToken != null && !oldToken.equals(token)) {
+                tokens.remove(oldToken);
+            }
             tokens.put(token, uuid);
             uuidToToken.put(uuid, token);
             if (name != null && !name.isEmpty()) {
@@ -433,6 +441,7 @@ public class PlayerConfig {
             return new ArrayList<>(uuidToName.values());
         }
 
+
         public UUID getUuidByName(String name) {
             if (name == null) return null;
             for (Map.Entry<UUID, String> entry : uuidToName.entrySet()) {
@@ -445,9 +454,12 @@ public class PlayerConfig {
 
         public void removeUuid(UUID uuid) {
             if (uuid == null) return;
-            String token = uuidToToken.remove(uuid);
-            if (token != null) {
-                tokens.remove(token);
+            uuidToToken.remove(uuid);
+            int removed = 0;
+            synchronized (tokens) {
+                tokens.entrySet().removeIf(entry -> {
+                    return uuid.equals(entry.getValue());
+                });
             }
             uuidToName.remove(uuid);
             save();
