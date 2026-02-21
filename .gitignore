@@ -20,5 +20,11 @@ Minecraft-Plugin-YinwuChat/
 # Logs
 *.log
 
+# Release binaries
+release/
+
+# Keystore
+*.keystore
+
 # OS
 .DS_Store

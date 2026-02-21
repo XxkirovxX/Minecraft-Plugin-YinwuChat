@@ -148,16 +148,18 @@ public class Listeners {
     private void handlePublicMessage(Player player, ByteArrayDataInput input) {
         try {
             String json = input.readUTF();
-            plugin.getLogger().info("Received public message from " + player.getUsername() + ": " + json);
-
             PublicMessage publicMessage = gson.fromJson(json, PublicMessage.class);
 
             if (publicMessage.chat == null || publicMessage.chat.isEmpty()) {
                 plugin.getLogger().debug("Public message chat is empty, ignoring");
                 return;
             }
-
-            plugin.getLogger().info("Processing public message: player=" + publicMessage.player + ", chat=" + publicMessage.chat + ", items=" + (publicMessage.items != null ? publicMessage.items.size() : 0));
+            int itemCount = publicMessage.items != null ? publicMessage.items.size() : 0;
+            if (publicMessage.chat.contains("[i]")) {
+                plugin.getLogger().info("[i] 物品展示已生成: player=" + publicMessage.player + ", items=" + itemCount);
+            } else {
+                plugin.getLogger().debug("Processing public message: player=" + publicMessage.player + ", chat=" + publicMessage.chat + ", items=" + itemCount);
+            }
 
             // 调用 MessageManage 处理消息（包含物品展示）
             MessageManage.getInstance().handleBukkitPublicMessage(player, publicMessage);
@@ -309,12 +311,10 @@ public class Listeners {
      */
     private void handleItemResponse(Player player, ByteArrayDataInput input) {
         try {
-            plugin.getLogger().info("Received item response for player " + player.getUsername());
             String jsonResponse = input.readUTF();
-            plugin.getLogger().info("Item response JSON: " + jsonResponse);
 
             ItemResponse response = gson.fromJson(jsonResponse, ItemResponse.class);
-            plugin.getLogger().info("Parsed response: success=" + response.success + ", items=" + (response.items != null ? response.items.size() : 0));
+            plugin.getLogger().debug("Parsed item response: player=" + player.getUsername() + ", success=" + response.success + ", items=" + (response.items != null ? response.items.size() : 0));
 
             // 委托给 MessageManage 处理
             MessageManage.getInstance().handleItemResponse(player, response);
@@ -418,7 +418,7 @@ public class Listeners {
             for (Player onlinePlayer : plugin.getProxy().getAllPlayers()) {
                 onlinePlayer.sendMessage(finalMessage);
             }
-            plugin.getLogger().info("Broadcast processed message from player " + player.getUsername());
+            plugin.getLogger().debug("Broadcast processed message from player " + player.getUsername());
 
         } catch (Exception e) {
             player.sendMessage(Component.text("处理聊天消息失败，请稍后再试", NamedTextColor.RED));

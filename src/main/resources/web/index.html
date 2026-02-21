@@ -12,10 +12,50 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <!-- Forge (Crypto Fallback) -->
     <script src="./forge.min.js"></script>
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        @font-face {
+            font-family: 'YinwuHarmonySans';
+            src: url('./fonts/HarmonyOS_Sans_SC_Thin.ttf') format('truetype');
+            font-style: normal;
+            font-weight: 100;
+            font-display: swap;
+        }
+        @font-face {
+            font-family: 'YinwuHarmonySans';
+            src: url('./fonts/HarmonyOS_Sans_SC_Light.ttf') format('truetype');
+            font-style: normal;
+            font-weight: 300;
+            font-display: swap;
+        }
+        @font-face {
+            font-family: 'YinwuHarmonySans';
+            src: url('./fonts/HarmonyOS_Sans_SC_Regular.ttf') format('truetype');
+            font-style: normal;
+            font-weight: 400;
+            font-display: swap;
+        }
+        @font-face {
+            font-family: 'YinwuHarmonySans';
+            src: url('./fonts/HarmonyOS_Sans_SC_Medium.ttf') format('truetype');
+            font-style: normal;
+            font-weight: 500;
+            font-display: swap;
+        }
+        @font-face {
+            font-family: 'YinwuHarmonySans';
+            src: url('./fonts/HarmonyOS_Sans_SC_Bold.ttf') format('truetype');
+            font-style: normal;
+            font-weight: 700;
+            font-display: swap;
+        }
+        @font-face {
+            font-family: 'YinwuHarmonySans';
+            src: url('./fonts/HarmonyOS_Sans_SC_Black.ttf') format('truetype');
+            font-style: normal;
+            font-weight: 900;
+            font-display: swap;
+        }
+        body { font-family: 'YinwuHarmonySans', 'HarmonyOS Sans SC', 'HarmonyOS Sans', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         .fade-enter-active, .fade-leave-active { transition: opacity 0.3s ease; }
         .fade-enter-from, .fade-leave-to { opacity: 0; }
         .slide-enter-active, .slide-leave-active { transition: transform 0.3s ease; }
@@ -343,6 +383,44 @@
             </div>
         </transition>
 
+        <!-- 重置 Token 弹窗 -->
+        <transition name="fade">
+            <div v-if="showResetToken" class="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+                <div class="w-full max-w-sm bg-beige-100 dark:bg-gray-900 rounded-2xl shadow-2xl border border-beige-200 dark:border-gray-700 p-6 space-y-4 animate-in zoom-in-95 duration-200">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                            <i data-lucide="key" class="w-5 h-5 text-amber-500"></i>
+                            重置 Token
+                        </h3>
+                        <button @click="showResetToken = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                            <i data-lucide="x" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                        重置后当前 Token 将失效，你需要重新连接并在游戏内执行 <code class="text-amber-600 dark:text-amber-400">/yinwuchat bind</code> 绑定新 Token。
+                    </p>
+                    <div class="space-y-3">
+                        <div class="relative group">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                                <i data-lucide="lock" class="w-4 h-4"></i>
+                            </div>
+                            <input v-model="resetTokenPassword" type="password" placeholder="输入账户密码以确认" 
+                                class="w-full pl-10 pr-4 py-3 bg-beige-50 dark:bg-gray-800 border-none rounded-xl text-sm focus:ring-2 focus:ring-amber-500 text-gray-900 dark:text-white transition-all outline-none">
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3 pt-2">
+                        <button @click="submitResetToken" :disabled="authLoading"
+                            class="flex-1 py-3 bg-amber-500 hover:bg-amber-600 text-white text-sm font-bold rounded-xl transition-all shadow-lg shadow-amber-500/30 active:scale-95 disabled:opacity-50">
+                            {{ authLoading ? '重置中...' : '确认重置' }}
+                        </button>
+                        <button @click="showResetToken = false" class="flex-1 py-3 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 text-sm font-bold rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all">
+                            取消
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </transition>
+
         <!-- 注销账户弹窗 -->
         <transition name="fade">
             <div v-if="showDeleteAccount" class="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
@@ -540,41 +618,41 @@
         <!-- 物品详情弹窗 -->
         <transition name="fade">
             <div v-if="itemPreview" class="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" @click.self="closeItemPreview">
-                <div class="w-auto max-w-[90vw] bg-beige-100 dark:bg-gray-900 rounded-2xl shadow-2xl border border-beige-200 dark:border-gray-700 p-6 space-y-4 animate-in zoom-in-95 duration-200">
+                <div class="w-auto max-w-[90vw] bg-gray-900 rounded-2xl shadow-2xl border border-gray-700 p-6 space-y-4 animate-in zoom-in-95 duration-200">
                     <div class="flex items-center justify-between gap-4">
-                        <h3 class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2 shrink-0">
+                        <h3 class="text-lg font-bold text-white flex items-center gap-2 shrink-0">
                             <i data-lucide="package-search" class="w-5 h-5 text-primary-500"></i>
                             物品详情
                         </h3>
-                        <button @click="closeItemPreview" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                        <button @click="closeItemPreview" class="text-gray-400 hover:text-gray-300">
                             <i data-lucide="x" class="w-5 h-5"></i>
                         </button>
                     </div>
-                    <div class="text-sm text-gray-600 dark:text-gray-300 space-y-2">
+                    <div class="text-sm text-gray-300 space-y-2">
                         <div class="flex items-center gap-3">
                             <img :src="getItemIconUrl(itemPreview)" @error="handleItemIconError"
-                                class="w-12 h-12 rounded-lg border border-beige-300 dark:border-gray-700 bg-beige-50 dark:bg-gray-800 p-1 object-contain shrink-0"
+                                class="w-12 h-12 rounded-lg border border-gray-700 bg-gray-800 p-1 object-contain shrink-0"
                                 alt="物品图标" />
                             <div class="min-w-0">
-                                <div>名称：<span class="font-semibold text-gray-900 dark:text-white break-all" v-html="formatMinecraftInline(itemPreview.name || '物品')"></span></div>
-                                <div class="mt-1">数量：<span class="font-semibold text-gray-900 dark:text-white">{{ itemPreview.count || 1 }}</span></div>
+                                <div>名称：<span class="font-semibold text-white break-all" v-html="formatMinecraftInline(itemPreview.name || '物品')"></span></div>
+                                <div class="mt-1">数量：<span class="font-semibold text-white">{{ itemPreview.count || 1 }}</span></div>
                             </div>
                         </div>
                         <div v-if="itemPreview.enchantments && itemPreview.enchantments.length > 0">
                             附魔：
                             <ul class="mt-1 space-y-1 pl-4 list-disc max-h-40 overflow-auto pr-1 custom-scrollbar">
-                                <li v-for="(ench, idx) in itemPreview.enchantments" :key="'ench-' + idx" class="text-gray-800 dark:text-gray-200 whitespace-nowrap" v-html="formatMinecraftInline(ench)"></li>
+                                <li v-for="(ench, idx) in itemPreview.enchantments" :key="'ench-' + idx" class="text-gray-200 whitespace-nowrap" v-html="formatMinecraftInline(ench)"></li>
                             </ul>
                         </div>
                         <div v-if="itemPreview.lore && itemPreview.lore.length > 0">
                             描述：
                             <ul class="mt-1 space-y-1 pl-4 list-disc max-h-[60vh] overflow-auto pr-1 custom-scrollbar">
-                                <li v-for="(line, idx) in itemPreview.lore" :key="'lore-' + idx" class="text-gray-800 dark:text-gray-200 whitespace-nowrap" v-html="formatMinecraftInline(line)"></li>
+                                <li v-for="(line, idx) in itemPreview.lore" :key="'lore-' + idx" class="text-gray-200 whitespace-nowrap" v-html="formatMinecraftInline(line)"></li>
                             </ul>
                         </div>
                     </div>
                     <button @click="closeItemPreview"
-                        class="w-full py-3 bg-beige-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-sm font-bold rounded-xl hover:bg-beige-300 dark:hover:bg-gray-700 transition-all">
+                        class="w-full py-3 bg-gray-800 text-gray-300 text-sm font-bold rounded-xl hover:bg-gray-700 transition-all">
                         关闭
                     </button>
                 </div>
@@ -660,6 +738,10 @@
                         <i data-lucide="alert-circle" class="w-4 h-4 text-amber-500"></i>
                         后台保持运行
                     </button>
+                    <button @click="showResetToken = true" class="w-full py-2.5 flex items-center justify-center gap-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-900/40 text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/30 rounded-xl text-xs font-bold transition-all active:scale-95">
+                        <i data-lucide="key" class="w-4 h-4"></i>
+                        重置 Token
+                    </button>
                     <button @click="showDeleteAccount = true" class="w-full py-2.5 flex items-center justify-center gap-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/40 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-xl text-xs font-bold transition-all active:scale-95">
                         <i data-lucide="user-x" class="w-4 h-4"></i>
                         注销指定账户
@@ -735,12 +817,55 @@
                     <button @click="inputMsg = '/vanish'; sendMessage()" class="ml-4 underline text-xs font-medium hover:text-amber-100">点击取消隐身</button>
                 </div>
 
+                <!-- 广播置顶横幅 -->
+                <div v-if="pinnedBroadcastCount > 0" class="relative z-10 shrink-0">
+                    <div @click="broadcastPanelOpen = !broadcastPanelOpen"
+                         class="bg-amber-50 dark:bg-amber-900/30 border-b border-amber-200 dark:border-amber-700/40 px-4 py-2 flex items-center justify-between cursor-pointer hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors select-none">
+                        <div class="flex items-center gap-2">
+                            <span class="text-amber-600 dark:text-amber-400 text-sm">&#x1F4E2;</span>
+                            <span class="text-xs font-bold text-amber-700 dark:text-amber-300">系统广播 ({{ pinnedBroadcastCount }}条)</span>
+                        </div>
+                        <span class="text-[10px] text-amber-500 dark:text-amber-400 transition-transform duration-200"
+                              :class="broadcastPanelOpen ? 'rotate-180' : ''">&#x25BC;</span>
+                    </div>
+                    <div v-if="broadcastPanelOpen"
+                         class="bg-amber-50/90 dark:bg-amber-950/50 border-b border-amber-200 dark:border-amber-700/40 max-h-60 overflow-y-auto chat-scroll">
+                        <div v-for="(bc, idx) in pinnedBroadcastList" :key="bc.taskIndex"
+                             class="px-4 py-2.5" :class="idx < pinnedBroadcastList.length - 1 ? 'border-b border-amber-100 dark:border-amber-800/30' : ''">
+                            <div class="text-sm leading-relaxed text-amber-900 dark:text-amber-100"
+                                 v-html="formatBroadcastSegments(bc.segments || [], bc.chat)">
+                            </div>
+                            <div class="text-[9px] text-amber-400 mt-1 opacity-70">{{ bc.time }}</div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- 消息区域 -->
                 <main ref="chatContainer" class="flex-1 overflow-y-auto p-4 space-y-6 chat-scroll">
-                    <div v-for="(msg, index) in currentMessages" :key="index" 
-                        class="flex animate-in fade-in slide-in-from-bottom-2 duration-300 w-full"
-                        :class="[msg.isSelf ? 'justify-end' : 'justify-start']">
-                        <div class="flex gap-3 max-w-[85%] lg:max-w-[80%] min-w-0"
+                    <div v-for="(msg, index) in currentMessages" :key="index">
+                        <div v-if="index === unreadDividerIndex" @click="acknowledgeUnreadForCurrentChat" class="flex items-center gap-2 py-1 cursor-pointer select-none">
+                            <div class="h-px flex-1 bg-red-300/70 dark:bg-red-500/40"></div>
+                            <span class="text-[10px] font-bold text-red-600 dark:text-red-400 whitespace-nowrap">上次阅读处</span>
+                            <div class="h-px flex-1 bg-red-300/70 dark:bg-red-500/40"></div>
+                        </div>
+                        <div class="flex animate-in fade-in slide-in-from-bottom-2 duration-300 w-full"
+                            :class="[msg.type === 'broadcast' ? 'justify-center' : (msg.isSelf ? 'justify-end' : 'justify-start')]">
+                        <!-- 广播消息：居中系统样式 -->
+                        <div v-if="msg.type === 'broadcast'" class="max-w-[90%] lg:max-w-[85%]">
+                            <div class="flex items-center gap-2 justify-center mb-1">
+                                <div class="h-px flex-1 bg-amber-300/40 dark:bg-amber-500/30"></div>
+                                <span class="text-[10px] font-bold text-amber-600 dark:text-amber-400 tracking-wider uppercase">系统广播</span>
+                                <div class="h-px flex-1 bg-amber-300/40 dark:bg-amber-500/30"></div>
+                            </div>
+                            <div class="px-4 py-2.5 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/40 text-sm leading-relaxed text-amber-900 dark:text-amber-100 shadow-sm"
+                                v-html="formatBroadcastSegments(msg.segments || [], msg.chat)">
+                            </div>
+                            <div class="text-[9px] text-gray-400 mt-1 opacity-60 text-center">
+                                {{ msg.time }}
+                            </div>
+                        </div>
+                        <!-- 普通消息：聊天气泡 -->
+                        <div v-else class="flex gap-3 max-w-[85%] lg:max-w-[80%] min-w-0"
                             :class="[msg.isSelf ? 'flex-row-reverse' : 'flex-row']">
                             <!-- 头像 -->
                             <div class="w-10 h-10 rounded-full overflow-hidden bg-beige-200 dark:bg-gray-700 shrink-0 shadow-sm border border-beige-300 dark:border-gray-800">
@@ -903,7 +1028,7 @@
                     if (trimmed) return trimmed;
                     const injected = getInjectedDiscoveryBase();
                     if (injected) return injected;
-                    return 'server.yinwurealm.org:31115';
+                    return 'https://server.yinwurealm.org:31115/new-chat/';
                 };
                 const getInjectedServerBase = () => {
                     if (window.__YINWUCHAT_SERVER__) return String(window.__YINWUCHAT_SERVER__);
@@ -925,6 +1050,13 @@
                         url = (looksLikeIp ? 'http://' : 'https://') + url;
                     }
                     url = url.replace(/^wss:\/\//i, 'https://').replace(/^ws:\/\//i, 'http://');
+                    url = url.replace(/\/+$/, '');
+                    // 允许用户直接输入 /new-chat/ 页面地址，这里统一归一到站点根地址
+                    url = url
+                        .replace(/\/new-chat\/ws\/?$/i, '')
+                        .replace(/\/new-ws\/?$/i, '')
+                        .replace(/\/ws\/?$/i, '')
+                        .replace(/\/new-chat\/?$/i, '');
                     return url.replace(/\/+$/, '');
                 };
                 const normalizeWsUrl = (input) => {
@@ -938,12 +1070,14 @@
                 };
                 const buildWsUrlFromBase = (base) => {
                     if (!base) return '';
-                    const normalized = normalizeWsUrl(base);
+                    let normalized = normalizeWsUrl(base).replace(/\/+$/, '');
                     if (normalized.startsWith('ws://') || normalized.startsWith('wss://')) {
                         // 已经是完整 WS 路径时直接返回（兼容 /new-chat/ws、/new-ws、/ws）
                         if (/\/new-chat\/ws\/?$/i.test(normalized) || /\/new-ws\/?$/i.test(normalized) || /\/ws\/?$/i.test(normalized)) {
                             return normalized.replace(/\/+$/, '');
                         }
+                        // 兼容输入为 https://host/new-chat/ 的场景，避免拼接成 /new-chat/new-chat/ws
+                        normalized = normalized.replace(/\/new-chat\/?$/i, '');
                         return normalized.replace(/\/+$/, '') + '/new-chat/ws';
                     }
                     return '';
@@ -999,6 +1133,8 @@
                 const authStep = ref('login');
                 const authLoading = ref(false);
                 const showDeleteAccount = ref(false);
+                const showResetToken = ref(false);
+                const resetTokenPassword = ref('');
                 const showAppKeepAliveTips = ref(false);
                 const showClearCacheConfirm = ref(false);
                 const banNotice = ref(null);
@@ -1051,6 +1187,7 @@
                 const sidebarWidth = ref(getSidebarWidth());
                 const sidebarTranslateX = ref(-sidebarWidth.value);
                 const sidebarDragging = ref(false);
+                const chatContainer = ref(null);
                 const sidebarStartX = ref(0);
                 const sidebarStartY = ref(0);
                 const sidebarLastX = ref(0);
@@ -1070,6 +1207,38 @@
                 };
 
                 const messages = ref(loadLocalMessages()); 
+                const publicReadCursor = ref(0);
+                const privateReadCursor = ref({});
+                const sessionPublicDividerCursor = ref(0);
+                const sessionPrivateDividerCursor = ref({});
+                const dismissedUnreadDivider = ref({});
+                const DIVIDER_ANCHOR_KEY = 'yinwuchat_divider_anchor';
+                const dividerAnchorLoadedForConnection = ref(false);
+
+                // --- 消息去重：防止同一条消息因多连接/重连被重复添加 ---
+                const _seenMsgIds = new Set();
+                const _initSeenMsgIds = () => {
+                    _seenMsgIds.clear();
+                    // 从已有消息中初始化
+                    messages.value.forEach(m => {
+                        const id = Number(m && m.messageId ? m.messageId : 0);
+                        if (id > 0) _seenMsgIds.add(id);
+                    });
+                };
+                _initSeenMsgIds(); // 初始化时调用
+                const _isDuplicateMsg = (msgId) => {
+                    const id = Number(msgId || 0);
+                    if (id <= 0) return false; // 没有 messageId 的消息不做去重
+                    if (_seenMsgIds.has(id)) return true;
+                    _seenMsgIds.add(id);
+                    // 防止 Set 无限增长，保留最近的 2000 条
+                    if (_seenMsgIds.size > 2000) {
+                        const arr = [..._seenMsgIds];
+                        _seenMsgIds.clear();
+                        arr.slice(-1500).forEach(v => _seenMsgIds.add(v));
+                    }
+                    return false;
+                };
                 
                 // 保存消息到本地
                 const saveLocalMessages = () => {
@@ -1078,6 +1247,72 @@
                         const toSave = messages.value.slice(-100);
                         localStorage.setItem('yinwuchat_msg_cache', JSON.stringify(toSave));
                     } catch (e) {}
+                };
+
+                const buildLatestDividerAnchor = () => {
+                    const anchor = { public: 0, private: {} };
+                    for (const msg of messages.value) {
+                        const id = Number(msg && msg.messageId ? msg.messageId : 0);
+                        if (id <= 0) continue;
+                        if (!msg.to) {
+                            if (id > anchor.public) anchor.public = id;
+                            continue;
+                        }
+                        const peer = String(msg.isSelf ? msg.to : msg.player || '').toLowerCase();
+                        if (!peer) continue;
+                        const current = Number(anchor.private[peer] || 0);
+                        if (id > current) {
+                            anchor.private[peer] = id;
+                        }
+                    }
+                    return anchor;
+                };
+
+                const saveDividerAnchor = () => {
+                    try {
+                        localStorage.setItem(DIVIDER_ANCHOR_KEY, JSON.stringify(buildLatestDividerAnchor()));
+                    } catch (e) {}
+                };
+
+                const applyDividerAnchorFromLocal = () => {
+                    try {
+                        const raw = localStorage.getItem(DIVIDER_ANCHOR_KEY);
+                        if (!raw) return false;
+                        const parsed = JSON.parse(raw);
+                        const localPublic = Number(parsed.public || 0);
+                        const localPrivateRaw = parsed.private && typeof parsed.private === 'object' ? parsed.private : {};
+                        const localPrivate = {};
+                        Object.keys(localPrivateRaw).forEach((key) => {
+                            const normalizedKey = String(key || '').toLowerCase();
+                            const id = Number(localPrivateRaw[key] || 0);
+                            if (!normalizedKey || id <= 0) return;
+                            localPrivate[normalizedKey] = id;
+                        });
+                        const hasLocalAnchor = localPublic > 0 || Object.keys(localPrivate).length > 0;
+                        if (!hasLocalAnchor) return false;
+                        sessionPublicDividerCursor.value = localPublic;
+                        sessionPrivateDividerCursor.value = localPrivate;
+                        dismissedUnreadDivider.value = {};
+                        return true;
+                    } catch (e) {
+                        return false;
+                    }
+                };
+
+                const formatMessageTime = (payloadTime) => {
+                    const toDisplay = (millis) => new Date(millis).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    const numericTime = Number(payloadTime || 0);
+                    if (Number.isFinite(numericTime) && numericTime > 0) {
+                        return toDisplay(numericTime);
+                    }
+                    if (typeof payloadTime === 'string' && payloadTime.trim()) {
+                        const parsed = Date.parse(payloadTime);
+                        if (!Number.isNaN(parsed)) {
+                            return toDisplay(parsed);
+                        }
+                        return payloadTime;
+                    }
+                    return toDisplay(Date.now());
                 };
 
                 const sidebarOverlayOpacity = computed(() => {
@@ -1102,6 +1337,15 @@
                 const playerStatusList = ref([]);
                 const selfName = ref('');
                 const isVanished = ref(localStorage.getItem('yinwuchat_vanished') === 'true');
+
+                const pinnedBroadcasts = ref(new Map());
+                const broadcastPanelOpen = ref(false);
+                const pinnedBroadcastCount = computed(() => pinnedBroadcasts.value.size);
+                const pinnedBroadcastList = computed(() => {
+                    return [...pinnedBroadcasts.value.values()]
+                        .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+                });
+
                 const playerRoster = computed(() => {
                     let list = [];
                     if (Array.isArray(playerStatusList.value) && playerStatusList.value.length > 0) {
@@ -1146,6 +1390,7 @@
                 const unreadCount = ref({});
                 const toasts = ref([]);
                 const wsStatus = ref('closed');
+                const lastGoodWsUrl = ref(localStorage.getItem('yinwuchat_last_good_ws') || '');
                 let ws = null;
                 let toastId = 0;
                 let touchTimer = null;
@@ -1156,13 +1401,28 @@
 
                 const currentMessages = computed(() => {
                     if (currentChat.value === 'public') {
-                        return messages.value.filter(m => !m.to);
+                        return messages.value.filter(m => !m.to && m.type !== 'broadcast');
                     } else {
                         const target = currentChat.value;
                         return messages.value.filter(m => 
                             (m.to === target) || (m.player === target && m.to)
                         );
                     }
+                });
+                const unreadDividerIndex = computed(() => {
+                    const chatKey = currentChat.value === 'public' ? 'public' : currentChat.value.toLowerCase();
+                    if (dismissedUnreadDivider.value[chatKey]) return -1;
+                    const cursor = chatKey === 'public'
+                        ? Number(sessionPublicDividerCursor.value || 0)
+                        : Number((sessionPrivateDividerCursor.value[chatKey] || 0));
+                    if (cursor <= 0) return -1;
+                    for (let i = 0; i < currentMessages.value.length; i++) {
+                        const id = Number(currentMessages.value[i].messageId || 0);
+                        if (id > cursor) {
+                            return i;
+                        }
+                    }
+                    return -1;
                 });
 
                 const toggleDarkMode = () => {
@@ -1387,19 +1647,145 @@
                     return '';
                 };
 
-                const connectWebSocket = (url, allowFallback) => {
+                const withWsPath = (url, path) => {
+                    if (!url || !path) return url;
+                    return url
+                        .replace(/\/new-chat\/ws\/?$/i, path)
+                        .replace(/\/new-ws\/?$/i, path)
+                        .replace(/\/ws\/?$/i, path);
+                };
+
+                const buildWsUrlCandidates = (url) => {
+                    if (!url) return [];
+                    const candidates = [];
+                    const pushUnique = (value) => {
+                        if (!value) return;
+                        const normalized = String(value).replace(/\/+$/, '');
+                        if (!normalized) return;
+                        if (!candidates.includes(normalized)) {
+                            candidates.push(normalized);
+                        }
+                    };
+                    const primary = String(url || '').trim();
+                    const hostPart = primary.replace(/^wss?:\/\//i, '').split('/')[0].toLowerCase();
+                    const isLocalTarget = hostPart.includes('localhost') || hostPart.includes('127.0.0.1');
+                    // 移动端在公网环境优先尝试 wss，减少 1006 概率
+                    if (!isLocalTarget && primary.startsWith('ws://')) {
+                        pushUnique(toggleWsProtocol(primary));
+                    }
+                    pushUnique(primary);
+                    pushUnique(withWsPath(url, '/ws'));
+                    pushUnique(withWsPath(url, '/new-ws'));
+                    pushUnique(withWsPath(url, '/new-chat/ws'));
+                    return candidates;
+                };
+
+                /* ── 原生 WebSocket 桥接 ── */
+                let _nativeWsConnId = 0;
+                let _nativeWsPlugin = null; // 缓存 JS 侧注册的原生插件代理
+
+                // 诊断：在连接前把关键检测结果展示出来
+                const _diagNativeWs = () => {
+                    const cap = !!window.Capacitor;
+                    const isNative = cap && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform();
+                    const hasRegister = cap && typeof window.Capacitor.registerPlugin === 'function';
+                    let pluginOk = false;
+                    let regErr = '';
+                    if (isNative && hasRegister && !_nativeWsPlugin) {
+                        try {
+                            _nativeWsPlugin = window.Capacitor.registerPlugin('NativeWebSocket');
+                            pluginOk = !!_nativeWsPlugin;
+                        } catch (e) { regErr = String(e); }
+                    } else if (_nativeWsPlugin) {
+                        pluginOk = true;
+                    }
+                    return { cap, isNative, hasRegister, pluginOk, regErr };
+                };
+
+                const _isNativeWsAvailable = () => {
+                    try {
+                        const d = _diagNativeWs();
+                        return d.isNative && d.pluginOk;
+                    } catch (e) { return false; }
+                };
+
+                /**
+                 * 创建 WebSocket 连接。
+                 * - 在 Capacitor 原生环境下自动使用 NativeWebSocketPlugin（OkHttp + 信任全部证书），
+                 *   解决 Android WebView 原生 WS 对非标准/自签证书直接 1006 的问题。
+                 * - 在浏览器环境下退回标准 new WebSocket()。
+                 */
+                const createWebSocket = (url) => {
+                    const diag = _diagNativeWs();
+                    const useNative = diag.isNative && diag.pluginOk;
+                    console.log('[WS-Bridge] useNative=' + useNative + ', url=' + url);
+
+                    if (!useNative) {
+                        return new WebSocket(url);
+                    }
+                    const plugin = _nativeWsPlugin;
+                    const connId = ++_nativeWsConnId;
+                    // 清除上一次连接的监听器，避免幽灵事件
+                    try { plugin.removeAllListeners(); } catch (_) {}
+                    const wsLike = {
+                        url,
+                        readyState: 0, // CONNECTING
+                        onopen: null,
+                        onmessage: null,
+                        onclose: null,
+                        onerror: null,
+                        send(data) { plugin.send({ data }).catch(() => {}); },
+                        close(code, reason) {
+                            wsLike.readyState = 2; // CLOSING
+                            plugin.close({ code: code || 1000, reason: reason || '' }).catch(() => {});
+                        }
+                    };
+                    plugin.addListener('open', () => {
+                        if (connId !== _nativeWsConnId) return;
+                        wsLike.readyState = 1; // OPEN
+                        if (wsLike.onopen) wsLike.onopen({ type: 'open' });
+                    });
+                    plugin.addListener('message', (ev) => {
+                        if (connId !== _nativeWsConnId) return;
+                        if (wsLike.onmessage) wsLike.onmessage({ data: ev.data });
+                    });
+                    plugin.addListener('close', (ev) => {
+                        if (connId !== _nativeWsConnId) return;
+                        wsLike.readyState = 3; // CLOSED
+                        if (wsLike.onclose) wsLike.onclose({ code: ev.code, reason: ev.reason || '' });
+                    });
+                    plugin.addListener('error', (ev) => {
+                        if (connId !== _nativeWsConnId) return;
+                        console.warn('[NativeWS] error:', ev.message);
+                        if (wsLike.onerror) wsLike.onerror(new Error(ev.message || 'WebSocket error'));
+                    });
+                    // 发起连接
+                    plugin.connect({ url }).catch(err => {
+                        if (connId !== _nativeWsConnId) return;
+                        console.warn('[NativeWS] connect rejected:', err);
+                        wsLike.readyState = 3;
+                        if (wsLike.onerror) wsLike.onerror(new Error(errDetail));
+                        if (wsLike.onclose) wsLike.onclose({ code: 1006, reason: errDetail });
+                    });
+                    return wsLike;
+                };
+
+                const connectWebSocket = (url, allowFallback, onConnectFailed) => {
                     let opened = false;
                     try {
-                        ws = new WebSocket(url);
+                        ws = createWebSocket(url);
                     } catch (err) {
                         connecting.value = false;
                         showToast('无法建立连接: ' + err.message, 'error');
+                        if (typeof onConnectFailed === 'function') onConnectFailed();
                         return;
                     }
 
                     ws.onopen = () => {
                         opened = true;
                         wsStatus.value = 'open';
+                        lastGoodWsUrl.value = url;
+                        localStorage.setItem('yinwuchat_last_good_ws', url);
                         requestNotificationPermission(); // 请求通知权限
                         ws.send(JSON.stringify({
                             action: 'check_token',
@@ -1418,6 +1804,7 @@
                     };
 
                     ws.onclose = (evt) => {
+                        saveDividerAnchor();
                         wsStatus.value = 'closed';
                         isConnected.value = false;
                         connecting.value = false;
@@ -1425,10 +1812,13 @@
                         if (!opened && allowFallback) {
                             const altUrl = toggleWsProtocol(url);
                             if (altUrl && altUrl !== url) {
-                                showToast('连接失败，尝试备用协议', 'error');
-                                connectWebSocket(altUrl, false);
+                                showToast(`连接失败，尝试备用协议：${altUrl}`, 'error');
+                                connectWebSocket(altUrl, false, onConnectFailed);
                                 return;
                             }
+                        }
+                        if (!opened && typeof onConnectFailed === 'function') {
+                            onConnectFailed();
                         }
                         const code = evt && typeof evt.code === 'number' ? evt.code : '';
                         const reason = evt && evt.reason ? evt.reason : '';
@@ -1457,7 +1847,8 @@
                     isManualDisconnect.value = false;
                     bindAccountSent.value = false;
                     autoWsUrl.value = getAutoWsUrl();
-                    let resolvedWsUrl = manualWsUrl.value.trim() ? buildWsUrlFromBase(manualWsUrl.value.trim()) : autoWsUrl.value;
+                    const manualCandidate = manualWsUrl.value.trim() || savedManualWsUrl.value || '';
+                    let resolvedWsUrl = manualCandidate ? buildWsUrlFromBase(manualCandidate) : (lastGoodWsUrl.value || autoWsUrl.value);
                     if (!resolvedWsUrl && isLocalHostEnv()) {
                         const discovered = await discoverWsUrl();
                         if (discovered) {
@@ -1473,12 +1864,23 @@
                         showToast('无法自动识别 WebSocket 地址，请在高级配置中手动输入', 'error');
                         return;
                     }
-                    if (manualWsUrl.value.trim()) {
-                        savedManualWsUrl.value = manualWsUrl.value.trim();
+                    if (manualCandidate) {
+                        savedManualWsUrl.value = manualCandidate;
                         localStorage.setItem('yinwuchat_manual_ws', savedManualWsUrl.value);
                     }
+                    const wsCandidates = buildWsUrlCandidates(resolvedWsUrl);
+                    let candidateIndex = 0;
+                    const tryNextCandidate = () => {
+                        candidateIndex += 1;
+                        if (candidateIndex >= wsCandidates.length) {
+                            showToast('所有候选 WebSocket 地址都连接失败，请检查反代 WS 路由', 'error');
+                            return;
+                        }
+                        connectWebSocket(wsCandidates[candidateIndex], true, tryNextCandidate);
+                    };
                     connecting.value = true;
-                    connectWebSocket(resolvedWsUrl, true);
+                    showToast(`尝试连接：${wsCandidates[0]}`, 'info');
+                    connectWebSocket(wsCandidates[0], true, tryNextCandidate);
                 };
 
                 const goToRegister = async () => {
@@ -1973,6 +2375,70 @@
                     }
                 };
 
+                const submitResetToken = async () => {
+                    if (!isCryptoAvailable()) {
+                        showToast('浏览器不支持加密操作，请升级浏览器', 'error');
+                        return;
+                    }
+                    if (!resetTokenPassword.value) {
+                        showToast('请输入密码', 'error');
+                        return;
+                    }
+                    if (!currentUser.value) {
+                        showToast('请先登录', 'error');
+                        return;
+                    }
+                    authLoading.value = true;
+                    try {
+                        const handshake = await fetchHandshake();
+                        const passwordHash = await sha256Hex(resetTokenPassword.value);
+                        const saltedHash = await sha256Hex(passwordHash + handshake.nonce);
+                        const oaepHash = handshake.oaepHash || 'SHA-256';
+                        const payload = {
+                            username: currentUser.value,
+                            passwordHash,
+                            saltedHash,
+                            nonce: handshake.nonce
+                        };
+                        const encryptedPayload = await encryptPayloadHybrid(payload, handshake.publicKey, oaepHash);
+                        const hmac = await signHmac(handshake.hmacKey, `${encryptedPayload.payloadEnc}.${encryptedPayload.iv}`);
+                        const base = getHttpBaseUrl();
+                        const res = await fetchWithFallback(base, '/new-chat/api/auth/reset-token', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                handshakeId: handshake.handshakeId,
+                                payloadEnc: encryptedPayload.payloadEnc,
+                                keyEnc: encryptedPayload.keyEnc,
+                                iv: encryptedPayload.iv,
+                                hmac
+                            })
+                        });
+                        const data = await res.json();
+                        if (data.ok) {
+                            showToast(data.message || 'Token 已重置');
+                            showResetToken.value = false;
+                            resetTokenPassword.value = '';
+                            localStorage.removeItem('yinwuchat_token');
+                            localStorage.removeItem('yinwuchat_last_good_ws');
+                            token.value = '';
+                            lastGoodWsUrl.value = '';
+                            if (ws && ws.readyState === WebSocket.OPEN) {
+                                ws.close();
+                            }
+                            isConnected.value = false;
+                            authStep.value = 'connect';
+                            nextTick(() => lucide.createIcons());
+                        } else {
+                            showToast(data.message || '重置失败', 'error');
+                        }
+                    } catch (err) {
+                        showToast('重置请求失败，请稍后重试', 'error');
+                    } finally {
+                        authLoading.value = false;
+                    }
+                };
+
                 const submitDeleteAccount = async () => {
                     if (!isCryptoAvailable()) {
                         showToast('浏览器不支持加密操作，请升级浏览器', 'error');
@@ -2096,6 +2562,8 @@
                         // 兼容多种可能的成功状态码：true, 0, '0', 1000, "1000"
                         const statusOk = data.status === 0 || data.status === true || data.status === '0' || data.status === 1000 || data.status === '1000';
                         if (statusOk) {
+                            _initSeenMsgIds(); // 重连时重新初始化去重集合
+                            dividerAnchorLoadedForConnection.value = applyDividerAnchorFromLocal();
                             isConnected.value = true;
                             connecting.value = false;
                             showToast('欢迎回来，连接成功');
@@ -2137,9 +2605,30 @@
                             localStorage.setItem('yinwuchat_vanished', String(!!data.vanished));
                         }
                         sendBindAccount();
+                    } else if (data.action === 'read_cursor_snapshot') {
+                        const serverPublic = Number(data.public_last_read_id || 0);
+                        publicReadCursor.value = serverPublic;
+                        const privateMap = data.private_last_read || {};
+                        const normalizedMap = {};
+                        Object.keys(privateMap).forEach((key) => {
+                            normalizedMap[String(key).toLowerCase()] = Number(privateMap[key] || 0);
+                        });
+                        privateReadCursor.value = normalizedMap;
+                        // 使用 max(本地, 服务端) 确保分割线定位准确
+                        const localPublicCursor = Number(sessionPublicDividerCursor.value || 0);
+                        sessionPublicDividerCursor.value = Math.max(localPublicCursor, serverPublic);
+                        const mergedPrivate = { ...sessionPrivateDividerCursor.value };
+                        Object.keys(normalizedMap).forEach((key) => {
+                            mergedPrivate[key] = Math.max(Number(mergedPrivate[key] || 0), Number(normalizedMap[key] || 0));
+                        });
+                        sessionPrivateDividerCursor.value = mergedPrivate;
+                        dismissedUnreadDivider.value = {};
                     } else if (data.action === 'send_message' || data.action === 'private_message') {
                         const text = data.message || data.chat || '';
                         if (!text) return;
+
+                        // --- 消息去重 ---
+                        if (_isDuplicateMsg(data.message_id)) return;
                         
                         const isPrivate = data.action === 'private_message';
                         const isSelf = data.is_self || data.player === 'You';
@@ -2172,9 +2661,11 @@
                             chat: displayChat,
                             items: structuredItems,
                             server: data.server,
+                            messageId: Number(data.message_id || 0) || null,
+                            replay: !!data.replay,
                             isSelf: data.is_self || data.player === 'You',
                             to: data.to,
-                            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                            time: formatMessageTime(data.time || data.timestamp || data.ts)
                         };
                         messages.value.push(msg);
                         saveLocalMessages(); // 保存到本地
@@ -2193,6 +2684,25 @@
                         }
                         
                         scrollToBottom();
+                    } else if (data.action === 'broadcast') {
+                        // 针对广播：由于多条广播可能共享相同的 messageId（特别是在旧数据结构中），
+                        // 这里我们取消严格的 messageId 去重，改用 task_index 在 map 中的覆盖机制。
+                        // 由于 pinnedBroadcasts.value 已经是根据 task_index 进行覆盖的，
+                        // WebSocket 重连时即使重新收到之前的广播消息，也只会覆盖自己，
+                        // 不会导致同一个任务出现多次。
+                        
+                        const taskIndex = data.task_index !== undefined ? data.task_index : 'default';
+                        const segments = Array.isArray(data.segments) ? data.segments : [];
+                        const newMap = new Map(pinnedBroadcasts.value);
+                        newMap.set(taskIndex, {
+                            taskIndex: taskIndex,
+                            chat: data.message || '',
+                            segments: segments,
+                            messageId: Number(data.message_id || 0) || null,
+                            timestamp: data.time || Date.now(),
+                            time: formatMessageTime(data.time || data.timestamp || data.ts)
+                        });
+                        pinnedBroadcasts.value = newMap;
                     } else if (data.action === 'player_list') {
                         gamePlayers.value = (data.players || []).map(p => ({
                             name: p.name,
@@ -2253,15 +2763,18 @@
                         };
                         nextTick(() => lucide.createIcons());
                     } else if (data.action === 'server_message') {
+                        if (_isDuplicateMsg(data.message_id)) return;
                         const level = data.type || (data.status === 1 ? 'error' : 'info');
                         showToast(data.message || '服务器提示', level === 'error' ? 'error' : 'info');
                         messages.value.push({
                             player: '系统',
                             chat: data.message || '',
                             server: 'Server',
+                            messageId: Number(data.message_id || 0) || null,
+                            replay: !!data.replay,
                             isSelf: false,
                             to: null,
-                            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                            time: formatMessageTime(data.time || data.timestamp || data.ts)
                         });
                         saveLocalMessages(); // 保存到本地
                         scrollToBottom();
@@ -2285,6 +2798,7 @@
                     }
 
                     ws.send(JSON.stringify(payload));
+                    acknowledgeUnreadForCurrentChat();
                     inputMsg.value = '';
                     scrollToBottom();
                     
@@ -2308,7 +2822,7 @@
                     currentChat.value = target;
                     unreadCount.value[target] = 0;
                     if (isMobile.value) showSidebar.value = false;
-                    scrollToBottom();
+                    scrollToBottom(false);
                     nextTick(() => lucide.createIcons());
                 };
 
@@ -2365,21 +2879,106 @@
 
                 const logout = () => {
                     isManualDisconnect.value = true;
+                    saveDividerAnchor();
                     if (ws) ws.close();
                     isConnected.value = false;
                     bindAccountSent.value = false;
                 };
 
-                const scrollToBottom = () => {
+                const scrollToBottom = (smooth = true) => {
                     nextTick(() => {
-                        const container = document.querySelector('main');
+                        const container = chatContainer.value;
                         if (container) {
                             container.scrollTo({
                                 top: container.scrollHeight,
-                                behavior: 'smooth'
+                                behavior: smooth ? 'smooth' : 'auto'
                             });
                         }
                     });
+                };
+
+                let lucidePatched = false;
+                let iconObserver = null;
+                let iconRefreshTimer = null;
+                const patchLucideRenderer = () => {
+                    if (lucidePatched || !window.lucide || typeof window.lucide.createIcons !== 'function') return;
+                    const originalCreateIcons = window.lucide.createIcons.bind(window.lucide);
+                    window.lucide.createIcons = (...args) => {
+                        originalCreateIcons(...args);
+                        requestAnimationFrame(() => originalCreateIcons(...args));
+                        setTimeout(() => originalCreateIcons(...args), 120);
+                    };
+                    lucidePatched = true;
+                };
+
+                const refreshIcons = () => {
+                    // 首屏与条件渲染节点可能分多帧挂载，做多阶段兜底渲染
+                    patchLucideRenderer();
+                    nextTick(() => {
+                        lucide.createIcons();
+                        requestAnimationFrame(() => {
+                            lucide.createIcons();
+                            setTimeout(() => lucide.createIcons(), 120);
+                        });
+                    });
+                };
+
+                const scheduleIconRefresh = () => {
+                    if (iconRefreshTimer) return;
+                    iconRefreshTimer = setTimeout(() => {
+                        iconRefreshTimer = null;
+                        if (!document.querySelector('i[data-lucide]')) return;
+                        refreshIcons();
+                    }, 40);
+                };
+
+                const installIconObserver = () => {
+                    if (iconObserver || typeof MutationObserver === 'undefined') return;
+                    const root = document.getElementById('app');
+                    if (!root) return;
+                    iconObserver = new MutationObserver(() => {
+                        scheduleIconRefresh();
+                    });
+                    iconObserver.observe(root, {
+                        childList: true,
+                        subtree: true,
+                        attributes: true,
+                        attributeFilter: ['class', 'style']
+                    });
+                };
+
+                const sendReadCursor = (chatKey, messageId) => {
+                    if (!ws || wsStatus.value !== 'open') return;
+                    if (!chatKey || !messageId || messageId <= 0) return;
+                    ws.send(JSON.stringify({
+                        action: 'read_cursor',
+                        chat: chatKey,
+                        message_id: messageId
+                    }));
+                };
+
+                const acknowledgeUnreadForCurrentChat = () => {
+                    const list = currentMessages.value;
+                    if (!Array.isArray(list) || list.length === 0) return;
+                    const reversed = [...list].reverse();
+                    const latest = reversed.find(m => Number(m.messageId || 0) > 0);
+                    if (!latest) return;
+                    const latestId = Number(latest.messageId);
+                    if (currentChat.value === 'public') {
+                        dismissedUnreadDivider.value.public = true;
+                        publicReadCursor.value = Math.max(Number(publicReadCursor.value || 0), latestId);
+                        sendReadCursor('public', latestId);
+                    } else {
+                        const key = String(currentChat.value || '').toLowerCase();
+                        if (!key) return;
+                        dismissedUnreadDivider.value[key] = true;
+                        const current = Number(privateReadCursor.value[key] || 0);
+                        if (latestId > current) {
+                            privateReadCursor.value[key] = latestId;
+                            sendReadCursor(key, latestId);
+                        }
+                    }
+                    saveDividerAnchor();
                 };
 
                 const formatMessage = (chat, items = []) => {
@@ -2426,6 +3025,47 @@
                     }
                     return html;
                 };
+
+                /**
+                 * 格式化广播消息的 segments，支持颜色码和可点击命令
+                 */
+                const formatBroadcastSegments = (segments, fallbackChat) => {
+                    if (!segments || segments.length === 0) {
+                        return formatMessage(fallbackChat || '');
+                    }
+                    let html = '';
+                    for (const seg of segments) {
+                        if (!seg.text) continue;
+                        // 解析 Minecraft 颜色码
+                        let segHtml = formatMessage(seg.text);
+                        if (seg.click) {
+                            // 可点击片段：渲染为按钮样式，点击填入输入框
+                            const safeClick = seg.click.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+                            const hoverAttr = seg.hover ? ` title="${seg.hover.replace(/"/g, '&quot;')}"` : '';
+                            segHtml = `<span class="broadcast-cmd inline cursor-pointer px-1 py-0.5 rounded bg-amber-200/60 dark:bg-amber-700/40 hover:bg-amber-300/80 dark:hover:bg-amber-600/50 transition-colors border-b border-dashed border-amber-500 dark:border-amber-400" data-cmd="${safeClick}"${hoverAttr}>${segHtml}</span>`;
+                        } else if (seg.hover) {
+                            const hoverAttr = seg.hover.replace(/"/g, '&quot;');
+                            segHtml = `<span title="${hoverAttr}">${segHtml}</span>`;
+                        }
+                        html += segHtml;
+                    }
+                    return html;
+                };
+
+                /**
+                 * 处理广播消息中可点击命令的点击事件（事件委托）
+                 */
+                document.addEventListener('click', (e) => {
+                    const cmdEl = e.target.closest('.broadcast-cmd');
+                    if (cmdEl && cmdEl.dataset.cmd) {
+                        inputMsg.value = cmdEl.dataset.cmd + ' ';
+                        // 聚焦输入框
+                        nextTick(() => {
+                            const area = document.querySelector('textarea');
+                            if (area) area.focus();
+                        });
+                    }
+                });
 
                 window.addEventListener('resize', () => {
                     isMobile.value = window.innerWidth < 1024;
@@ -2595,8 +3235,18 @@
                 });
 
                 onMounted(async () => {
+                    if (savedManualWsUrl.value) {
+                        manualWsUrl.value = savedManualWsUrl.value;
+                    } else if (window.Capacitor) {
+                        // App 默认使用你指定的入口地址，首次安装无需手动填写
+                        manualWsUrl.value = 'https://server.yinwurealm.org:31115/new-chat/';
+                        savedManualWsUrl.value = manualWsUrl.value;
+                        localStorage.setItem('yinwuchat_manual_ws', savedManualWsUrl.value);
+                    }
                     if (isDark.value) document.documentElement.classList.add('dark');
-                    lucide.createIcons();
+                    patchLucideRenderer();
+                    installIconObserver();
+                    refreshIcons();
                     syncSidebarPosition();
                     document.addEventListener('click', handleItemTagClick);
                     
@@ -2639,22 +3289,29 @@
                 });
 
                 onBeforeUnmount(() => {
+                    saveDividerAnchor();
                     document.removeEventListener('click', handleItemTagClick);
+                    if (iconObserver) {
+                        iconObserver.disconnect();
+                        iconObserver = null;
+                    }
                 });
 
                 watch(isConnected, (val) => {
                     if (val) {
                         nextTick(() => {
-                            lucide.createIcons();
-                            // 进入聊天界面后滚动到最新消息
-                            scrollToBottom();
+                            refreshIcons();
+                            // 首次进入聊天界面时直接定位到最新消息，避免从顶部平滑滚动
+                            requestAnimationFrame(() => {
+                                scrollToBottom(false);
+                            });
                         });
                     }
                 });
 
                 watch(showSidebar, (val) => {
                     if (val) {
-                        nextTick(() => lucide.createIcons());
+                        refreshIcons();
                         sidebarAnimationActive.value = true;
                         // 展开动画关键：
                         // 1. 确保 sidebarTranslateX 初始处于关闭状态
@@ -2705,12 +3362,13 @@
                     token, authStep, authLoading, loginForm, registerForm, captchaImage, captchaId, currentUser,
                     advancedOpen, manualWsUrl, savedManualWsUrl, fillSavedWsUrl,
                     isConnected, connecting, isDark, showSidebar, currentChat, inputMsg, 
-                    isMobile, messages, playerRoster, unreadCount, toasts, wsStatus, currentMessages,
+                    isMobile, messages, playerRoster, unreadCount, toasts, wsStatus, currentMessages, unreadDividerIndex, chatContainer,
                     isAdmin, quickCommands, isVanished,
-                    showDeleteAccount, showAppKeepAliveTips, showClearCacheConfirm, banNotice, closeBanNotice, adminAlert, closeAdminAlert, itemPreview, closeItemPreview, atAllAdminConfirm, closeAtAllAdminConfirm, sendAtAllAdminExecute, deleteAccountForm, submitDeleteAccount,
+                    pinnedBroadcasts, broadcastPanelOpen, pinnedBroadcastCount, pinnedBroadcastList,
+                    showDeleteAccount, showResetToken, resetTokenPassword, submitResetToken, showAppKeepAliveTips, showClearCacheConfirm, banNotice, closeBanNotice, adminAlert, closeAdminAlert, itemPreview, closeItemPreview, atAllAdminConfirm, closeAtAllAdminConfirm, sendAtAllAdminExecute, deleteAccountForm, submitDeleteAccount,
                     forgotForm, resetPasswordForm, resetCode, goToForgot, submitForgotRequest, submitResetPassword,
                     connect, submitLogin, submitRegister, goToRegister, goToLogin, refreshCaptcha,
-                    sendMessage, selectChat, mentionPlayer, logout, toggleDarkMode, clearCache, confirmClearCache, formatMessage, formatMinecraftInline, getItemIconUrl, handleItemIconError,
+                    sendMessage, selectChat, acknowledgeUnreadForCurrentChat, mentionPlayer, logout, toggleDarkMode, clearCache, confirmClearCache, formatMessage, formatBroadcastSegments, formatMinecraftInline, getItemIconUrl, handleItemIconError,
                     handleTouchStart, handleTouchEnd, getAvatarName, getAvatarUrl, getTargetStatus,
                     showSettings, defaultDomain, saveDefaultDomain,
                     sidebarWidth, sidebarTranslateX, sidebarDragging, sidebarOverlayOpacity, sidebarOverlayVisible, sidebarBlur, sidebarAnimationActive,

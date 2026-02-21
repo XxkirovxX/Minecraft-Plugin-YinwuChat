@@ -9,8 +9,10 @@ import org.lintx.plugins.yinwuchat.Const;
 import org.lintx.plugins.yinwuchat.chat.struct.ChatPlayer;
 import org.lintx.plugins.yinwuchat.chat.struct.ChatSource;
 import org.lintx.plugins.yinwuchat.chat.struct.ChatType;
+import org.lintx.plugins.yinwuchat.json.HandleConfig;
 import org.lintx.plugins.yinwuchat.json.MessageFormat;
 import org.lintx.plugins.yinwuchat.json.PrivateMessage;
+import org.lintx.plugins.yinwuchat.velocity.announcement.AnnouncementTaskConfig;
 import org.lintx.plugins.yinwuchat.json.PublicMessage;
 import org.lintx.plugins.yinwuchat.velocity.YinwuChat;
 import org.lintx.plugins.yinwuchat.velocity.chat.*;
@@ -56,6 +58,9 @@ public class MessageManage {
     private final List<VelocityChatHandle> handles = new ArrayList<>();
     private final Map<UUID, String> pendingChatMessages = new ConcurrentHashMap<>();
     private org.lintx.plugins.yinwuchat.common.message.OfflineMessageStore offlineStore;
+    private WebChatReplayStore replayStore;
+    private static final int WEB_REPLAY_PUBLIC_LIMIT = 300;
+    private static final int WEB_REPLAY_PRIVATE_LIMIT = 300;
     
     public MessageManage() {
         // Initialize message handlers in order
@@ -85,6 +90,16 @@ public class MessageManage {
             }
         }
         return offlineStore;
+    }
+
+    private WebChatReplayStore getReplayStore() {
+        if (replayStore == null) {
+            YinwuChat current = getPluginSafe();
+            if (current != null) {
+                replayStore = new WebChatReplayStore(current.getDataFolder().toFile());
+            }
+        }
+        return replayStore;
     }
 
     /**
@@ -423,6 +438,7 @@ public class MessageManage {
                 jsonMsg.addProperty("action", "send_message");
                 jsonMsg.addProperty("message", message);
                 jsonMsg.addProperty("player", player.getUsername());
+                jsonMsg.addProperty("time", System.currentTimeMillis());
                 
                 String jsonStr = new Gson().toJson(jsonMsg);
                 NettyChannelMessageHelper.broadcast(jsonStr);
@@ -595,7 +611,9 @@ public class MessageManage {
         Component messageComponent = chat.buildPublicMessage(publicMessage.format);
         
         // 广播消息到所有玩家，并向 Web 端附带结构化物品数据
-        broadcast(player.getUniqueId(), messageComponent, notQQ, publicMessage.items, publicMessage.chat);
+        // 对 rawChat 应用 handle 替换（如 [p] → 彩色坐标），确保 Web 端与游戏内显示一致
+        String webRawChat = applyHandlesToRawChat(publicMessage.chat, publicMessage.handles);
+        broadcast(player.getUniqueId(), messageComponent, notQQ, publicMessage.items, webRawChat);
         
         // 处理 @ 提及：发送声音提示和消息给被@的玩家
         handleAtMentionNotifications(player, publicMessage.chat);
@@ -807,12 +825,18 @@ public class MessageManage {
         sendMessage(player, toComponent);
         // 发送给接收者
         sendMessage(toPlayer, fromComponent);
+
+        long privateMessageId = 0L;
+        WebChatReplayStore store = getReplayStore();
+        if (store != null) {
+            privateMessageId = store.appendPrivateMessage(player.getUsername(), toPlayer.getUsername(), privateMessage.chat);
+        }
         
         // 同步到发送者的 Web 端
-        syncPrivateMessageToWeb(player.getUniqueId(), player.getUsername(), toPlayer.getUsername(), privateMessage.chat, true);
+        syncPrivateMessageToWeb(player.getUniqueId(), player.getUsername(), toPlayer.getUsername(), privateMessage.chat, true, privateMessageId, false);
         
         // 同步到接收者的 Web 端
-        syncPrivateMessageToWeb(toPlayer.getUniqueId(), player.getUsername(), toPlayer.getUsername(), privateMessage.chat, false);
+        syncPrivateMessageToWeb(toPlayer.getUniqueId(), player.getUsername(), toPlayer.getUsername(), privateMessage.chat, false, privateMessageId, false);
 
         // 监听私聊（管理员可见）
         sendPrivateMonitor(player.getUsername(), toPlayer.getUsername(), privateMessage.chat);
@@ -909,6 +933,11 @@ public class MessageManage {
         if (plugin.getConfig().openwsserver && YinwuChat.getWSServer() != null) {
             try {
                 String webMessage = LegacyComponentSerializer.legacySection().serialize(component);
+                WebChatReplayStore store = getReplayStore();
+                long messageId = store != null
+                        ? store.appendPublicMessage(senderName, serverName, webMessage, rawChat, rawItems)
+                        : 0L;
+                long messageTime = System.currentTimeMillis();
                 for (io.netty.channel.Channel wsChannel : org.lintx.plugins.yinwuchat.velocity.httpserver.VelocityWsClientHelper.getChannels()) {
                     org.lintx.plugins.yinwuchat.velocity.httpserver.VelocityWsClientUtil util = 
                         org.lintx.plugins.yinwuchat.velocity.httpserver.VelocityWsClientHelper.get(wsChannel);
@@ -917,6 +946,10 @@ public class MessageManage {
                     json.addProperty("action", "send_message");
                     json.addProperty("message", webMessage);
                     json.addProperty("player", senderName != null ? senderName : "");
+                    json.addProperty("time", messageTime);
+                    if (messageId > 0) {
+                        json.addProperty("message_id", messageId);
+                    }
                     if (serverName != null && !serverName.isEmpty()) {
                         json.addProperty("server", serverName);
                     }
@@ -974,6 +1007,28 @@ public class MessageManage {
                 }
             }
         }
+    }
+
+    /**
+     * 将 HandleConfig（如 [p] 位置展示）中的占位符替换为已解析的格式文本，
+     * 使 Web 端 raw_chat 与游戏内显示保持一致。
+     */
+    private String applyHandlesToRawChat(String rawChat, List<HandleConfig> handles) {
+        if (rawChat == null || handles == null || handles.isEmpty()) return rawChat;
+        String result = rawChat;
+        for (HandleConfig handle : handles) {
+            if (handle.placeholder == null || handle.format == null) continue;
+            StringBuilder replacement = new StringBuilder();
+            for (MessageFormat fmt : handle.format) {
+                if (fmt.message != null) {
+                    replacement.append(fmt.message);
+                }
+            }
+            try {
+                result = result.replaceAll(handle.placeholder, Matcher.quoteReplacement(replacement.toString()));
+            } catch (Exception ignored) {}
+        }
+        return result;
     }
 
     /**
@@ -1295,11 +1350,17 @@ public class MessageManage {
             target.sendMessage(targetMessage);
         }
         
+        long privateMessageId = 0L;
+        WebChatReplayStore store = getReplayStore();
+        if (store != null) {
+            privateMessageId = store.appendPrivateMessage(sender.getUsername(), finalTargetName, message);
+        }
+
         // 同步到发送者的 Web 端
-        syncPrivateMessageToWeb(sender.getUniqueId(), sender.getUsername(), finalTargetName, message, true);
+        syncPrivateMessageToWeb(sender.getUniqueId(), sender.getUsername(), finalTargetName, message, true, privateMessageId, false);
         
         // 同步到接收者的 Web 端
-        syncPrivateMessageToWeb(targetUuid, sender.getUsername(), finalTargetName, message, false);
+        syncPrivateMessageToWeb(targetUuid, sender.getUsername(), finalTargetName, message, false, privateMessageId, false);
 
         // 监听私聊（管理员可见）
         sendPrivateMonitor(sender.getUsername(), finalTargetName, message);
@@ -1308,7 +1369,7 @@ public class MessageManage {
     /**
      * 同步私聊消息到 Web 端
      */
-    private void syncPrivateMessageToWeb(UUID playerUuid, String fromName, String toName, String message, boolean isSelf) {
+    private void syncPrivateMessageToWeb(UUID playerUuid, String fromName, String toName, String message, boolean isSelf, long messageId, boolean replay) {
         if (playerUuid == null) return;
         for (io.netty.channel.Channel wsChannel : org.lintx.plugins.yinwuchat.velocity.httpserver.VelocityWsClientHelper.getChannels()) {
             org.lintx.plugins.yinwuchat.velocity.httpserver.VelocityWsClientUtil util = 
@@ -1320,6 +1381,13 @@ public class MessageManage {
                 json.addProperty("to", toName);
                 json.addProperty("message", message);
                 json.addProperty("is_self", isSelf);
+                json.addProperty("time", System.currentTimeMillis());
+                if (messageId > 0) {
+                    json.addProperty("message_id", messageId);
+                }
+                if (replay) {
+                    json.addProperty("replay", true);
+                }
                 org.lintx.plugins.yinwuchat.velocity.httpserver.NettyChannelMessageHelper.send(wsChannel, json.toString());
             }
         }
@@ -1437,11 +1505,11 @@ public class MessageManage {
         Config config = plugin.getConfig();
         List<MessageFormat> formats = config.formatConfig.format;
         
-        // 创建 VelocityChatPlayer
+        // 创建 VelocityChatPlayer，来源为 Web 时强制服务器名为 "Web"
         org.lintx.plugins.yinwuchat.chat.struct.VelocityChatPlayer fromPlayer;
         Optional<Player> onlinePlayer = plugin.getProxy().getPlayer(playerUuid);
         if (onlinePlayer.isPresent()) {
-            fromPlayer = new org.lintx.plugins.yinwuchat.chat.struct.VelocityChatPlayer(onlinePlayer.get());
+            fromPlayer = new org.lintx.plugins.yinwuchat.chat.struct.VelocityChatPlayer(onlinePlayer.get(), "Web");
         } else {
             fromPlayer = new org.lintx.plugins.yinwuchat.chat.struct.VelocityChatPlayer(playerUuid, playerName, "Web");
         }
@@ -1519,6 +1587,12 @@ public class MessageManage {
             }
         }
 
+        long privateMessageId = 0L;
+        WebChatReplayStore replayStore = getReplayStore();
+        if (replayStore != null) {
+            privateMessageId = replayStore.appendPrivateMessage(fromPlayerName, finalTargetName, message);
+        }
+
         if (targetUuid == null) {
             // 存入离线消息
             org.lintx.plugins.yinwuchat.common.message.OfflineMessageStore store = getOfflineStore();
@@ -1535,7 +1609,7 @@ public class MessageManage {
                 org.lintx.plugins.yinwuchat.velocity.json.OutputServerMessage.infoJSON("玩家不在线，消息已留存").getJSON());
             
             // 发送给发送者 (WebSocket) - 同步到发送者的所有 Web 端
-            syncPrivateMessageToWeb(util.getUuid(), fromPlayerName, toPlayerName, message, true);
+            syncPrivateMessageToWeb(util.getUuid(), fromPlayerName, toPlayerName, message, true, privateMessageId, false);
             return;
         }
         
@@ -1573,10 +1647,10 @@ public class MessageManage {
         plugin.getProxy().getPlayer(util.getUuid()).ifPresent(sender -> sender.sendMessage(toMessage));
         
         // 发送给发送者 (WebSocket) - 同步到发送者的所有 Web 端
-        syncPrivateMessageToWeb(util.getUuid(), fromPlayerName, finalTargetName, message, true);
+        syncPrivateMessageToWeb(util.getUuid(), fromPlayerName, finalTargetName, message, true, privateMessageId, false);
         
         // 发送给接收者 (WebSocket) - 同步到接收者的所有 Web 端
-        syncPrivateMessageToWeb(targetUuid, fromPlayerName, finalTargetName, message, false);
+        syncPrivateMessageToWeb(targetUuid, fromPlayerName, finalTargetName, message, false, privateMessageId, false);
 
         // 监听私聊（管理员可见）
         sendPrivateMonitor(fromPlayerName, finalTargetName, message);
@@ -1615,6 +1689,78 @@ public class MessageManage {
             org.lintx.plugins.yinwuchat.velocity.httpserver.NettyChannelMessageHelper.send(channel, receiverJson.toString());
             notifyOfflineRead(msg.from, msg.to);
         }
+    }
+
+    public void replayMessagesToWeb(io.netty.channel.Channel channel, String playerName) {
+        if (channel == null || playerName == null || playerName.isEmpty()) return;
+        WebChatReplayStore store = getReplayStore();
+        if (store == null) return;
+
+        WebChatReplayStore.ReplaySnapshot snapshot =
+                store.createSnapshot(playerName, WEB_REPLAY_PUBLIC_LIMIT, WEB_REPLAY_PRIVATE_LIMIT);
+
+        JsonObject cursorSnapshot = new JsonObject();
+        cursorSnapshot.addProperty("action", "read_cursor_snapshot");
+        cursorSnapshot.addProperty("public_last_read_id", snapshot.publicLastReadId);
+        JsonObject privateCursor = new JsonObject();
+        for (Map.Entry<String, Long> entry : snapshot.privateLastReadByPeer.entrySet()) {
+            privateCursor.addProperty(entry.getKey(), entry.getValue());
+        }
+        cursorSnapshot.add("private_last_read", privateCursor);
+        NettyChannelMessageHelper.send(channel, cursorSnapshot.toString());
+
+        for (WebChatReplayStore.PublicMessageRecord record : snapshot.publicMessages) {
+            // 跳过历史遗留的“系统广播”，防止它们出现在公屏聊天界面中
+            if (record.player != null && record.player.equals("系统广播")) {
+                continue;
+            }
+            
+            JsonObject json = new JsonObject();
+            json.addProperty("action", "send_message");
+            json.addProperty("message", record.message);
+            json.addProperty("player", record.player);
+            json.addProperty("time", record.time);
+            json.addProperty("message_id", record.id);
+            json.addProperty("replay", true);
+            if (record.server != null && !record.server.isEmpty()) {
+                json.addProperty("server", record.server);
+            }
+            if (record.rawChat != null && !record.rawChat.isEmpty()) {
+                json.addProperty("raw_chat", buildWebChatTemplate(record.rawChat, record.rawItems == null ? 0 : record.rawItems.size()));
+            }
+            if (record.rawItems != null && !record.rawItems.isEmpty()) {
+                JsonArray webItems = buildWebItems(record.rawItems);
+                if (!webItems.isEmpty()) {
+                    json.add("items", webItems);
+                }
+            }
+            if (record.player != null && record.player.equalsIgnoreCase(playerName)) {
+                json.addProperty("is_self", true);
+            }
+            NettyChannelMessageHelper.send(channel, json.toString());
+        }
+
+        for (WebChatReplayStore.PrivateMessageRecord record : snapshot.privateMessages) {
+            JsonObject json = new JsonObject();
+            json.addProperty("action", "private_message");
+            json.addProperty("player", record.from);
+            json.addProperty("to", record.to);
+            json.addProperty("message", record.message);
+            json.addProperty("time", record.time);
+            json.addProperty("message_id", record.id);
+            json.addProperty("is_self", false);
+            json.addProperty("replay", true);
+            NettyChannelMessageHelper.send(channel, json.toString());
+        }
+    }
+
+    public void updateWebReadCursor(String playerName, String chat, long messageId) {
+        if (playerName == null || playerName.isEmpty()) return;
+        if (chat == null || chat.isEmpty()) return;
+        if (messageId <= 0) return;
+        WebChatReplayStore store = getReplayStore();
+        if (store == null) return;
+        store.updateReadCursor(playerName, chat, messageId);
     }
 
     private void notifyOfflineRead(String fromPlayer, String toPlayer) {
@@ -1675,6 +1821,108 @@ public class MessageManage {
                 continue;
             }
             p.sendMessage(monitor);
+        }
+    }
+
+    /**
+     * 广播公告消息到游戏端和Web端
+     * 根据 AnnouncementTaskConfig 中的白名单/黑名单/Web 配置过滤发送目标
+     * @param task 广播任务配置
+     * @param taskIndex 该任务在配置列表中的索引，用于Web端按任务去重
+     */
+    public void broadcastAnnouncement(AnnouncementTaskConfig task, int taskIndex) {
+        if (task.list == null || task.list.isEmpty()) return;
+
+        Component component = buildAnnouncementComponent(task.list);
+
+        for (Player p : plugin.getProxy().getAllPlayers()) {
+            p.getCurrentServer().ifPresent(conn -> {
+                if (task.shouldSendToServer(conn.getServerInfo().getName())) {
+                    sendMessage(p, component);
+                }
+            });
+        }
+
+        if (task.web) {
+            sendAnnouncementToWeb(task.list, taskIndex);
+        }
+    }
+
+    /**
+     * 从 MessageFormat 列表构建广播用的 Adventure Component
+     * 广播中的点击事件统一使用 SUGGEST_COMMAND（填入聊天栏）
+     */
+    private Component buildAnnouncementComponent(List<MessageFormat> formats) {
+        Component result = Component.empty();
+        for (MessageFormat format : formats) {
+            if (format.message == null || format.message.isEmpty()) continue;
+
+            Component part = LegacyComponentSerializer.legacyAmpersand().deserialize(format.message);
+
+            // 添加悬停提示
+            if (format.hover != null && !format.hover.isEmpty()) {
+                Component hoverComponent = LegacyComponentSerializer.legacyAmpersand().deserialize(format.hover);
+                part = part.hoverEvent(HoverEvent.showText(hoverComponent));
+            }
+
+            // 添加点击事件（统一使用 SUGGEST_COMMAND，将内容填入聊天栏）
+            if (format.click != null && !format.click.isEmpty()) {
+                part = part.clickEvent(ClickEvent.suggestCommand(format.click));
+            }
+
+            result = result.append(part);
+        }
+        return result;
+    }
+
+    /**
+     * 将广播消息发送到所有 WebSocket 客户端
+     * 使用 "broadcast" action，附带结构化的 segments 数据和 task_index
+     */
+    private void sendAnnouncementToWeb(List<MessageFormat> formats, int taskIndex) {
+        if (!plugin.getConfig().openwsserver || YinwuChat.getWSServer() == null) return;
+
+        try {
+            // 构建纯文本版本（用于兼容）
+            StringBuilder plainText = new StringBuilder();
+            for (MessageFormat format : formats) {
+                if (format.message != null) {
+                    plainText.append(format.message);
+                }
+            }
+
+            // 构建结构化 segments
+            JsonArray segments = new JsonArray();
+            for (MessageFormat format : formats) {
+                if (format.message == null || format.message.isEmpty()) continue;
+                JsonObject seg = new JsonObject();
+                seg.addProperty("text", format.message);
+                if (format.hover != null && !format.hover.isEmpty()) {
+                    seg.addProperty("hover", format.hover);
+                }
+                if (format.click != null && !format.click.isEmpty()) {
+                    seg.addProperty("click", format.click);
+                }
+                segments.add(seg);
+            }
+
+            // 取消存入 ReplayStore，广播不再进入聊天历史流
+            long messageTime = System.currentTimeMillis();
+
+            JsonObject json = new JsonObject();
+            json.addProperty("action", "broadcast");
+            json.addProperty("task_index", taskIndex);
+            json.addProperty("message", plainText.toString());
+            json.add("segments", segments);
+            json.addProperty("time", messageTime);
+
+            String jsonStr = new Gson().toJson(json);
+
+            for (io.netty.channel.Channel wsChannel : org.lintx.plugins.yinwuchat.velocity.httpserver.VelocityWsClientHelper.getChannels()) {
+                org.lintx.plugins.yinwuchat.velocity.httpserver.NettyChannelMessageHelper.send(wsChannel, jsonStr);
+            }
+        } catch (Exception e) {
+            plugin.getLogger().warn("[WebSocket] 广播消息发送失败: " + e.getMessage());
         }
     }
 }

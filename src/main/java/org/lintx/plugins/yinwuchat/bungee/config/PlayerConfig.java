@@ -264,6 +264,7 @@ public class PlayerConfig {
                 return newToken();
             }
             tokens.put(token,"");
+            save();
             return token;
         }
 
@@ -317,6 +318,33 @@ public class PlayerConfig {
                 }
             }
             return result;
+        }
+
+        public UUID getUuidByName(String name) {
+            if (name == null || name.isEmpty()) return null;
+            for (Map.Entry<UUID, Player> entry : configs.entrySet()) {
+                if (name.equalsIgnoreCase(entry.getValue().name)) {
+                    return entry.getKey();
+                }
+            }
+            for (UUID uuid : getAllUuids()) {
+                Player config = getConfig(uuid);
+                if (name.equalsIgnoreCase(config.name)) {
+                    return uuid;
+                }
+            }
+            return null;
+        }
+
+        public String getToken(UUID uuid) {
+            if (uuid == null) return null;
+            String pid = uuid.toString();
+            for (Map.Entry<String, String> entry : tokens.entrySet()) {
+                if (pid.equals(entry.getValue())) {
+                    return entry.getKey();
+                }
+            }
+            return null;
         }
 
         public void removeUuidByName(String name) {

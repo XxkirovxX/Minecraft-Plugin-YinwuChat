@@ -90,10 +90,22 @@ public class YinwuChat extends Plugin {
         MessageManage.setPlugin(this);
         getProxy().registerChannel(Const.PLUGIN_CHANNEL);
         getProxy().getPluginManager().registerListener(this,new Listeners(this));
-        getProxy().getPluginManager().registerCommand(this, new Commands(plugin,"yinwuchat"));
+        Commands yinwuChatCommand = new Commands(plugin,"yinwuchat");
+        getProxy().getPluginManager().registerCommand(this, yinwuChatCommand);
         getProxy().getPluginManager().registerCommand(this, new Commands(plugin,"chatban"));
         getProxy().getPluginManager().registerCommand(this, new Commands(plugin,"chatunban"));
-        getProxy().getPluginManager().registerCommand(this,new IgnoreCommand(this,"ignore"));
+        getProxy().getPluginManager().registerCommand(this, new IgnoreCommand(this,"ignore"));
+
+        // 注册独立禁言命令 (与 Velocity 端对齐)
+        getProxy().getPluginManager().registerCommand(this, new BungeeMuteCommand(this, "mute"));
+        getProxy().getPluginManager().registerCommand(this, new BungeeMuteCommand(this, "unmute"));
+        getProxy().getPluginManager().registerCommand(this, new BungeeMuteCommand(this, "muteinfo"));
+
+        // 将 /yinwuchat 子命令代理为独立命令 (与 Velocity 端对齐)
+        getProxy().getPluginManager().registerCommand(this, new BungeeSubcommandProxy(yinwuChatCommand, "vanish", "vanish"));
+        getProxy().getPluginManager().registerCommand(this, new BungeeSubcommandProxy(yinwuChatCommand, "noat", "noat"));
+        getProxy().getPluginManager().registerCommand(this, new BungeeSubcommandProxy(yinwuChatCommand, "monitor", "monitor"));
+        getProxy().getPluginManager().registerCommand(this, new BungeeSubcommandProxy(yinwuChatCommand, "muteat", "muteat"));
 
         org.lintx.plugins.yinwuchat.bungee.announcement.Config.getInstance().load(this);
         Task task = new Task();

@@ -19,11 +19,14 @@ import org.lintx.plugins.yinwuchat.velocity.command.PrivateMessageCommand;
 import org.lintx.plugins.yinwuchat.velocity.command.VanishCommand;
 import org.lintx.plugins.yinwuchat.velocity.command.QQCommand;
 import org.lintx.plugins.yinwuchat.velocity.command.YinwuChatCommand;
+import org.lintx.plugins.yinwuchat.velocity.announcement.AnnouncementConfig;
+import org.lintx.plugins.yinwuchat.velocity.announcement.AnnouncementTask;
 import org.lintx.plugins.yinwuchat.velocity.config.Config;
 import org.lintx.plugins.yinwuchat.velocity.httpserver.VelocityHttpServer;
 import org.lintx.plugins.yinwuchat.velocity.listeners.Listeners;
 import org.lintx.plugins.yinwuchat.velocity.message.MessageManage;
 import org.lintx.plugins.yinwuchat.velocity.util.RedisUtil;
+import com.velocitypowered.api.scheduler.ScheduledTask;
 import org.slf4j.Logger;
 
 import java.io.File;
@@ -32,6 +35,7 @@ import java.io.InputStream;
 import java.net.ServerSocket;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.concurrent.TimeUnit;
 
 /**
  * YinwuChat Velocity Proxy Plugin
@@ -39,7 +43,7 @@ import java.nio.file.Path;
 @Plugin(
     id = "yinwuchat-velocity",
     name = "YinwuChat",
-    version = "2.12.73",
+    version = "2.12.76",
     description = "Cross-server chat synchronization for Velocity",
     authors = {"LinTx"}
 )
@@ -51,6 +55,7 @@ public class YinwuChat {
     private final Path dataDirectory;
     private Config config;
     private Metrics.Factory metricsFactory;
+    private ScheduledTask announcementScheduledTask;
 
     @Inject
     public YinwuChat(ProxyServer proxy, Logger logger, @DataDirectory Path dataDirectory, Metrics.Factory metricsFactory) {
@@ -81,10 +86,16 @@ public class YinwuChat {
         
         proxy.getEventManager().register(this, new Listeners(this));
         
-        proxy.getChannelRegistrar().register(MinecraftChannelIdentifier.from(Const.PLUGIN_CHANNEL_VELOCITY));
+        try {
+            proxy.getChannelRegistrar().register(MinecraftChannelIdentifier.from(Const.PLUGIN_CHANNEL_VELOCITY));
+        } catch (Exception e) {
+            logger.warn("Failed to register velocity channel '{}': {}", Const.PLUGIN_CHANNEL_VELOCITY, e.getMessage());
+        }
         try {
             proxy.getChannelRegistrar().register(MinecraftChannelIdentifier.from(Const.PLUGIN_CHANNEL_BUKKIT));
-        } catch (Exception e) {}
+        } catch (Exception e) {
+            logger.warn("Failed to register bukkit channel '{}': {}", Const.PLUGIN_CHANNEL_BUKKIT, e.getMessage());
+        }
         
         CommandManager commandManager = proxy.getCommandManager();
         
@@ -200,6 +211,13 @@ public class YinwuChat {
             logger.info("bStats metrics unavailable: {}", e.getMessage());
         }
         
+        // 加载广播配置并启动定时广播任务
+        try {
+            startAnnouncementTask();
+        } catch (Exception e) {
+            logger.warn("Failed to start broadcast task: " + e.getMessage());
+        }
+        
         extractWebFiles();
         
         logger.info("YinwuChat initialized successfully");
@@ -208,6 +226,7 @@ public class YinwuChat {
     @Subscribe
     public void onProxyShutdown(ProxyShutdownEvent event) {
         logger.info("YinwuChat shutting down...");
+        stopAnnouncementTask();
         RedisUtil.unload();
         stopWsServer();
     }
@@ -243,12 +262,19 @@ public class YinwuChat {
     public void reload() {
         stopWsServer();
         RedisUtil.unload();
+        stopAnnouncementTask();
         config.load(this);
         if (config.openwsserver) {
             startWsServer();
         }
         if (config.redisConfig.openRedis) {
             RedisUtil.init(this);
+        }
+        // 重新加载广播配置并启动任务
+        try {
+            startAnnouncementTask();
+        } catch (Exception e) {
+            logger.warn("Failed to start broadcast task on reload: " + e.getMessage());
         }
     }
 
@@ -272,7 +298,9 @@ public class YinwuChat {
     }
 
     private boolean isPortAvailable(int port) {
-        try (ServerSocket socket = new ServerSocket(port)) {
+        try (ServerSocket socket = new ServerSocket()) {
+            socket.setReuseAddress(true);
+            socket.bind(new java.net.InetSocketAddress(port));
             return true;
         } catch (IOException e) {
             return false;
@@ -316,6 +344,45 @@ public class YinwuChat {
                 Files.copy(input, logoFile.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
             }
         } catch (IOException ignored) {}
+
+        Path fontsPath = webPath.resolve("fonts");
+        try {
+            Files.createDirectories(fontsPath);
+        } catch (IOException ignored) {}
+        copyWebResource("/web/fonts/HarmonyOS_Sans_SC_Regular.ttf", fontsPath.resolve("HarmonyOS_Sans_SC_Regular.ttf"));
+        copyWebResource("/web/fonts/HarmonyOS_Sans_SC_Medium.ttf", fontsPath.resolve("HarmonyOS_Sans_SC_Medium.ttf"));
+        copyWebResource("/web/fonts/HarmonyOS_Sans_SC_Bold.ttf", fontsPath.resolve("HarmonyOS_Sans_SC_Bold.ttf"));
+    }
+
+    private void copyWebResource(String classpathResource, Path targetPath) {
+        try (InputStream input = getClass().getResourceAsStream(classpathResource)) {
+            if (input != null) {
+                Files.copy(input, targetPath, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            }
+        } catch (IOException ignored) {}
+    }
+
+    /**
+     * 加载广播配置并启动定时广播任务（每秒检查一次）
+     */
+    private void startAnnouncementTask() {
+        stopAnnouncementTask();
+        AnnouncementConfig.getInstance().load(this);
+        announcementScheduledTask = proxy.getScheduler()
+                .buildTask(this, new AnnouncementTask())
+                .repeat(1, TimeUnit.SECONDS)
+                .schedule();
+        logger.info("Broadcast task started");
+    }
+
+    /**
+     * 停止广播定时任务
+     */
+    private void stopAnnouncementTask() {
+        if (announcementScheduledTask != null) {
+            announcementScheduledTask.cancel();
+            announcementScheduledTask = null;
+        }
     }
 }
 

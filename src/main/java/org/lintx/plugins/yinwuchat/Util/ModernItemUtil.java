@@ -287,14 +287,20 @@ public class ModernItemUtil {
      * 获取物品的翻译键
      */
     private static String getTranslationKey(ItemStack itemStack) {
+        // 药水类物品需要特殊处理：翻译键由容器类型+药水效果组合而成
+        if (isPotionItem(itemStack.getType()) && itemStack.hasItemMeta() && itemStack.getItemMeta() instanceof PotionMeta) {
+            String potionKey = getPotionTranslationKey(itemStack);
+            if (potionKey != null) {
+                return potionKey;
+            }
+        }
+
         try {
-            // 尝试使用 Paper API 获取翻译键 (1.16+)
             Method getTranslationKeyMethod = itemStack.getClass().getMethod("translationKey");
             Object key = getTranslationKeyMethod.invoke(itemStack);
             return key.toString();
         } catch (Exception e1) {
             try {
-                // 尝试从 ItemMeta 获取 (某些版本)
                 if (itemStack.hasItemMeta()) {
                     ItemMeta meta = itemStack.getItemMeta();
                     Method getTransKeyMethod = meta.getClass().getMethod("getLocalizedName");
@@ -305,7 +311,6 @@ public class ModernItemUtil {
                 }
             } catch (Exception ignored) {}
             
-            // 构造默认翻译键
             String key = getItemKeyName(itemStack.getType());
             if (itemStack.getType().isBlock()) {
                 return "block.minecraft." + key;
@@ -313,6 +318,98 @@ public class ModernItemUtil {
                 return "item.minecraft." + key;
             }
         }
+    }
+
+    private static boolean isPotionItem(Material material) {
+        String name = material.name();
+        return name.equals("POTION") || name.equals("SPLASH_POTION")
+                || name.equals("LINGERING_POTION") || name.equals("TIPPED_ARROW");
+    }
+
+    /**
+     * 构造药水的完整翻译键，格式: item.minecraft.<容器类型>.effect.<药水基础ID>
+     * Minecraft 语言文件中 strong_/long_ 变体没有独立词条，翻译键统一使用基础 ID。
+     * 例: 滞留型剧毒药水 II 的翻译键为 item.minecraft.lingering_potion.effect.poison
+     */
+    private static String getPotionTranslationKey(ItemStack itemStack) {
+        PotionMeta potionMeta = (PotionMeta) itemStack.getItemMeta();
+        String materialKey = getItemKeyName(itemStack.getType());
+
+        // 1.20.5+ API: PotionMeta.getBasePotionType() → PotionType.getKey()
+        try {
+            Method getBasePotionType = potionMeta.getClass().getMethod("getBasePotionType");
+            Object potionType = getBasePotionType.invoke(potionMeta);
+            if (potionType != null) {
+                Method getKey = potionType.getClass().getMethod("getKey");
+                Object nsKey = getKey.invoke(potionType);
+                Method getKeyName = nsKey.getClass().getMethod("getKey");
+                String potionId = getKeyName.invoke(nsKey).toString();
+                if (potionId != null && !potionId.isEmpty()) {
+                    return "item.minecraft." + materialKey + ".effect." + stripPotionVariantPrefix(potionId);
+                }
+            }
+        } catch (Exception ignored) {}
+
+        // Legacy API: PotionMeta.getBasePotionData()
+        try {
+            PotionData base = potionMeta.getBasePotionData();
+            if (base != null && base.getType() != null) {
+                String potionId = mapLegacyPotionType(base);
+                if (potionId != null) {
+                    return "item.minecraft." + materialKey + ".effect." + stripPotionVariantPrefix(potionId);
+                }
+            }
+        } catch (Exception ignored) {}
+
+        return null;
+    }
+
+    /**
+     * 去掉 strong_ / long_ 前缀，返回基础药水 ID。
+     * Minecraft 语言文件中 strong_poison / long_poison 等变体没有独立翻译键。
+     */
+    private static String stripPotionVariantPrefix(String potionId) {
+        if (potionId == null) return null;
+        if (potionId.startsWith("strong_")) return potionId.substring("strong_".length());
+        if (potionId.startsWith("long_")) return potionId.substring("long_".length());
+        return potionId;
+    }
+
+    /**
+     * 将旧版 PotionData 映射为 Minecraft 药水注册 ID
+     */
+    @SuppressWarnings("deprecation")
+    private static String mapLegacyPotionType(PotionData data) {
+        String base;
+        switch (data.getType().name()) {
+            case "NIGHT_VISION":   base = "night_vision"; break;
+            case "INVISIBILITY":   base = "invisibility"; break;
+            case "JUMP":           base = "leaping"; break;
+            case "FIRE_RESISTANCE":base = "fire_resistance"; break;
+            case "SPEED":          base = "swiftness"; break;
+            case "SLOWNESS":       base = "slowness"; break;
+            case "WATER_BREATHING":base = "water_breathing"; break;
+            case "INSTANT_HEAL":   base = "healing"; break;
+            case "INSTANT_DAMAGE": base = "harming"; break;
+            case "POISON":         base = "poison"; break;
+            case "REGEN":          base = "regeneration"; break;
+            case "STRENGTH":       base = "strength"; break;
+            case "WEAKNESS":       base = "weakness"; break;
+            case "LUCK":           base = "luck"; break;
+            case "TURTLE_MASTER":  base = "turtle_master"; break;
+            case "SLOW_FALLING":   base = "slow_falling"; break;
+            case "MUNDANE":        base = "mundane"; break;
+            case "THICK":          base = "thick"; break;
+            case "AWKWARD":        base = "awkward"; break;
+            case "WATER":          base = "water"; break;
+            default:               base = data.getType().name().toLowerCase(); break;
+        }
+        if (data.isUpgraded()) {
+            return "strong_" + base;
+        } else if (data.isExtended()) {
+            return "long_" + base;
+        }
+        return base;
     }
     
     /**
@@ -701,18 +798,35 @@ public class ModernItemUtil {
         if (itemStack.hasItemMeta() && itemStack.getItemMeta() instanceof PotionMeta) {
             PotionMeta potionMeta = (PotionMeta) itemStack.getItemMeta();
 
+            boolean potionTypeResolved = false;
+
+            // 1.20.5+ API: PotionMeta.getBasePotionType()
             try {
-                PotionData base = potionMeta.getBasePotionData();
-                if (base != null && base.getType() != null) {
-                    String potionType = base.getType().name().toLowerCase();
-                    if (base.isExtended()) {
-                        potionType = "long_" + potionType;
-                    } else if (base.isUpgraded()) {
-                        potionType = "strong_" + potionType;
+                Method getBasePotionType = potionMeta.getClass().getMethod("getBasePotionType");
+                Object ptObj = getBasePotionType.invoke(potionMeta);
+                if (ptObj != null) {
+                    Method getKey = ptObj.getClass().getMethod("getKey");
+                    Object nsKey = getKey.invoke(ptObj);
+                    Method getKeyName = nsKey.getClass().getMethod("getKey");
+                    String potionId = getKeyName.invoke(nsKey).toString();
+                    if (potionId != null && !potionId.isEmpty()) {
+                        json.addProperty("potionType", potionId);
+                        potionTypeResolved = true;
                     }
-                    json.addProperty("potionType", potionType);
                 }
-            } catch (Exception ignored) {
+            } catch (Exception ignored) {}
+
+            // Legacy API 兜底
+            if (!potionTypeResolved) {
+                try {
+                    PotionData base = potionMeta.getBasePotionData();
+                    if (base != null && base.getType() != null) {
+                        String potionType = mapLegacyPotionType(base);
+                        if (potionType != null) {
+                            json.addProperty("potionType", potionType);
+                        }
+                    }
+                } catch (Exception ignored) {}
             }
 
             if (potionMeta.hasCustomEffects()) {

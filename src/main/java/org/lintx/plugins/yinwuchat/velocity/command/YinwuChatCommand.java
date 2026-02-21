@@ -109,7 +109,7 @@ public class YinwuChatCommand implements SimpleCommand {
             case "bind":
                 if (player.hasPermission(Const.PERMISSION_BIND) || isDefault) {
                     if (args.length >= 2) {
-                        String bindToken = args[1];
+                        String bindToken = args[1].trim().replaceAll("[^a-zA-Z0-9-]", "");
                         PlayerConfig.TokenManager tokens = PlayerConfig.getInstance().getTokenManager();
                         if (tokens.tokenNotValid(bindToken)) {
                             player.sendMessage(Component.text("✗ Token 无效").color(NamedTextColor.RED));

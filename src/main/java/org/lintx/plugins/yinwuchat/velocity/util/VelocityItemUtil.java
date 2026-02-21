@@ -577,13 +577,24 @@ public class VelocityItemUtil {
             normalizedId = normalizedId.substring("minecraft:".length());
         }
 
-        if ("potion".equals(normalizedId) || "splash_potion".equals(normalizedId) || "lingering_potion".equals(normalizedId)) {
+        if ("potion".equals(normalizedId) || "splash_potion".equals(normalizedId)
+                || "lingering_potion".equals(normalizedId) || "tipped_arrow".equals(normalizedId)) {
             String potionKey = extractPotionKey(json, itemJson);
             if (potionKey != null && !potionKey.isEmpty()) {
+                // 先尝试完整 key（包含 strong_/long_ 前缀）
                 String exactKey = "item.minecraft." + normalizedId + ".effect." + potionKey;
                 String localized = LANG_ZH_CN.get(exactKey);
                 if (localized != null && !localized.isEmpty()) {
                     return localized;
+                }
+                // Minecraft 语言文件中 strong_/long_ 变体没有独立词条，去掉前缀重试
+                String baseKey = stripPotionVariantPrefix(potionKey);
+                if (!baseKey.equals(potionKey)) {
+                    String fallbackKey = "item.minecraft." + normalizedId + ".effect." + baseKey;
+                    localized = LANG_ZH_CN.get(fallbackKey);
+                    if (localized != null && !localized.isEmpty()) {
+                        return localized;
+                    }
                 }
             }
         }
@@ -593,6 +604,13 @@ public class VelocityItemUtil {
             return formatItemName(normalizedId);
         }
         return null;
+    }
+
+    private static String stripPotionVariantPrefix(String potionId) {
+        if (potionId == null) return potionId;
+        if (potionId.startsWith("strong_")) return potionId.substring("strong_".length());
+        if (potionId.startsWith("long_")) return potionId.substring("long_".length());
+        return potionId;
     }
 
     private static String extractPotionKey(com.google.gson.JsonObject json, String itemJson) {
