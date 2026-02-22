@@ -908,7 +908,12 @@ public class VelocityWebSocketFrameHandler extends SimpleChannelInboundHandler<W
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        plugin.getLogger().warn("[WebSocket] 错误: " + cause.getMessage());
+        String msg = cause.getMessage();
+        if (msg != null && msg.contains("Connection reset")) {
+            plugin.getLogger().debug("[WebSocket] 连接被重置: " + ctx.channel().remoteAddress());
+        } else {
+            plugin.getLogger().warn("[WebSocket] 错误: " + msg);
+        }
         ctx.close();
     }
 }
