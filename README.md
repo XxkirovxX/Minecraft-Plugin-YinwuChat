@@ -48,17 +48,49 @@
 - 3.0.0：YinwuChat重构后第一个正式版本，该版本针对web端做了全新优化，快捷指令列表重构，可读性进行优化，token绑定消息转为消息块显示模式，更加清晰。至此，YinwuChat基本重构完成
 
 #### 示例图片
-![登录界面](./picturesForReadme/log_in.png)
-![聊天界面——日间](./picturesForReadme/chat_day.png)
-![聊天界面——夜间](.picturesForReadme/chat.png)
-![token绑定消息](.picturesForReadme/token.png)
-![游戏内聊天](./picturesForReadme/game_chat.png)
-![web端消息与游戏端前缀分离](./picturesForReadme/web_and_game.png)
-![游戏内i的显示](./picturesForReadme/i_in_game.png)
-![游戏内i的物品详情](./picturesForReadme/i_detail.png)
-![web端i的详情](./picturesForReadme/i_web_detail.png)
-![游戏内p的显示](./picturesForReadme/p_in_game.png)
-![web端p的显示](./picturesForReadme/p_web.png)
+<p align="center">
+  <img src="./picturesForReadme/log_in.png" alt="登录界面" />
+</p>
+
+<p align="center">
+  <img src="./picturesForReadme/chat_day.png" alt="聊天界面——日间" />
+</p>
+
+<p align="center">
+  <img src="./picturesForReadme/chat.png" alt="聊天界面——夜间" />
+</p>
+
+<p align="center">
+  <img src="./picturesForReadme/token.png" alt="token绑定消息" />
+</p>
+
+<p align="center">
+  <img src="./picturesForReadme/game_chat.png" alt="游戏内聊天" />
+</p>
+
+<p align="center">
+  <img src="./picturesForReadme/web_and_game.png" alt="web端消息与游戏端前缀分离" />
+</p>
+
+<p align="center">
+  <img src="./picturesForReadme/i_in_game.png" alt="游戏内i的显示" />
+</p>
+
+<p align="center">
+  <img src="./picturesForReadme/i_detail.png" alt="游戏内i的物品详情" />
+</p>
+
+<p align="center">
+  <img src="./picturesForReadme/i_web_detail.png" alt="web端i的详情" />
+</p>
+
+<p align="center">
+  <img src="./picturesForReadme/p_in_game.png" alt="游戏内p的显示" />
+</p>
+
+<p align="center">
+  <img src="./picturesForReadme/p_web.png" alt="web端p的显示" />
+</p>
 
 ### 简介
 YinwuChat是Velocity代理插件和Spigot插件，主要功能有：
