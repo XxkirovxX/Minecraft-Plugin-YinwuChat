@@ -6,7 +6,7 @@
 
     <groupId>org.lintx.plugins.yinwuchat</groupId>
     <artifactId>YinwuChat</artifactId>
-    <version>2.12.76</version>
+    <version>3.0.0</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

@@ -755,11 +755,11 @@
 
             <!-- 右侧聊天内容区域 -->
             <div class="flex-1 flex flex-col bg-beige-100 dark:bg-gray-900 min-w-0 relative transition-all chat-window"
-                :style="isMobile ? { filter: `blur(${sidebarBlur}px)` } : {}"
-                @touchstart="onChatTouchStart"
-                @touchmove="onChatTouchMove"
-                @touchend="onChatTouchEnd">
-                
+                :style="isMobile ? { filter: `blur(${sidebarBlur}px)` } : {}">
+                <div class="flex-1 flex flex-col min-h-0"
+                    @touchstart="onChatTouchStart"
+                    @touchmove="onChatTouchMove"
+                    @touchend="onChatTouchEnd">
                 <!-- 顶部栏 -->
                 <header class="h-16 border-b border-beige-200 dark:border-gray-700 flex items-center px-4 justify-between bg-beige-100/80 dark:bg-gray-900/80 backdrop-blur-md sticky top-0 z-20">
                     <div class="flex items-center gap-3 min-w-0">
@@ -820,22 +820,26 @@
                 <!-- 广播置顶横幅 -->
                 <div v-if="pinnedBroadcastCount > 0" class="relative z-10 shrink-0">
                     <div @click="broadcastPanelOpen = !broadcastPanelOpen"
-                         class="bg-amber-50 dark:bg-amber-900/30 border-b border-amber-200 dark:border-amber-700/40 px-4 py-2 flex items-center justify-between cursor-pointer hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors select-none">
+                         class="bg-amber-100 dark:bg-amber-900/30 border-b border-amber-300 dark:border-amber-700/40 px-4 py-2 flex items-center justify-between cursor-pointer hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors select-none">
                         <div class="flex items-center gap-2">
                             <span class="text-amber-600 dark:text-amber-400 text-sm">&#x1F4E2;</span>
-                            <span class="text-xs font-bold text-amber-700 dark:text-amber-300">系统广播 ({{ pinnedBroadcastCount }}条)</span>
+                            <span class="text-xs font-bold text-amber-800 dark:text-amber-300">系统广播 ({{ pinnedBroadcastCount }}条)</span>
                         </div>
-                        <span class="text-[10px] text-amber-500 dark:text-amber-400 transition-transform duration-200"
+                        <span class="text-[10px] text-amber-600 dark:text-amber-400 transition-transform duration-200"
                               :class="broadcastPanelOpen ? 'rotate-180' : ''">&#x25BC;</span>
                     </div>
-                    <div v-if="broadcastPanelOpen"
-                         class="bg-amber-50/90 dark:bg-amber-950/50 border-b border-amber-200 dark:border-amber-700/40 max-h-60 overflow-y-auto chat-scroll">
-                        <div v-for="(bc, idx) in pinnedBroadcastList" :key="bc.taskIndex"
-                             class="px-4 py-2.5" :class="idx < pinnedBroadcastList.length - 1 ? 'border-b border-amber-100 dark:border-amber-800/30' : ''">
-                            <div class="text-sm leading-relaxed text-amber-900 dark:text-amber-100"
-                                 v-html="formatBroadcastSegments(bc.segments || [], bc.chat)">
+                    <div class="grid transition-[grid-template-rows,opacity] duration-300 ease-in-out"
+                         :class="broadcastPanelOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'">
+                        <div class="overflow-hidden">
+                            <div class="bg-amber-100 dark:bg-amber-950/50 border-b border-amber-300 dark:border-amber-700/40 max-h-60 overflow-y-auto chat-scroll">
+                                <div v-for="(bc, idx) in pinnedBroadcastList" :key="bc.taskIndex"
+                                     class="px-4 py-2.5" :class="idx < pinnedBroadcastList.length - 1 ? 'border-b border-amber-200 dark:border-amber-800/30' : ''">
+                                    <div class="text-sm leading-relaxed text-amber-900 dark:text-amber-100"
+                                         v-html="formatBroadcastSegments(bc.segments || [], bc.chat)">
+                                    </div>
+                                    <div class="text-[9px] text-amber-500 mt-1 opacity-80">{{ bc.time }}</div>
+                                </div>
                             </div>
-                            <div class="text-[9px] text-amber-400 mt-1 opacity-70">{{ bc.time }}</div>
                         </div>
                     </div>
                 </div>
@@ -849,19 +853,38 @@
                             <div class="h-px flex-1 bg-red-300/70 dark:bg-red-500/40"></div>
                         </div>
                         <div class="flex animate-in fade-in slide-in-from-bottom-2 duration-300 w-full"
-                            :class="[msg.type === 'broadcast' ? 'justify-center' : (msg.isSelf ? 'justify-end' : 'justify-start')]">
+                            :class="[msg.type === 'broadcast' || msg.type === 'token_bind' ? 'justify-center' : (msg.isSelf ? 'justify-end' : 'justify-start')]">
                         <!-- 广播消息：居中系统样式 -->
                         <div v-if="msg.type === 'broadcast'" class="max-w-[90%] lg:max-w-[85%]">
                             <div class="flex items-center gap-2 justify-center mb-1">
-                                <div class="h-px flex-1 bg-amber-300/40 dark:bg-amber-500/30"></div>
-                                <span class="text-[10px] font-bold text-amber-600 dark:text-amber-400 tracking-wider uppercase">系统广播</span>
-                                <div class="h-px flex-1 bg-amber-300/40 dark:bg-amber-500/30"></div>
+                                <div class="h-px flex-1 bg-amber-400/50 dark:bg-amber-500/30"></div>
+                                <span class="text-[10px] font-bold text-amber-800 dark:text-amber-400 tracking-wider uppercase">系统广播</span>
+                                <div class="h-px flex-1 bg-amber-400/50 dark:bg-amber-500/30"></div>
                             </div>
-                            <div class="px-4 py-2.5 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/40 text-sm leading-relaxed text-amber-900 dark:text-amber-100 shadow-sm"
+                            <div class="px-4 py-2.5 rounded-xl bg-amber-100 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700/40 text-sm leading-relaxed text-amber-900 dark:text-amber-100 shadow-sm"
                                 v-html="formatBroadcastSegments(msg.segments || [], msg.chat)">
                             </div>
                             <div class="text-[9px] text-gray-400 mt-1 opacity-60 text-center">
                                 {{ msg.time }}
+                            </div>
+                        </div>
+                        <!-- Token 绑定：系统提示块 -->
+                        <div v-else-if="msg.type === 'token_bind'" class="max-w-[90%] lg:max-w-[85%] w-full">
+                            <div class="rounded-xl border-2 border-amber-300 dark:border-amber-600/60 bg-amber-100 dark:bg-amber-950/50 shadow-sm overflow-hidden">
+                                <div class="px-4 py-2 border-b border-amber-200 dark:border-amber-700/50">
+                                    <span class="text-sm font-bold text-amber-800 dark:text-amber-200">&#x1F512; Token 绑定</span>
+                                </div>
+                                <div class="px-4 py-3 space-y-3 text-sm">
+                                    <div>
+                                        <div class="text-amber-700 dark:text-amber-300 text-xs font-medium mb-1">你的新 Token</div>
+                                        <div class="font-mono text-sm px-3 py-2 rounded-lg bg-cyan-100 dark:bg-cyan-900/50 text-cyan-900 dark:text-cyan-100 border border-cyan-300 dark:border-cyan-700 break-all select-all">{{ msg.token }}</div>
+                                    </div>
+                                    <div>
+                                        <div class="text-amber-700 dark:text-amber-300 text-xs font-medium mb-1">请在游戏内输入以下命令完成绑定</div>
+                                        <div class="font-mono text-sm px-3 py-2 rounded-lg bg-slate-200 dark:bg-slate-700/80 text-slate-800 dark:text-slate-100 border border-slate-300 dark:border-slate-600 break-all select-all">{{ msg.command }}</div>
+                                    </div>
+                                </div>
+                                <div class="text-[9px] text-amber-600 dark:text-amber-400 px-4 pb-2 opacity-80">{{ msg.time }}</div>
                             </div>
                         </div>
                         <!-- 普通消息：聊天气泡 -->
@@ -904,6 +927,7 @@
                         <p class="text-sm font-medium">开始你的对话...</p>
                     </div>
                 </main>
+                </div>
 
                 <!-- 输入区域 -->
                 <footer class="p-4 bg-beige-100/80 dark:bg-gray-900/80 backdrop-blur-md border-t border-beige-200 dark:border-gray-700">
@@ -935,12 +959,24 @@
                             <i data-lucide="send" class="w-5 h-5"></i>
                         </button>
                     </div>
-                    <div v-if="currentChat === 'public'" class="mt-2 flex gap-2 overflow-x-auto pb-1 no-scrollbar">
-                        <button v-for="cmd in quickCommands" :key="cmd"
-                            @click="inputMsg = cmd + ' '"
-                            class="text-[10px] px-2 py-1 bg-beige-200 dark:bg-gray-800 text-gray-500 dark:text-gray-400 rounded-md hover:bg-beige-300 dark:hover:bg-gray-700 transition-colors shrink-0">
-                            {{ cmd }}
+                    <div v-if="currentChat === 'public'" class="mt-2">
+                        <button @click="showQuickCommands = !showQuickCommands"
+                            class="w-full flex items-center justify-between px-3 py-2 bg-beige-50 dark:bg-gray-800 border border-beige-200 dark:border-gray-700 rounded-xl text-xs text-gray-600 dark:text-gray-300 transition-colors hover:bg-beige-100 dark:hover:bg-gray-700">
+                            <span>快捷指令</span>
+                            <span class="text-[10px] opacity-70">{{ showQuickCommands ? '收起' : `展开 (${quickCommands.length})` }}</span>
                         </button>
+                        <div class="grid transition-[grid-template-rows,opacity,padding] duration-300 ease-in-out"
+                            :class="showQuickCommands ? 'grid-rows-[1fr] opacity-100 pt-2' : 'grid-rows-[0fr] opacity-0 pt-0'">
+                            <div class="overflow-hidden">
+                                <div class="grid grid-cols-2 gap-2">
+                                    <button v-for="cmd in quickCommands" :key="cmd"
+                                        @click="selectQuickCommand(cmd)"
+                                        class="text-[10px] px-2.5 py-2 bg-beige-200 dark:bg-gray-800 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-beige-300 dark:hover:bg-gray-700 transition-colors text-left break-all">
+                                        {{ cmd }}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </footer>
             </div>
@@ -1187,6 +1223,7 @@
                 const sidebarWidth = ref(getSidebarWidth());
                 const sidebarTranslateX = ref(-sidebarWidth.value);
                 const sidebarDragging = ref(false);
+                const showQuickCommands = ref(false);
                 const chatContainer = ref(null);
                 const sidebarStartX = ref(0);
                 const sidebarStartY = ref(0);
@@ -2585,10 +2622,13 @@
                         connecting.value = false;
                         showToast('已生成新 Token，请在游戏内绑定');
                         
-                        // 添加一条系统消息说明如何绑定
+                        // 添加 Token 绑定系统提示块（专用卡片样式）
+                        const bindCmd = `/yinwuchat bind ${data.token}`;
                         messages.value.push({
+                            type: 'token_bind',
                             player: '系统',
-                            chat: `&6你的新 Token 是: &b${data.token}&r\n&e请在游戏内输入: &b/yinwuchat bind ${data.token}&e 以完成绑定。`,
+                            token: data.token,
+                            command: bindCmd,
                             isSelf: false,
                             time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                         });
@@ -3042,7 +3082,7 @@
                             // 可点击片段：渲染为按钮样式，点击填入输入框
                             const safeClick = seg.click.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
                             const hoverAttr = seg.hover ? ` title="${seg.hover.replace(/"/g, '&quot;')}"` : '';
-                            segHtml = `<span class="broadcast-cmd inline cursor-pointer px-1 py-0.5 rounded bg-amber-200/60 dark:bg-amber-700/40 hover:bg-amber-300/80 dark:hover:bg-amber-600/50 transition-colors border-b border-dashed border-amber-500 dark:border-amber-400" data-cmd="${safeClick}"${hoverAttr}>${segHtml}</span>`;
+                            segHtml = `<span class="broadcast-cmd inline cursor-pointer px-1 py-0.5 rounded bg-amber-300/90 dark:bg-amber-700/50 hover:bg-amber-400 dark:hover:bg-amber-600/60 transition-colors border border-amber-500 dark:border-amber-500/60 text-amber-900 dark:text-amber-100" data-cmd="${safeClick}"${hoverAttr}>${segHtml}</span>`;
                         } else if (seg.hover) {
                             const hoverAttr = seg.hover.replace(/"/g, '&quot;');
                             segHtml = `<span title="${hoverAttr}">${segHtml}</span>`;
@@ -3171,15 +3211,31 @@
                     sidebarLongPressActive.value = false;
                 };
 
+                const shouldBypassSidebarSwipe = (event) => {
+                    return !!event.target?.closest?.('[data-touch-scroll-x="true"]');
+                };
+
+                const selectQuickCommand = (cmd) => {
+                    inputMsg.value = cmd + ' ';
+                    showQuickCommands.value = false;
+                    nextTick(() => {
+                        const area = document.querySelector('textarea');
+                        if (area) area.focus();
+                    });
+                };
+
                 const onChatTouchStart = (event) => {
+                    if (shouldBypassSidebarSwipe(event)) return;
                     onSidebarTouchStart(event);
                 };
 
                 const onChatTouchMove = (event) => {
+                    if (shouldBypassSidebarSwipe(event)) return;
                     onSidebarTouchMove(event);
                 };
 
-                const onChatTouchEnd = () => {
+                const onChatTouchEnd = (event) => {
+                    if (event && shouldBypassSidebarSwipe(event)) return;
                     onSidebarTouchEnd();
                 };
 
@@ -3363,7 +3419,7 @@
                     advancedOpen, manualWsUrl, savedManualWsUrl, fillSavedWsUrl,
                     isConnected, connecting, isDark, showSidebar, currentChat, inputMsg, 
                     isMobile, messages, playerRoster, unreadCount, toasts, wsStatus, currentMessages, unreadDividerIndex, chatContainer,
-                    isAdmin, quickCommands, isVanished,
+                    isAdmin, quickCommands, showQuickCommands, isVanished,
                     pinnedBroadcasts, broadcastPanelOpen, pinnedBroadcastCount, pinnedBroadcastList,
                     showDeleteAccount, showResetToken, resetTokenPassword, submitResetToken, showAppKeepAliveTips, showClearCacheConfirm, banNotice, closeBanNotice, adminAlert, closeAdminAlert, itemPreview, closeItemPreview, atAllAdminConfirm, closeAtAllAdminConfirm, sendAtAllAdminExecute, deleteAccountForm, submitDeleteAccount,
                     forgotForm, resetPasswordForm, resetCode, goToForgot, submitForgotRequest, submitResetPassword,
@@ -3375,6 +3431,7 @@
                     onSidebarTouchStart, onSidebarTouchMove, onSidebarTouchEnd,
                     onChatTouchStart, onChatTouchMove, onChatTouchEnd, closeSidebar,
                     toastDragId, toastDragOffset, startToastDrag, moveToastDrag, endToastDrag,
+                    selectQuickCommand,
                     showCommandPicker, commandTargetCandidates, selectCommandTarget
                 };
             }

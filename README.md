@@ -17,11 +17,11 @@
 2025年底，服务组组长[MadaoMeloN]启动了Yinwu第十二周目的建设工作，chat作为核心插件被提上日程。
 如今，chat将按照如下几点逐步更新：
 
-1. 与更好的服务器核心兼容，如folia等
-2. 跨服通讯功能，从bungeecord迁移至velocity
-3. 玩家物品信息[i]功能
-4. 彩色文本功能
-5. 服务器消息与Q群同步功能 **需测试**
+1. 与更好的服务器核心兼容，如folia等 
+2. 跨服通讯功能，从bungeecord迁移至velocity 
+3. 玩家物品信息[i]功能 
+4. 彩色文本功能 
+5. 服务器消息与Q群同步功能 **暂无更新计划**
 6. 关键词过滤功能等
 7. 网页端通讯，实现使用APP与服务器内玩家实时通讯的功能等
 
@@ -45,15 +45,32 @@
 - 2.12.75：修复 Folia 服务端插件启动失败问题，新增 SchedulerUtil 调度工具类，通过反射兼容 Folia AsyncScheduler 与 EntityScheduler；ItemDisplayCache 与 ViewItemCommand 全面适配 Folia 区域线程调度
 - 2.12.76：新增 Web 端"重置 Token"功能，支持一键清空账号下所有已绑定 Token 并强制重新绑定；修复服务器广播消息在公屏聊天重复显示问题，广播改为置顶横幅展示（支持多条广播折叠查看）；修复 Web 端玩家发送消息时游戏内服务器前缀显示错误问题；修复 Token 绑定失败与 WebSocket 路径路由不匹配问题（新增 Netty 管线路径重写）；修复 TokenManager 未完整清除同一 UUID 下所有 Token 的问题；优化 Token 绑定时旧 Token 自动清理逻辑
 
+- 3.0.0：YinwuChat重构后第一个正式版本，该版本针对web端做了全新优化，快捷指令列表重构，可读性进行优化，token绑定消息转为消息块显示模式，更加清晰。至此，YinwuChat基本重构完成
+
+#### 示例图片
+![登录界面](./Minecraft-Plugin-YinwuChat/picturesForReadme/log_in.png)
+![聊天界面——日间](./Minecraft-Plugin-YinwuChat/picturesForReadme/chat_day.png)
+![聊天界面——夜间](./Minecraft-Plugin-YinwuChat/picturesForReadme/chat.png)
+![token绑定消息](./Minecraft-Plugin-YinwuChat/picturesForReadme/token.png)
+![游戏内聊天](./Minecraft-Plugin-YinwuChat/picturesForReadme/game_chat.png)
+![web端消息与游戏端前缀分离](./Minecraft-Plugin-YinwuChat/picturesForReadme/web_and_game.png)
+![游戏内i的显示](./Minecraft-Plugin-YinwuChat/picturesForReadme/i_in_game.png)
+![游戏内i的物品详情](./Minecraft-Plugin-YinwuChat/picturesForReadme/i_detail.png)
+![web端i的详情](./Minecraft-Plugin-YinwuChat/picturesForReadme/i_web_detail.png)
+![游戏内p的显示](./Minecraft-Plugin-YinwuChat/picturesForReadme/p_in_game.png)
+![web端p的显示](./Minecraft-Plugin-YinwuChat/picturesForReadme/p_web.png)
+
+### 简介
 YinwuChat是Velocity代理插件和Spigot插件，主要功能有：
 
 1. 跨服聊天同步
 2. 跨服私聊（`/msg <玩家名> 消息`）
 3. 跨服@（聊天内容中输入想@的玩家的名字，或名字的前面一部分，不区分大小写）
-4. 跨服物品展示（聊天内容中输入`[i]`即可将手中的物品发送到聊天栏，输入`[i:x]`可以展示背包中x对应的物品栏的物品，物品栏为0-8，然后从背包左上角从左至右从上至下为9-35，装备栏为36-39，副手为40，一条消息中可以展示多个物品）
-5. WebSocket，开启WebSocket后配合YinwuChat-Web（Web客户端）可以实现web、游戏内聊天同步
-6. 关键词屏蔽
-7. 使用酷Q和酷Q HTTP API来实现Q群聊天同步
+4. 跨服物品展示（聊天内容中输入`[i]`即可将手中的物品发送到聊天栏，点击即可查看物品详情信息，支持跨服展示）
+5. 跨服位置信息展示（聊天中输入`[p]`即可将位置发送至聊天栏，支持悬浮查看hover中详细信息）
+6. Web端与游戏互联，开启WebSocket后配合YinwuChat-Web（Web客户端）可以实现web、APP、游戏内聊天同步
+7. 关键词屏蔽，可自定义关键词以屏蔽发表不正确、仇恨言论等的消息，并把多次发送此类消息玩家踢出服务器
+8. 聊天自定义前后缀，支持自定义前后缀，自定义颜色，装饰你的聊天
 
 **注意**：你需要在你的**Velocity代理服务器**和这个Velocity接入的所有的**Spigot服务器**都安装这个插件
 
