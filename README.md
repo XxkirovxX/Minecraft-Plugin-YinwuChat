@@ -46,7 +46,7 @@
 - 2.12.76：新增 Web 端"重置 Token"功能，支持一键清空账号下所有已绑定 Token 并强制重新绑定；修复服务器广播消息在公屏聊天重复显示问题，广播改为置顶横幅展示（支持多条广播折叠查看）；修复 Web 端玩家发送消息时游戏内服务器前缀显示错误问题；修复 Token 绑定失败与 WebSocket 路径路由不匹配问题（新增 Netty 管线路径重写）；修复 TokenManager 未完整清除同一 UUID 下所有 Token 的问题；优化 Token 绑定时旧 Token 自动清理逻辑
 
 - 3.0.0：YinwuChat重构后第一个正式版本，该版本针对web端做了全新优化，快捷指令列表重构，可读性进行优化，token绑定消息转为消息块显示模式，更加清晰。至此，YinwuChat基本重构完成
-
+- 3.1.0：web端现已支持快捷登录，选择记住登录后即可在下次登录时快速登录；新增账号切换功能，同一web账号下可绑定多个游戏账号，可在登录后切换，亦可在聊天时切换。游戏端新增[b]背包展示功能，输入后即可展示背包，管理员新增背包公示功能，输入/yinwuchat backpackview 玩家名 即可将对应玩家的背包展现在公屏上。另增改动：游戏端指令快速补全已加入，可根据指令自动展示tab补全，方便输入
 #### 示例图片
 <p align="center">
   <img src="./picturesForReadme/log_in.png" alt="登录界面" />
@@ -140,13 +140,12 @@ YinwuChat是Velocity代理插件和Spigot插件，主要功能有：
 - `/yinwuchat chatban <玩家> [时长] [原因]`：封禁 Web 账号（别名：`/chatban`，管理员）
 - `/yinwuchat chatunban <玩家>`：解封 Web 账号（别名：`/chatunban`，管理员）
 - `/yinwuchat itemdisplay`：物品展示帮助（别名：`/itemdisplay /showitem /displayitem`）
-- `/yinwuchat backpackview <玩家名>`：查看在线玩家背包（管理员）
 
 #### Velocity Tab 补全
 
 - `/yinwuchat` + `Tab`：显示当前玩家有权限使用的一级子命令
 - `/yinwuchat reload`：补全 `config`、`ws`
-- `/yinwuchat ignore`、`msg`、`mute`、`unmute`、`muteinfo`、`chatban`、`chatunban`、`backpackview`：补全在线玩家名
+- `/yinwuchat ignore`、`msg`、`mute`、`unmute`、`muteinfo`、`chatban`、`chatunban`：补全在线玩家名
 - `/yinwuchat mute <玩家>`、`chatban <玩家>`：继续补全常用时长模板，如 `10m`、`30m`、`1h`、`1d`
 - `/yinwuchat format`：按层补全 `edit|show|public|private -> prefix|suffix -> set|clear`
 - `/yinwuchat atalladmin`：补全 `confirm`，管理员继续补全玩家名
@@ -954,8 +953,7 @@ admins:
 
 - `/yinwuchat` 与别名 `/yw` 现在支持一级子命令 Tab 补全，并按权限过滤结果
 - `/chatban`、`/chatunban` 以及代理出的独立命令（如 `/vanish`、`/noat`、`/muteat`、`/monitor`）会转发到对应的 `/yinwuchat` 子命令补全逻辑
-- `feat-login-backpack` 分支额外补全 `/yinwuchat backpackview <玩家名>`
-- Bungee 侧已补全 `reload`、`bind`、`list`、`unbind`、`format`、`ignore`、`noat`、`muteat`、`monitor`、`vanish`、`permsync`、`atalladmin`、`webbind`、`badword`、`chatban`、`chatunban`、`reset`、`backpackview` 等分支
+- Bungee 侧已补全 `reload`、`bind`、`list`、`unbind`、`format`、`ignore`、`noat`、`muteat`、`monitor`、`vanish`、`permsync`、`atalladmin`、`webbind`、`badword`、`chatban`、`chatunban`、`reset` 等分支
 
 ### Bukkit端权限
 
