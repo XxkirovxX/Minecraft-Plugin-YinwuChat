@@ -12,6 +12,7 @@ import net.md_5.bungee.api.config.ListenerInfo;
 import net.md_5.bungee.api.plugin.Command;
 import net.md_5.bungee.api.plugin.TabExecutor;
 import org.lintx.plugins.yinwuchat.Util.BackpackViewCommandUtil;
+import org.lintx.plugins.yinwuchat.Util.CommandCompletionUtil;
 import org.lintx.plugins.yinwuchat.Const;
 import org.lintx.plugins.yinwuchat.Util.BackpackViewDebugLogUtil;
 import org.lintx.plugins.yinwuchat.Util.MessageUtil;
@@ -754,48 +755,268 @@ public class Commands extends Command implements TabExecutor {
         }
     }
 
+    private String[] remapArgsForAlias(String[] args) {
+        String label = getName().toLowerCase(Locale.ROOT);
+        if (label.equals("chatban")) {
+            String[] remapped = new String[args.length + 1];
+            remapped[0] = "ban";
+            System.arraycopy(args, 0, remapped, 1, args.length);
+            return remapped;
+        }
+        if (label.equals("chatunban")) {
+            String[] remapped = new String[args.length + 1];
+            remapped[0] = "unban";
+            System.arraycopy(args, 0, remapped, 1, args.length);
+            return remapped;
+        }
+        return args;
+    }
+
+    private List<String> getAvailableSubcommands(ProxiedPlayer player, boolean isAdmin, boolean isDefault) {
+        List<String> commands = new ArrayList<>();
+
+        if (player.hasPermission(Const.PERMISSION_RELOAD) || isAdmin) commands.add("reload");
+        if (player.hasPermission(Const.PERMISSION_BAD_WORD) || isAdmin) commands.add("badword");
+        if (player.hasPermission(Const.PERMISSION_VANISH) || isAdmin) commands.add("vanish");
+        if (player.hasPermission(Const.PERMISSION_MONITOR_PRIVATE_MESSAGE) || isAdmin) commands.add("monitor");
+        if (player.hasPermission(Const.PERMISSION_ADMIN) || isAdmin) {
+            commands.add("chatban");
+            commands.add("chatunban");
+            commands.add("webbind");
+            commands.add("permsync");
+        }
+        if (player.hasPermission(Const.PERMISSION_BACKPACK_VIEW) || isAdmin) commands.add("backpackview");
+
+        if (player.hasPermission(Const.PERMISSION_BIND) || isDefault) commands.add("bind");
+        if (player.hasPermission(Const.PERMISSION_LIST) || isDefault) commands.add("list");
+        if (player.hasPermission(Const.PERMISSION_WS) || isDefault) commands.add("ws");
+        if (player.hasPermission(Const.PERMISSION_UNBIND) || isDefault) commands.add("unbind");
+        if ((player.hasPermission(Const.PERMISSION_FORMAT) || isDefault) && Config.getInstance().allowPlayerFormatPrefixSuffix) commands.add("format");
+        if (player.hasPermission(Const.PERMISSION_MUTEAT) || isDefault) commands.add("muteat");
+        if (player.hasPermission(Const.PERMISSION_NOAT) || isDefault) commands.add("noat");
+        if (player.hasPermission(Const.PERMISSION_IGNORE) || isDefault) commands.add("ignore");
+        if (player.hasPermission(Const.PERMISSION_AT_ALL_ADMIN) || isDefault || player.hasPermission(Const.PERMISSION_AT_ALL_ADMIN_RESET) || isAdmin) commands.add("atalladmin");
+        commands.add("reset");
+
+        return commands;
+    }
+
+    private boolean isKnownCommand(ProxiedPlayer player, String command, boolean isAdmin, boolean isDefault) {
+        if ("ban".equalsIgnoreCase(command) || "unban".equalsIgnoreCase(command)) {
+            return true;
+        }
+        return getAvailableSubcommands(player, isAdmin, isDefault).stream()
+                .anyMatch(value -> value.equalsIgnoreCase(command));
+    }
+
+    private List<String> getOnlinePlayerSuggestions(String prefix) {
+        return CommandCompletionUtil.filterByPrefix(
+                plugin.getProxy().getPlayers().stream().map(ProxiedPlayer::getName).toList(),
+                prefix
+        );
+    }
+
+    private boolean hasExactOnlinePlayer(String name) {
+        return plugin.getProxy().getPlayer(name) != null;
+    }
+
+    private List<String> suggestRootCommands(ProxiedPlayer player, String[] args, boolean isAdmin, boolean isDefault) {
+        List<String> commands = getAvailableSubcommands(player, isAdmin, isDefault);
+        if (args.length == 0) {
+            return commands;
+        }
+        return CommandCompletionUtil.filterByPrefix(commands, args[0]);
+    }
+
+    private boolean hasSuggestionPermission(ProxiedPlayer player, String command, boolean isAdmin, boolean isDefault) {
+        switch (command.toLowerCase(Locale.ROOT)) {
+            case "reload":
+                return player.hasPermission(Const.PERMISSION_RELOAD) || isAdmin;
+            case "badword":
+                return player.hasPermission(Const.PERMISSION_BAD_WORD) || isAdmin;
+            case "vanish":
+                return player.hasPermission(Const.PERMISSION_VANISH) || isAdmin;
+            case "monitor":
+                return player.hasPermission(Const.PERMISSION_MONITOR_PRIVATE_MESSAGE) || isAdmin;
+            case "chatban":
+            case "ban":
+            case "chatunban":
+            case "unban":
+            case "webbind":
+            case "permsync":
+                return player.hasPermission(Const.PERMISSION_ADMIN) || isAdmin;
+            case "backpackview":
+                return player.hasPermission(Const.PERMISSION_BACKPACK_VIEW) || isAdmin;
+            case "bind":
+                return player.hasPermission(Const.PERMISSION_BIND) || isDefault;
+            case "list":
+                return player.hasPermission(Const.PERMISSION_LIST) || isDefault;
+            case "ws":
+                return player.hasPermission(Const.PERMISSION_WS) || isDefault;
+            case "unbind":
+                return player.hasPermission(Const.PERMISSION_UNBIND) || isDefault;
+            case "format":
+                return (player.hasPermission(Const.PERMISSION_FORMAT) || isDefault) && Config.getInstance().allowPlayerFormatPrefixSuffix;
+            case "muteat":
+                return player.hasPermission(Const.PERMISSION_MUTEAT) || isDefault;
+            case "noat":
+                return player.hasPermission(Const.PERMISSION_NOAT) || isDefault;
+            case "ignore":
+                return player.hasPermission(Const.PERMISSION_IGNORE) || isDefault;
+            case "atalladmin":
+                return player.hasPermission(Const.PERMISSION_AT_ALL_ADMIN) || isDefault || player.hasPermission(Const.PERMISSION_AT_ALL_ADMIN_RESET) || isAdmin;
+            case "reset":
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    private List<String> suggestSubcommand(ProxiedPlayer player, String[] args, boolean isAdmin, boolean isDefault) {
+        String command = args[0].toLowerCase(Locale.ROOT);
+        if (!hasSuggestionPermission(player, command, isAdmin, isDefault)) {
+            return List.of();
+        }
+        switch (command) {
+            case "reload":
+                return CommandCompletionUtil.filterByPrefix(
+                        CommandCompletionUtil.RELOAD_TARGETS,
+                        args.length >= 2 ? args[1] : ""
+                );
+            case "ignore":
+                return getOnlinePlayerSuggestions(args.length >= 2 ? args[1] : "");
+            case "bind":
+            case "ws":
+            case "list":
+            case "noat":
+            case "muteat":
+            case "monitor":
+            case "vanish":
+            case "permsync":
+            case "reset":
+                return List.of();
+            case "unbind":
+                if (args.length <= 1) {
+                    return CommandCompletionUtil.filterByPrefix(PlayerConfig.getTokens().tokenWithPlayer(player), "");
+                }
+                return CommandCompletionUtil.filterByPrefix(PlayerConfig.getTokens().tokenWithPlayer(player), args[1]);
+            case "chatban":
+            case "ban":
+                if (args.length <= 1) {
+                    return getOnlinePlayerSuggestions("");
+                }
+                if (args.length == 2) {
+                    if (hasExactOnlinePlayer(args[1])) {
+                        return CommandCompletionUtil.DURATION_TEMPLATES;
+                    }
+                    return getOnlinePlayerSuggestions(args[1]);
+                }
+                if (args.length == 3) {
+                    return CommandCompletionUtil.filterByPrefix(CommandCompletionUtil.DURATION_TEMPLATES, args[2]);
+                }
+                return List.of();
+            case "chatunban":
+            case "unban":
+                return getOnlinePlayerSuggestions(args.length >= 2 ? args[1] : "");
+            case "webbind":
+                if (args.length <= 1) {
+                    return CommandCompletionUtil.WEBBIND_ACTIONS;
+                }
+                if (args.length == 2) {
+                    if (CommandCompletionUtil.WEBBIND_ACTIONS.stream().anyMatch(args[1]::equalsIgnoreCase)) {
+                        return getOnlinePlayerSuggestions("");
+                    }
+                    return CommandCompletionUtil.filterByPrefix(CommandCompletionUtil.WEBBIND_ACTIONS, args[1]);
+                }
+                return getOnlinePlayerSuggestions(args[2]);
+            case "format":
+                if (!Config.getInstance().allowPlayerFormatPrefixSuffix) {
+                    return List.of();
+                }
+                if (args.length <= 1) {
+                    return CommandCompletionUtil.FORMAT_SCOPES;
+                }
+                if (args.length == 2) {
+                    return CommandCompletionUtil.filterByPrefix(CommandCompletionUtil.FORMAT_SCOPES, args[1]);
+                }
+                if (args.length == 3) {
+                    return CommandCompletionUtil.filterByPrefix(CommandCompletionUtil.FORMAT_POSITIONS, args[2]);
+                }
+                if (args.length == 4) {
+                    return CommandCompletionUtil.filterByPrefix(CommandCompletionUtil.FORMAT_ACTIONS_BUNGEE, args[3]);
+                }
+                return List.of();
+            case "atalladmin":
+                if (args.length <= 1) {
+                    return CommandCompletionUtil.ATALLADMIN_ACTIONS;
+                }
+                if (args.length == 2) {
+                    if ("confirm".equalsIgnoreCase(args[1]) && (player.hasPermission(Const.PERMISSION_AT_ALL_ADMIN_RESET) || isAdmin)) {
+                        return getOnlinePlayerSuggestions("");
+                    }
+                    return CommandCompletionUtil.filterByPrefix(CommandCompletionUtil.ATALLADMIN_ACTIONS, args[1]);
+                }
+                if (args.length == 3 && "confirm".equalsIgnoreCase(args[1]) && (player.hasPermission(Const.PERMISSION_AT_ALL_ADMIN_RESET) || isAdmin)) {
+                    return getOnlinePlayerSuggestions(args[2]);
+                }
+                return List.of();
+            case "badword":
+                if (args.length <= 1) {
+                    return CommandCompletionUtil.BADWORD_ACTIONS;
+                }
+                if (args.length == 2) {
+                    if ("remove".equalsIgnoreCase(args[1])) {
+                        return CommandCompletionUtil.filterByPrefix(Config.getInstance().shieldeds, "");
+                    }
+                    if ("add".equalsIgnoreCase(args[1]) || "list".equalsIgnoreCase(args[1])) {
+                        return List.of();
+                    }
+                    return CommandCompletionUtil.filterByPrefix(CommandCompletionUtil.BADWORD_ACTIONS, args[1]);
+                }
+                if (args.length == 3 && "remove".equalsIgnoreCase(args[1])) {
+                    return CommandCompletionUtil.filterByPrefix(Config.getInstance().shieldeds, args[2]);
+                }
+                return List.of();
+            case "backpackview":
+                return BackpackViewCommandUtil.suggestTargets(
+                        args.length >= 2 ? args[1] : "",
+                        plugin.getProxy().getPlayers().stream().map(ProxiedPlayer::getName).toList()
+                );
+            default:
+                return List.of();
+        }
+    }
+
     @Override
     public Iterable<String> onTabComplete(CommandSender sender, String[] args) {
+        String[] remappedArgs = remapArgsForAlias(args);
+
         if (!(sender instanceof ProxiedPlayer)) {
+            if (remappedArgs.length == 0) {
+                return List.of("reload");
+            }
+            if (remappedArgs.length == 1) {
+                if ("reload".equalsIgnoreCase(remappedArgs[0])) {
+                    return CommandCompletionUtil.RELOAD_TARGETS;
+                }
+                return CommandCompletionUtil.filterByPrefix(List.of("reload"), remappedArgs[0]);
+            }
+            if ("reload".equalsIgnoreCase(remappedArgs[0])) {
+                return CommandCompletionUtil.filterByPrefix(CommandCompletionUtil.RELOAD_TARGETS, remappedArgs[1]);
+            }
             return Collections.emptyList();
         }
         ProxiedPlayer player = (ProxiedPlayer) sender;
         boolean isAdmin = Config.getInstance().isAdmin(player);
-        if (args.length == 1) {
-            List<String> completions = new ArrayList<>();
-            if (player.hasPermission(Const.PERMISSION_RELOAD) || isAdmin) completions.add("reload");
-            if (player.hasPermission(Const.PERMISSION_MONITOR_PRIVATE_MESSAGE) || isAdmin) completions.add("monitor");
-            if (player.hasPermission(Const.PERMISSION_VANISH) || isAdmin) completions.add("vanish");
-            if (player.hasPermission(Const.PERMISSION_MUTE) || isAdmin) {
-                completions.add("mute");
-                completions.add("unmute");
-                completions.add("muteinfo");
-            }
-            if (player.hasPermission(Const.PERMISSION_ADMIN) || isAdmin) completions.add("chatban");
-            if (player.hasPermission(Const.PERMISSION_BACKPACK_VIEW) || isAdmin) completions.add("backpackview");
-            if (player.hasPermission(Const.PERMISSION_WS) || Config.getInstance().isDefault(player)) completions.add("ws");
-            if (player.hasPermission(Const.PERMISSION_BIND) || Config.getInstance().isDefault(player)) completions.add("bind");
-            if (player.hasPermission(Const.PERMISSION_LIST) || Config.getInstance().isDefault(player)) completions.add("list");
-            if (player.hasPermission(Const.PERMISSION_UNBIND) || Config.getInstance().isDefault(player)) completions.add("unbind");
-            if (player.hasPermission(Const.PERMISSION_IGNORE) || Config.getInstance().isDefault(player)) completions.add("ignore");
-            if (player.hasPermission(Const.PERMISSION_NOAT) || Config.getInstance().isDefault(player)) completions.add("noat");
-            if (player.hasPermission(Const.PERMISSION_MUTEAT) || Config.getInstance().isDefault(player)) completions.add("muteat");
-            if (player.hasPermission(Const.PERMISSION_FORMAT) || Config.getInstance().isDefault(player)) completions.add("format");
-            if (player.hasPermission(Const.PERMISSION_AT_ALL_ADMIN) || Config.getInstance().isDefault(player)) completions.add("atalladmin");
-            if (player.hasPermission(Const.PERMISSION_ITEM_DISPLAY) || Config.getInstance().isDefault(player)) completions.add("itemdisplay");
-            if (player.hasPermission(Const.PERMISSION_QQ) || Config.getInstance().isDefault(player)) completions.add("qq");
-            if (player.hasPermission(Const.PERMISSION_MSG) || Config.getInstance().isDefault(player)) completions.add("msg");
-            String prefix = args[0].toLowerCase(Locale.ROOT);
-            return completions.stream().filter(s -> s.startsWith(prefix)).toList();
+        boolean isDefault = Config.getInstance().isDefault(player);
+
+        if (remappedArgs.length == 0) {
+            return suggestRootCommands(player, remappedArgs, isAdmin, isDefault);
         }
-        if (args.length == 2 && "backpackview".equalsIgnoreCase(args[0])
-                && (player.hasPermission(Const.PERMISSION_BACKPACK_VIEW) || isAdmin)) {
-            return BackpackViewCommandUtil.suggestTargets(
-                    args[1],
-                    plugin.getProxy().getPlayers().stream().map(ProxiedPlayer::getName).toList()
-            );
+        if (remappedArgs.length == 1 && !isKnownCommand(player, remappedArgs[0], isAdmin, isDefault)) {
+            return suggestRootCommands(player, remappedArgs, isAdmin, isDefault);
         }
-        return Collections.emptyList();
+        return suggestSubcommand(player, remappedArgs, isAdmin, isDefault);
     }
 
     private void handleBackpackView(CommandSender sender, ProxiedPlayer player, String[] args) {

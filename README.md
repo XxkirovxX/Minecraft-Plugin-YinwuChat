@@ -140,6 +140,18 @@ YinwuChat是Velocity代理插件和Spigot插件，主要功能有：
 - `/yinwuchat chatban <玩家> [时长] [原因]`：封禁 Web 账号（别名：`/chatban`，管理员）
 - `/yinwuchat chatunban <玩家>`：解封 Web 账号（别名：`/chatunban`，管理员）
 - `/yinwuchat itemdisplay`：物品展示帮助（别名：`/itemdisplay /showitem /displayitem`）
+- `/yinwuchat backpackview <玩家名>`：查看在线玩家背包（管理员）
+
+#### Velocity Tab 补全
+
+- `/yinwuchat` + `Tab`：显示当前玩家有权限使用的一级子命令
+- `/yinwuchat reload`：补全 `config`、`ws`
+- `/yinwuchat ignore`、`msg`、`mute`、`unmute`、`muteinfo`、`chatban`、`chatunban`、`backpackview`：补全在线玩家名
+- `/yinwuchat mute <玩家>`、`chatban <玩家>`：继续补全常用时长模板，如 `10m`、`30m`、`1h`、`1d`
+- `/yinwuchat format`：按层补全 `edit|show|public|private -> prefix|suffix -> set|clear`
+- `/yinwuchat atalladmin`：补全 `confirm`，管理员继续补全玩家名
+- `/yinwuchat webbind`：补全 `query|unbind`，随后补全玩家名
+- `/yinwuchat badword`：补全 `add|remove|list`，`remove` 后继续补全现有屏蔽词
 
 #### Bukkit 指令（子服）
 
@@ -937,6 +949,13 @@ admins:
     - `/yinwuchat monitor`：切换是否监听其他玩家的私聊消息，需要具有`yinwuchat.admin.monitor`权限
 3. WebClient命令
   - `/msg <玩家名> <消息>`：向玩家发送私聊消息
+
+补充：
+
+- `/yinwuchat` 与别名 `/yw` 现在支持一级子命令 Tab 补全，并按权限过滤结果
+- `/chatban`、`/chatunban` 以及代理出的独立命令（如 `/vanish`、`/noat`、`/muteat`、`/monitor`）会转发到对应的 `/yinwuchat` 子命令补全逻辑
+- `feat-login-backpack` 分支额外补全 `/yinwuchat backpackview <玩家名>`
+- Bungee 侧已补全 `reload`、`bind`、`list`、`unbind`、`format`、`ignore`、`noat`、`muteat`、`monitor`、`vanish`、`permsync`、`atalladmin`、`webbind`、`badword`、`chatban`、`chatunban`、`reset`、`backpackview` 等分支
 
 ### Bukkit端权限
 
