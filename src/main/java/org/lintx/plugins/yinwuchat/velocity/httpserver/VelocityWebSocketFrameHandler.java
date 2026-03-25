@@ -218,8 +218,7 @@ public class VelocityWebSocketFrameHandler extends SimpleChannelInboundHandler<W
             return;
         }
         // 检查账户是否已绑定该玩家，如果已绑定则不发送确认消息
-        String existingBound = authService.getBoundPlayerName(account);
-        boolean alreadyBound = playerName.equalsIgnoreCase(existingBound);
+        boolean alreadyBound = authService.isWebAccountBoundToPlayer(account, playerName);
         
         authService.bindAccountPlayerName(account, playerName);
         util.setAccount(account);

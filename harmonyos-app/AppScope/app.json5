@@ -2,8 +2,8 @@
   "app": {
     "bundleName": "com.lintx.yinwuchat",
     "vendor": "lintx",
-    "versionCode": 3000000,
-    "versionName": "3.0.0",
+    "versionCode": 3000001,
+    "versionName": "3.0.1",
     "icon": "$media:app_icon",
     "label": "$string:app_name"
   }

@@ -7,6 +7,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.lintx.plugins.yinwuchat.Const;
 import org.lintx.plugins.yinwuchat.Util.FoliaUtil;
 import org.lintx.plugins.yinwuchat.bukkit.commands.PrivateMessage;
+import org.lintx.plugins.yinwuchat.bukkit.commands.ViewBackpackCommand;
 import org.lintx.plugins.yinwuchat.bukkit.commands.ViewItemCommand;
 
 import java.util.ArrayList;
@@ -59,6 +60,7 @@ public class YinwuChat extends JavaPlugin {
         getCommand("msg").setExecutor(new PrivateMessage(this));
         getCommand("yinwuchat-bukkit").setExecutor(new org.lintx.plugins.yinwuchat.bukkit.commands.YinwuChat(this));
         getCommand("viewitem").setExecutor(new ViewItemCommand(this));
+        getCommand("viewbackpack").setExecutor(new ViewBackpackCommand(this));
         
         // 初始化物品展示缓存
         ItemDisplayCache.getInstance().setPlugin(this);

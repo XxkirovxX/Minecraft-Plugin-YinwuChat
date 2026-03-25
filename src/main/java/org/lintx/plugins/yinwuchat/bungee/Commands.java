@@ -1,13 +1,19 @@
 package org.lintx.plugins.yinwuchat.bungee;
 
+import com.google.common.io.ByteArrayDataOutput;
+import com.google.common.io.ByteStreams;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFutureListener;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
+import net.md_5.bungee.api.connection.Server;
 import net.md_5.bungee.api.config.ListenerInfo;
 import net.md_5.bungee.api.plugin.Command;
+import net.md_5.bungee.api.plugin.TabExecutor;
+import org.lintx.plugins.yinwuchat.Util.BackpackViewCommandUtil;
 import org.lintx.plugins.yinwuchat.Const;
+import org.lintx.plugins.yinwuchat.Util.BackpackViewDebugLogUtil;
 import org.lintx.plugins.yinwuchat.Util.MessageUtil;
 import org.lintx.plugins.yinwuchat.bungee.config.Config;
 import org.lintx.plugins.yinwuchat.bungee.config.PlayerConfig;
@@ -17,10 +23,11 @@ import org.lintx.plugins.yinwuchat.bungee.httpserver.WsClientHelper;
 import org.lintx.plugins.yinwuchat.bungee.httpserver.WsClientUtil;
 import org.lintx.plugins.yinwuchat.bungee.manage.MuteManage;
 import org.lintx.plugins.yinwuchat.common.auth.AuthService;
+import org.lintx.plugins.yinwuchat.velocity.json.ItemRequest;
 
 import java.util.*;
 
-public class Commands extends Command {
+public class Commands extends Command implements TabExecutor {
     private YinwuChat plugin;
 
     Commands(YinwuChat plugin, String name) {
@@ -223,10 +230,26 @@ public class Commands extends Command {
                     AuthService authService = AuthService.getInstance(plugin.getDataFolder());
                     if ("query".equals(action)) {
                         if (authService.accountExists(target)) {
-                            String bound = authService.getBoundPlayerName(target);
-                            String msg = bound == null || bound.isEmpty()
-                                ? "账号 " + target + " 未绑定玩家名"
-                                : "账号 " + target + " 绑定玩家名: " + bound;
+                            java.util.List<org.lintx.plugins.yinwuchat.common.auth.AuthUserStore.BoundPlayerRecord> list = authService.listBoundPlayers(target);
+                            String msg;
+                            if (list == null || list.isEmpty()) {
+                                msg = "账号 " + target + " 未绑定玩家名";
+                            } else {
+                                StringBuilder sb = new StringBuilder("账号 ").append(target).append(" 绑定玩家: ");
+                                for (int i = 0; i < list.size(); i++) {
+                                    org.lintx.plugins.yinwuchat.common.auth.AuthUserStore.BoundPlayerRecord b = list.get(i);
+                                    if (i > 0) {
+                                        sb.append(", ");
+                                    }
+                                    if (b != null && b.playerName != null) {
+                                        sb.append(b.playerName);
+                                        if (b.needsRebind) {
+                                            sb.append("(需重新绑定)");
+                                        }
+                                    }
+                                }
+                                msg = sb.toString();
+                            }
                             sender.sendMessage(MessageUtil.newTextComponent(ChatColor.GREEN + msg));
                             return;
                         }
@@ -270,6 +293,11 @@ public class Commands extends Command {
                         if (tokens.bindToken(token,player)){
                             sender.sendMessage(MessageUtil.newTextComponent(ChatColor.GREEN + "绑定成功"));
                             tokens.save();
+                            AuthService authService = AuthService.getInstance(plugin.getDataFolder());
+                            String pendingWeb = authService.findAccountByPendingBindToken(token);
+                            if (pendingWeb != null && !pendingWeb.isEmpty()) {
+                                authService.onGameBindWithPendingTokenCompletes(pendingWeb, player.getName(), token);
+                            }
                             Channel channel = WsClientHelper.getWebSocket(token);
                             if (channel != null) {
                                 WsClientHelper.get(channel).setUUID(playerUUID);
@@ -675,6 +703,14 @@ public class Commands extends Command {
                 }
                 return;
             }
+            else if (first.equalsIgnoreCase("backpackview")) {
+                if (player.hasPermission(Const.PERMISSION_BACKPACK_VIEW) || isAdmin) {
+                    handleBackpackView(sender, player, args);
+                } else {
+                    sender.sendMessage(MessageUtil.newTextComponent(ChatColor.RED + "权限不足"));
+                }
+                return;
+            }
         }
         sender.sendMessage(MessageUtil.newTextComponent(ChatColor.GOLD + "YinwuChat Version "+ plugin.getDescription().getVersion() + ",Author:"+plugin.getDescription().getAuthor()));
         sender.sendMessage(MessageUtil.newTextComponent(ChatColor.GOLD + "插件帮助："));
@@ -712,6 +748,83 @@ public class Commands extends Command {
             sender.sendMessage(MessageUtil.newTextComponent(ChatColor.GOLD + "Web账号绑定查询/解绑：&b/yinwuchat webbind <query|unbind> <账号名/玩家名>"));
             sender.sendMessage(MessageUtil.newTextComponent(ChatColor.GOLD + "封禁Web账号：&b/chatban <账号名/玩家名> [时长] [理由]"));
             sender.sendMessage(MessageUtil.newTextComponent(ChatColor.GOLD + "解封Web账号：&b/chatunban <账号名/玩家名>"));
+        }
+        if (sender.hasPermission(Const.PERMISSION_BACKPACK_VIEW) || isAdmin) {
+            sender.sendMessage(MessageUtil.newTextComponent(ChatColor.GOLD + "查看指定玩家背包：&b/yinwuchat backpackview <玩家名>"));
+        }
+    }
+
+    @Override
+    public Iterable<String> onTabComplete(CommandSender sender, String[] args) {
+        if (!(sender instanceof ProxiedPlayer)) {
+            return Collections.emptyList();
+        }
+        ProxiedPlayer player = (ProxiedPlayer) sender;
+        boolean isAdmin = Config.getInstance().isAdmin(player);
+        if (args.length == 1) {
+            List<String> completions = new ArrayList<>();
+            if (player.hasPermission(Const.PERMISSION_RELOAD) || isAdmin) completions.add("reload");
+            if (player.hasPermission(Const.PERMISSION_MONITOR_PRIVATE_MESSAGE) || isAdmin) completions.add("monitor");
+            if (player.hasPermission(Const.PERMISSION_VANISH) || isAdmin) completions.add("vanish");
+            if (player.hasPermission(Const.PERMISSION_MUTE) || isAdmin) {
+                completions.add("mute");
+                completions.add("unmute");
+                completions.add("muteinfo");
+            }
+            if (player.hasPermission(Const.PERMISSION_ADMIN) || isAdmin) completions.add("chatban");
+            if (player.hasPermission(Const.PERMISSION_BACKPACK_VIEW) || isAdmin) completions.add("backpackview");
+            if (player.hasPermission(Const.PERMISSION_WS) || Config.getInstance().isDefault(player)) completions.add("ws");
+            if (player.hasPermission(Const.PERMISSION_BIND) || Config.getInstance().isDefault(player)) completions.add("bind");
+            if (player.hasPermission(Const.PERMISSION_LIST) || Config.getInstance().isDefault(player)) completions.add("list");
+            if (player.hasPermission(Const.PERMISSION_UNBIND) || Config.getInstance().isDefault(player)) completions.add("unbind");
+            if (player.hasPermission(Const.PERMISSION_IGNORE) || Config.getInstance().isDefault(player)) completions.add("ignore");
+            if (player.hasPermission(Const.PERMISSION_NOAT) || Config.getInstance().isDefault(player)) completions.add("noat");
+            if (player.hasPermission(Const.PERMISSION_MUTEAT) || Config.getInstance().isDefault(player)) completions.add("muteat");
+            if (player.hasPermission(Const.PERMISSION_FORMAT) || Config.getInstance().isDefault(player)) completions.add("format");
+            if (player.hasPermission(Const.PERMISSION_AT_ALL_ADMIN) || Config.getInstance().isDefault(player)) completions.add("atalladmin");
+            if (player.hasPermission(Const.PERMISSION_ITEM_DISPLAY) || Config.getInstance().isDefault(player)) completions.add("itemdisplay");
+            if (player.hasPermission(Const.PERMISSION_QQ) || Config.getInstance().isDefault(player)) completions.add("qq");
+            if (player.hasPermission(Const.PERMISSION_MSG) || Config.getInstance().isDefault(player)) completions.add("msg");
+            String prefix = args[0].toLowerCase(Locale.ROOT);
+            return completions.stream().filter(s -> s.startsWith(prefix)).toList();
+        }
+        if (args.length == 2 && "backpackview".equalsIgnoreCase(args[0])
+                && (player.hasPermission(Const.PERMISSION_BACKPACK_VIEW) || isAdmin)) {
+            return BackpackViewCommandUtil.suggestTargets(
+                    args[1],
+                    plugin.getProxy().getPlayers().stream().map(ProxiedPlayer::getName).toList()
+            );
+        }
+        return Collections.emptyList();
+    }
+
+    private void handleBackpackView(CommandSender sender, ProxiedPlayer player, String[] args) {
+        if (args.length < 2) {
+            sender.sendMessage(MessageUtil.newTextComponent(ChatColor.RED + "用法: /yinwuchat backpackview <玩家名>"));
+            return;
+        }
+        ProxiedPlayer target = plugin.getProxy().getPlayer(args[1]);
+        if (target == null) {
+            sender.sendMessage(MessageUtil.newTextComponent(ChatColor.RED + "未找到该在线玩家"));
+            return;
+        }
+        Server server = target.getServer();
+        if (server == null) {
+            sender.sendMessage(MessageUtil.newTextComponent(ChatColor.RED + "目标玩家当前未连接后端服务器"));
+            return;
+        }
+        try {
+            ItemRequest request = new ItemRequest(player.getName(), "backpackview", target.getName());
+            plugin.getLogger().fine("[backpackview] bungee dispatch request: " + BackpackViewDebugLogUtil.summarizeRequest(request)
+                    + ", targetServer=" + server.getInfo().getName());
+            ByteArrayDataOutput output = ByteStreams.newDataOutput();
+            output.writeUTF(Const.PLUGIN_SUB_CHANNEL_ITEM_REQUEST);
+            output.writeUTF(org.lintx.plugins.yinwuchat.Util.Gson.gson().toJson(request));
+            server.sendData(Const.PLUGIN_CHANNEL, output.toByteArray());
+            sender.sendMessage(MessageUtil.newTextComponent(ChatColor.YELLOW + "正在请求 " + target.getName() + " 的背包..."));
+        } catch (Exception e) {
+            sender.sendMessage(MessageUtil.newTextComponent(ChatColor.RED + "请求背包失败，请稍后重试"));
+            plugin.getLogger().warning("Failed to request backpack view: " + e.getMessage());
         }
     }
 
