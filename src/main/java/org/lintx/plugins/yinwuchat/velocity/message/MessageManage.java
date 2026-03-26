@@ -7,6 +7,7 @@ import com.velocitypowered.api.proxy.ServerConnection;
 import com.velocitypowered.api.proxy.messages.MinecraftChannelIdentifier;
 import org.lintx.plugins.yinwuchat.Const;
 import org.lintx.plugins.yinwuchat.Util.BackpackViewDebugLogUtil;
+import org.lintx.plugins.yinwuchat.Util.ClickActionResolver;
 import org.lintx.plugins.yinwuchat.Util.WebItemPayloadUtil;
 import org.lintx.plugins.yinwuchat.chat.struct.ChatPlayer;
 import org.lintx.plugins.yinwuchat.chat.struct.ChatSource;
@@ -1469,8 +1470,8 @@ public class MessageManage {
                     .replace("{displayName}", fromPlayer)  // 兼容旧格式
                     .replace("{message}", message);
 
-                ClickEvent.Action action = determineClickAction(clickCommand);
-                component = component.clickEvent(ClickEvent.clickEvent(action, clickCommand));
+                ClickActionResolver.ResolvedClick resolved = ClickActionResolver.resolve(clickCommand, Config.getInstance().linkRegex);
+                component = component.clickEvent(ClickEvent.clickEvent(toAdventureAction(resolved.getMode()), resolved.getValue()));
             }
 
             result = result.append(component);
@@ -1479,22 +1480,10 @@ public class MessageManage {
         return result;
     }
 
-    // 确定点击动作类型
-    private ClickEvent.Action determineClickAction(String click) {
-        Pattern pattern = Pattern.compile("((https?|ftp|file)://[-A-Za-z0-9+&@#/%?=~_|!:,.;]+[-A-Za-z0-9+&@#/%=~_|])");
-        Matcher matcher = pattern.matcher(click);
-
-        if (matcher.find()) {
-            return ClickEvent.Action.OPEN_URL;
-        } else if (click.startsWith("/msg")) {
-            return ClickEvent.Action.SUGGEST_COMMAND;  // 私聊命令建议输入而不是直接运行
-        } else if (click.startsWith("/")) {
-            return ClickEvent.Action.RUN_COMMAND;  // 其他命令直接运行
-        } else if (click.startsWith("!")) {
-            return ClickEvent.Action.RUN_COMMAND;
-        } else {
-            return ClickEvent.Action.SUGGEST_COMMAND;
-        }
+    private ClickEvent.Action toAdventureAction(ClickActionResolver.ClickMode mode) {
+        return mode == ClickActionResolver.ClickMode.OPEN_URL
+                ? ClickEvent.Action.OPEN_URL
+                : ClickEvent.Action.SUGGEST_COMMAND;
     }
     
     /**
@@ -1905,9 +1894,10 @@ public class MessageManage {
                 part = part.hoverEvent(HoverEvent.showText(hoverComponent));
             }
 
-            // 添加点击事件（统一使用 SUGGEST_COMMAND，将内容填入聊天栏）
+            // 添加点击事件（网址打开，命令/占位文本填入聊天栏）
             if (format.click != null && !format.click.isEmpty()) {
-                part = part.clickEvent(ClickEvent.suggestCommand(format.click));
+                ClickActionResolver.ResolvedClick resolved = ClickActionResolver.resolve(format.click, Config.getInstance().linkRegex);
+                part = part.clickEvent(ClickEvent.clickEvent(toAdventureAction(resolved.getMode()), resolved.getValue()));
             }
 
             result = result.append(part);

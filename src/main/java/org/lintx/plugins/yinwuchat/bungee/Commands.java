@@ -6,13 +6,19 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFutureListener;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.CommandSender;
+import net.md_5.bungee.api.chat.ClickEvent;
+import net.md_5.bungee.api.chat.HoverEvent;
+import net.md_5.bungee.api.chat.TextComponent;
+import net.md_5.bungee.api.chat.hover.content.Text;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.connection.Server;
 import net.md_5.bungee.api.config.ListenerInfo;
 import net.md_5.bungee.api.plugin.Command;
 import net.md_5.bungee.api.plugin.TabExecutor;
 import org.lintx.plugins.yinwuchat.Util.BackpackViewCommandUtil;
+import org.lintx.plugins.yinwuchat.Util.AdminAlertCommandUtil;
 import org.lintx.plugins.yinwuchat.Util.CommandCompletionUtil;
+import org.lintx.plugins.yinwuchat.Util.PlayerFormatCommandUtil;
 import org.lintx.plugins.yinwuchat.Const;
 import org.lintx.plugins.yinwuchat.Util.BackpackViewDebugLogUtil;
 import org.lintx.plugins.yinwuchat.Util.MessageUtil;
@@ -400,87 +406,27 @@ public class Commands extends Command implements TabExecutor {
             }
             else if (first.equalsIgnoreCase("format") && Config.getInstance().allowPlayerFormatPrefixSuffix){
                 if (player.hasPermission(Const.PERMISSION_FORMAT) || isDefault) {
-                    if (args.length>=4){
-                    String namespace = args[1].toLowerCase(Locale.ROOT);
-                    String position = args[2].toLowerCase(Locale.ROOT);
-                    String action = args[3].toLowerCase(Locale.ROOT);
-                    String str = "";
-                    if (args.length>=5){
-                        str = MessageUtil.filter(args[4],Config.getInstance().playerFormatPrefixSuffixDenyStyle);
+                    if (args.length == 1) {
+                        showFormatHelp(sender);
+                        return;
                     }
-                    if (namespace.equals("public")){
-                        if (position.equals("prefix")){
-                            if ("view".equals(action)){
-                                if ("".equals(playerConfig.publicPrefix)){
-                                    sender.sendMessage(MessageUtil.newTextComponent(ChatColor.GREEN + "你没有设置公共消息前缀"));
-                                }else {
-                                    sender.sendMessage(MessageUtil.newTextComponent(ChatColor.GREEN + "你的公共消息前缀是:"+playerConfig.publicPrefix.replaceAll("([&§])([0-9a-fklmnor])","$1&a$2")));
-                                }
-                                return;
-                            }
-                            else if ("set".equals(action)) {
-                                playerConfig.publicPrefix = str;
-                                playerConfig.save();
-                                sender.sendMessage(MessageUtil.newTextComponent(ChatColor.GREEN + "你的公共消息前缀已设置为:"+playerConfig.publicPrefix.replaceAll("([&§])([0-9a-fklmnor])","$1&a$2")));
-                                return;
-                            }
-                        }
-                        else if (position.equals("suffix")){
-                            if ("view".equals(action)){
-                                if ("".equals(playerConfig.publicSuffix)){
-                                    sender.sendMessage(MessageUtil.newTextComponent(ChatColor.GREEN + "你没有设置公共消息后缀"));
-                                }else {
-                                    sender.sendMessage(MessageUtil.newTextComponent(ChatColor.GREEN + "你的公共消息后缀是:"+playerConfig.publicSuffix.replaceAll("([&§])([0-9a-fklmnor])","$1&a$2")));
-                                }
-                                return;
-                            }
-                            else if ("set".equals(action))  {
-                                playerConfig.publicSuffix = str;
-                                playerConfig.save();
-                                sender.sendMessage(MessageUtil.newTextComponent(ChatColor.GREEN + "你的公共消息后缀已设置为:"+playerConfig.publicSuffix.replaceAll("([&§])([0-9a-fklmnor])","$1&a$2")));
-                                return;
-                            }
-                        }
+                    if (args[1].equalsIgnoreCase("edit")) {
+                        showFormatEditMenu(sender);
+                        return;
                     }
-                    else if (namespace.equals("private")){
-                        if (position.equals("prefix")){
-                            if ("view".equals(action)){
-                                if ("".equals(playerConfig.privatePrefix)){
-                                    sender.sendMessage(MessageUtil.newTextComponent(ChatColor.GREEN + "你没有设置私聊消息前缀"));
-                                }else {
-                                    sender.sendMessage(MessageUtil.newTextComponent(ChatColor.GREEN + "你的私聊消息前缀是:"+playerConfig.privatePrefix.replaceAll("([&§])([0-9a-fklmnor])","$1&a$2")));
-                                }
-                                return;
-                            }
-                            else if ("set".equals(action))  {
-                                playerConfig.privatePrefix = str;
-                                playerConfig.save();
-                                sender.sendMessage(MessageUtil.newTextComponent(ChatColor.GREEN + "你的私聊消息前缀已设置为:"+playerConfig.privatePrefix.replaceAll("([&§])([0-9a-fklmnor])","$1&a$2")));
-                                return;
-                            }
-                        }
-                        else if (position.equals("suffix")){
-                            if ("view".equals(action)){
-                                if ("".equals(playerConfig.privateSuffix)){
-                                    sender.sendMessage(MessageUtil.newTextComponent(ChatColor.GREEN + "你没有设置私聊消息后缀"));
-                                }else {
-                                    sender.sendMessage(MessageUtil.newTextComponent(ChatColor.GREEN + "你的私聊消息后缀是:"+playerConfig.privateSuffix.replaceAll("([&§])([0-9a-fklmnor])","$1&a$2")));
-                                }
-                                return;
-                            }
-                            else if ("set".equals(action))  {
-                                playerConfig.privateSuffix = str;
-                                playerConfig.save();
-                                sender.sendMessage(MessageUtil.newTextComponent(ChatColor.GREEN + "你的私聊消息后缀已设置为:"+playerConfig.privateSuffix.replaceAll("([&§])([0-9a-fklmnor])","$1&a$2")));
-                                return;
-                            }
-                        }
+                    if (args[1].equalsIgnoreCase("show")) {
+                        showCurrentFormat(sender, playerConfig);
+                        return;
                     }
-                }
-                }
-                else {
+                    if (args.length >= 4) {
+                        handleFormatSet(sender, playerConfig, args);
+                        return;
+                    }
+                } else {
                     sender.sendMessage(MessageUtil.newTextComponent(ChatColor.RED + "权限不足"));
                 }
+                showFormatHelp(sender);
+                return;
             }
             else if (first.equalsIgnoreCase("vanish")){
                 if (player.hasPermission(Const.PERMISSION_VANISH) || Config.getInstance().isAdmin(player)){
@@ -666,6 +612,16 @@ public class Commands extends Command implements TabExecutor {
                 for (ProxiedPlayer p : plugin.getProxy().getPlayers()) {
                     if (Config.getInstance().isAdmin(p)) {
                         p.sendMessage(gameAlert);
+                        TextComponent confirmAck = new TextComponent("处理结果：");
+                        confirmAck.setColor(ChatColor.YELLOW);
+                        TextComponent button = new TextComponent("[确认收到]");
+                        button.setColor(ChatColor.GREEN);
+                        button.setBold(true);
+                        button.setClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, AdminAlertCommandUtil.buildAtAllAdminConfirmCommand(playerName)));
+                        button.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("点击填入确认指令并重置该玩家冷却")));
+                        confirmAck.setText("处理结果：");
+                        confirmAck.addExtra(button);
+                        p.sendMessage(confirmAck);
                     }
                 }
 
@@ -723,7 +679,7 @@ public class Commands extends Command implements TabExecutor {
         sender.sendMessage(MessageUtil.newTextComponent(ChatColor.GOLD + "可以解绑对应的token，token为查询结果中的token,可以只输入前面的部分"));
         sender.sendMessage(MessageUtil.newTextComponent(ChatColor.GOLD + "发送私聊消息：&b/msg <player_name> <message>&6，例：&b/msg LinTx 一条私聊消息"));
         if (Config.getInstance().allowPlayerFormatPrefixSuffix){
-            sender.sendMessage(MessageUtil.newTextComponent(ChatColor.GOLD + "查看/设置聊天前后缀：&b/yinwuchat format public/private prefix/suffix view/set [prefix/suffix]"));
+            sender.sendMessage(MessageUtil.newTextComponent(ChatColor.GOLD + "查看/设置聊天前后缀：&b/yinwuchat format edit/show/public/private prefix/suffix set/clear [内容]"));
         }
         sender.sendMessage(MessageUtil.newTextComponent(ChatColor.GOLD + "被@时静音：&b/yinwuchat muteat"));
         sender.sendMessage(MessageUtil.newTextComponent(ChatColor.GOLD + "阻止自己被@：&b/yinwuchat noat&6（无法阻止被管理@全体）"));
@@ -934,16 +890,24 @@ public class Commands extends Command implements TabExecutor {
                     return List.of();
                 }
                 if (args.length <= 1) {
-                    return CommandCompletionUtil.FORMAT_SCOPES;
+                    return CommandCompletionUtil.FORMAT_ROOT_ACTIONS;
                 }
                 if (args.length == 2) {
-                    return CommandCompletionUtil.filterByPrefix(CommandCompletionUtil.FORMAT_SCOPES, args[1]);
+                    if (CommandCompletionUtil.FORMAT_SCOPES.stream().anyMatch(args[1]::equalsIgnoreCase)
+                            || "edit".equalsIgnoreCase(args[1])
+                            || "show".equalsIgnoreCase(args[1])) {
+                        if ("edit".equalsIgnoreCase(args[1]) || "show".equalsIgnoreCase(args[1])) {
+                            return List.of();
+                        }
+                        return CommandCompletionUtil.FORMAT_POSITIONS;
+                    }
+                    return CommandCompletionUtil.filterByPrefix(CommandCompletionUtil.FORMAT_ROOT_ACTIONS, args[1]);
                 }
                 if (args.length == 3) {
                     return CommandCompletionUtil.filterByPrefix(CommandCompletionUtil.FORMAT_POSITIONS, args[2]);
                 }
                 if (args.length == 4) {
-                    return CommandCompletionUtil.filterByPrefix(CommandCompletionUtil.FORMAT_ACTIONS_BUNGEE, args[3]);
+                    return CommandCompletionUtil.filterByPrefix(CommandCompletionUtil.FORMAT_ACTIONS_VELOCITY, args[3]);
                 }
                 return List.of();
             case "atalladmin":
@@ -1017,6 +981,128 @@ public class Commands extends Command implements TabExecutor {
             return suggestRootCommands(player, remappedArgs, isAdmin, isDefault);
         }
         return suggestSubcommand(player, remappedArgs, isAdmin, isDefault);
+    }
+
+    private void showFormatEditMenu(CommandSender sender) {
+        sender.sendMessage(MessageUtil.newTextComponent(ChatColor.GOLD + "=== 聊天前后缀编辑模式 ==="));
+        sender.sendMessage(MessageUtil.newTextComponent(ChatColor.YELLOW + "已进入编辑模式，可直接点击设置或清除："));
+        sender.sendMessage(buildFormatEditLine("公共前缀", "/yinwuchat format public prefix set ", "/yinwuchat format public prefix clear"));
+        sender.sendMessage(buildFormatEditLine("公共后缀", "/yinwuchat format public suffix set ", "/yinwuchat format public suffix clear"));
+        sender.sendMessage(buildFormatEditLine("私聊前缀", "/yinwuchat format private prefix set ", "/yinwuchat format private prefix clear"));
+        sender.sendMessage(buildFormatEditLine("私聊后缀", "/yinwuchat format private suffix set ", "/yinwuchat format private suffix clear"));
+        sender.sendMessage(MessageUtil.newTextComponent(ChatColor.GRAY + "提示：点击 [✔] 后在聊天框中输入内容，支持颜色代码 (&a, &b 等)"));
+    }
+
+    private TextComponent buildFormatEditLine(String label, String setCommand, String clearCommand) {
+        TextComponent root = new TextComponent(label + " ");
+
+        TextComponent setButton = new TextComponent("[✔]");
+        setButton.setColor(ChatColor.GREEN);
+        setButton.setBold(true);
+        setButton.setClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, setCommand));
+        setButton.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("点击设置" + label)));
+
+        TextComponent clearButton = new TextComponent("[清除]");
+        clearButton.setColor(ChatColor.RED);
+        clearButton.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, clearCommand));
+        clearButton.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("点击清除" + label)));
+
+        root.addExtra(setButton);
+        root.addExtra(" ");
+        root.addExtra(clearButton);
+        return root;
+    }
+
+    private void showCurrentFormat(CommandSender sender, PlayerConfig.Player playerConfig) {
+        sender.sendMessage(MessageUtil.newTextComponent(ChatColor.GOLD + "=== 你的聊天前后缀 ==="));
+        sendFormatValueLine(sender, "公共前缀", playerConfig.publicPrefix, "/yinwuchat format public prefix clear");
+        sendFormatValueLine(sender, "公共后缀", playerConfig.publicSuffix, "/yinwuchat format public suffix clear");
+        sendFormatValueLine(sender, "私聊前缀", playerConfig.privatePrefix, "/yinwuchat format private prefix clear");
+        sendFormatValueLine(sender, "私聊后缀", playerConfig.privateSuffix, "/yinwuchat format private suffix clear");
+    }
+
+    private void sendFormatValueLine(CommandSender sender, String label, String value, String clearCommand) {
+        if (value == null || value.isEmpty()) {
+            sender.sendMessage(MessageUtil.newTextComponent(ChatColor.WHITE + label + ": " + ChatColor.GRAY + "(未设置)"));
+            return;
+        }
+
+        TextComponent root = MessageUtil.newTextComponent(ChatColor.WHITE + label + ": " + formatPreview(value) + " ");
+        TextComponent clearButton = new TextComponent("[清除]");
+        clearButton.setColor(ChatColor.RED);
+        clearButton.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, clearCommand));
+        clearButton.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("点击清除" + label)));
+        root.addExtra(clearButton);
+        sender.sendMessage(root);
+    }
+
+    private void handleFormatSet(CommandSender sender, PlayerConfig.Player playerConfig, String[] args) {
+        String namespace = args[1].toLowerCase(Locale.ROOT);
+        String position = args[2].toLowerCase(Locale.ROOT);
+        String action = args[3].toLowerCase(Locale.ROOT);
+
+        if ((!namespace.equals("public") && !namespace.equals("private"))
+                || (!position.equals("prefix") && !position.equals("suffix"))) {
+            showFormatHelp(sender);
+            return;
+        }
+
+        if ("clear".equals(action)) {
+            applyFormatValue(playerConfig, namespace, position, "");
+            playerConfig.save();
+            sender.sendMessage(MessageUtil.newTextComponent(ChatColor.GREEN + "✓ 已清除" + describeFormatTarget(namespace, position)));
+            return;
+        }
+
+        if (!"set".equals(action)) {
+            showFormatHelp(sender);
+            return;
+        }
+
+        String content = PlayerFormatCommandUtil.joinAndFilterContent(args, 4, Config.getInstance().playerFormatPrefixSuffixDenyStyle);
+        if (content.isEmpty()) {
+            sender.sendMessage(MessageUtil.newTextComponent(ChatColor.RED + "✗ 请输入要设置的内容"));
+            return;
+        }
+
+        applyFormatValue(playerConfig, namespace, position, content);
+        playerConfig.save();
+        sender.sendMessage(MessageUtil.newTextComponent(ChatColor.GREEN + "✓ 已设置" + describeFormatTarget(namespace, position) + "为:" + formatPreview(content)));
+    }
+
+    private void applyFormatValue(PlayerConfig.Player playerConfig, String namespace, String position, String value) {
+        if (namespace.equals("public")) {
+            if (position.equals("prefix")) {
+                playerConfig.publicPrefix = value;
+            } else {
+                playerConfig.publicSuffix = value;
+            }
+        } else {
+            if (position.equals("prefix")) {
+                playerConfig.privatePrefix = value;
+            } else {
+                playerConfig.privateSuffix = value;
+            }
+        }
+    }
+
+    private String describeFormatTarget(String namespace, String position) {
+        return ("public".equals(namespace) ? "公共" : "私聊") + ("prefix".equals(position) ? "前缀" : "后缀");
+    }
+
+    private String formatPreview(String value) {
+        return value.replaceAll("([&§])([0-9a-fklmnor])", "$1&a$2");
+    }
+
+    private void showFormatHelp(CommandSender sender) {
+        sender.sendMessage(MessageUtil.newTextComponent(ChatColor.GOLD + "=== 聊天前后缀帮助 ==="));
+        sender.sendMessage(MessageUtil.newTextComponent(ChatColor.AQUA + "/yinwuchat format edit" + ChatColor.GRAY + "：进入编辑模式"));
+        sender.sendMessage(MessageUtil.newTextComponent(ChatColor.AQUA + "/yinwuchat format show" + ChatColor.GRAY + "：显示当前前后缀"));
+        sender.sendMessage(MessageUtil.newTextComponent(ChatColor.AQUA + "/yinwuchat format public prefix set <内容>" + ChatColor.GRAY + "：设置公共前缀"));
+        sender.sendMessage(MessageUtil.newTextComponent(ChatColor.AQUA + "/yinwuchat format public suffix set <内容>" + ChatColor.GRAY + "：设置公共后缀"));
+        sender.sendMessage(MessageUtil.newTextComponent(ChatColor.AQUA + "/yinwuchat format private prefix set <内容>" + ChatColor.GRAY + "：设置私聊前缀"));
+        sender.sendMessage(MessageUtil.newTextComponent(ChatColor.AQUA + "/yinwuchat format private suffix set <内容>" + ChatColor.GRAY + "：设置私聊后缀"));
+        sender.sendMessage(MessageUtil.newTextComponent(ChatColor.AQUA + "/yinwuchat format <public|private> <prefix|suffix> clear" + ChatColor.GRAY + "：清除前后缀"));
     }
 
     private void handleBackpackView(CommandSender sender, ProxiedPlayer player, String[] args) {

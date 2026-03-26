@@ -12,7 +12,9 @@ import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import org.lintx.plugins.yinwuchat.Util.BackpackViewCommandUtil;
+import org.lintx.plugins.yinwuchat.Util.AdminAlertCommandUtil;
 import org.lintx.plugins.yinwuchat.Util.CommandCompletionUtil;
+import org.lintx.plugins.yinwuchat.Util.PlayerFormatCommandUtil;
 import org.lintx.plugins.yinwuchat.Const;
 import org.lintx.plugins.yinwuchat.Util.BackpackViewDebugLogUtil;
 import org.lintx.plugins.yinwuchat.Util.PluginMessageChannelUtil;
@@ -654,6 +656,12 @@ public class YinwuChatCommand implements SimpleCommand {
         for (Player p : plugin.getProxy().getAllPlayers()) {
             if (config.isAdmin(p)) {
                 p.sendMessage(gameAlert);
+                p.sendMessage(Component.text("处理结果：").color(NamedTextColor.YELLOW)
+                    .append(Component.text("[确认收到]").color(NamedTextColor.GREEN)
+                        .decorate(TextDecoration.BOLD)
+                        .clickEvent(ClickEvent.suggestCommand(AdminAlertCommandUtil.buildAtAllAdminConfirmCommand(playerName)))
+                        .hoverEvent(net.kyori.adventure.text.event.HoverEvent.showText(
+                            Component.text("点击填入确认指令并重置该玩家冷却").color(NamedTextColor.GRAY)))));
             }
         }
 
@@ -1401,7 +1409,7 @@ public class YinwuChatCommand implements SimpleCommand {
     private void showFormatEditMenu(Player player) {
         player.sendMessage(Component.text(""));
         player.sendMessage(Component.text("=== 聊天前后缀编辑模式 ===").color(NamedTextColor.GOLD));
-        player.sendMessage(Component.text("已进入编辑模式，选择编辑前缀还是后缀：").color(NamedTextColor.YELLOW));
+        player.sendMessage(Component.text("已进入编辑模式，可直接点击设置或清除：").color(NamedTextColor.YELLOW));
         player.sendMessage(Component.text(""));
         
         // 公聊前缀
@@ -1410,7 +1418,12 @@ public class YinwuChatCommand implements SimpleCommand {
                 .decorate(TextDecoration.BOLD)
                 .clickEvent(ClickEvent.suggestCommand("/yinwuchat format public prefix set "))
                 .hoverEvent(net.kyori.adventure.text.event.HoverEvent.showText(
-                    Component.text("点击设置公聊前缀").color(NamedTextColor.GRAY)))));
+                    Component.text("点击设置公聊前缀").color(NamedTextColor.GRAY))))
+            .append(Component.text(" "))
+            .append(Component.text("[清除]").color(NamedTextColor.RED)
+                .clickEvent(ClickEvent.runCommand("/yinwuchat format public prefix clear"))
+                .hoverEvent(net.kyori.adventure.text.event.HoverEvent.showText(
+                    Component.text("点击清除公聊前缀").color(NamedTextColor.RED)))));
         
         // 公聊后缀
         player.sendMessage(Component.text("公聊后缀 ").color(NamedTextColor.WHITE)
@@ -1418,7 +1431,12 @@ public class YinwuChatCommand implements SimpleCommand {
                 .decorate(TextDecoration.BOLD)
                 .clickEvent(ClickEvent.suggestCommand("/yinwuchat format public suffix set "))
                 .hoverEvent(net.kyori.adventure.text.event.HoverEvent.showText(
-                    Component.text("点击设置公聊后缀").color(NamedTextColor.GRAY)))));
+                    Component.text("点击设置公聊后缀").color(NamedTextColor.GRAY))))
+            .append(Component.text(" "))
+            .append(Component.text("[清除]").color(NamedTextColor.RED)
+                .clickEvent(ClickEvent.runCommand("/yinwuchat format public suffix clear"))
+                .hoverEvent(net.kyori.adventure.text.event.HoverEvent.showText(
+                    Component.text("点击清除公聊后缀").color(NamedTextColor.RED)))));
         
         // 私聊前缀
         player.sendMessage(Component.text("私聊前缀 ").color(NamedTextColor.WHITE)
@@ -1426,7 +1444,12 @@ public class YinwuChatCommand implements SimpleCommand {
                 .decorate(TextDecoration.BOLD)
                 .clickEvent(ClickEvent.suggestCommand("/yinwuchat format private prefix set "))
                 .hoverEvent(net.kyori.adventure.text.event.HoverEvent.showText(
-                    Component.text("点击设置私聊前缀").color(NamedTextColor.GRAY)))));
+                    Component.text("点击设置私聊前缀").color(NamedTextColor.GRAY))))
+            .append(Component.text(" "))
+            .append(Component.text("[清除]").color(NamedTextColor.RED)
+                .clickEvent(ClickEvent.runCommand("/yinwuchat format private prefix clear"))
+                .hoverEvent(net.kyori.adventure.text.event.HoverEvent.showText(
+                    Component.text("点击清除私聊前缀").color(NamedTextColor.RED)))));
         
         // 私聊后缀
         player.sendMessage(Component.text("私聊后缀 ").color(NamedTextColor.WHITE)
@@ -1434,7 +1457,12 @@ public class YinwuChatCommand implements SimpleCommand {
                 .decorate(TextDecoration.BOLD)
                 .clickEvent(ClickEvent.suggestCommand("/yinwuchat format private suffix set "))
                 .hoverEvent(net.kyori.adventure.text.event.HoverEvent.showText(
-                    Component.text("点击设置私聊后缀").color(NamedTextColor.GRAY)))));
+                    Component.text("点击设置私聊后缀").color(NamedTextColor.GRAY))))
+            .append(Component.text(" "))
+            .append(Component.text("[清除]").color(NamedTextColor.RED)
+                .clickEvent(ClickEvent.runCommand("/yinwuchat format private suffix clear"))
+                .hoverEvent(net.kyori.adventure.text.event.HoverEvent.showText(
+                    Component.text("点击清除私聊后缀").color(NamedTextColor.RED)))));
         
         player.sendMessage(Component.text(""));
         player.sendMessage(Component.text("提示：点击 [✔] 后在聊天框中输入内容，支持颜色代码 (&a, &b 等)").color(NamedTextColor.GRAY));
@@ -1564,10 +1592,7 @@ public class YinwuChatCommand implements SimpleCommand {
         }
         
         // 合并剩余参数作为内容
-        String content = String.join(" ", Arrays.copyOfRange(args, 4, args.length));
-        
-        // 过滤禁止的样式代码
-        content = filterDenyStyle(content, config.playerFormatPrefixSuffixDenyStyle);
+        String content = PlayerFormatCommandUtil.joinAndFilterContent(args, 4, config.playerFormatPrefixSuffixDenyStyle);
         
         // 检查长度
         int maxLength = position.equals("prefix") ? config.maxPrefixLength : config.maxSuffixLength;
@@ -1602,20 +1627,6 @@ public class YinwuChatCommand implements SimpleCommand {
         playerConfig.saveSettings(settings);
         player.sendMessage(Component.text("✓ 已设置" + typeName + "为: ").color(NamedTextColor.GREEN)
             .append(Component.text(content.replace("&", "§")).color(NamedTextColor.AQUA)));
-    }
-    
-    /**
-     * 过滤禁止的样式代码
-     */
-    private String filterDenyStyle(String content, String denyStyle) {
-        if (denyStyle == null || denyStyle.isEmpty()) {
-            return content;
-        }
-        
-        for (char c : denyStyle.toCharArray()) {
-            content = content.replace("&" + c, "").replace("§" + c, "");
-        }
-        return content;
     }
     
     /**

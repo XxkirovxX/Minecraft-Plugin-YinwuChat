@@ -17,7 +17,7 @@ public final class CommandCompletionUtil {
     public static final List<String> FORMAT_SCOPES = List.of("public", "private");
     public static final List<String> FORMAT_POSITIONS = List.of("prefix", "suffix");
     public static final List<String> FORMAT_ACTIONS_VELOCITY = List.of("set", "clear");
-    public static final List<String> FORMAT_ACTIONS_BUNGEE = List.of("view", "set");
+    public static final List<String> FORMAT_ACTIONS_BUNGEE = List.of("set", "clear");
 
     private CommandCompletionUtil() {
     }

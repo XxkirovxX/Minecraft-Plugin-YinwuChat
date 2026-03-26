@@ -130,9 +130,11 @@ YinwuChat是Velocity代理插件和Spigot插件，主要功能有：
 - `/yinwuchat muteat`：切换@时的声音
 - `/yinwuchat ignore <玩家名>`：忽略/取消忽略玩家
 - `/yinwuchat vanish`：切换隐身模式（管理员）
-- `/yinwuchat atalladmin`：报告突发事件给所有管理员（每日限一次）
+- `/yinwuchat atalladmin`：报告突发事件给所有管理员（每日限一次；管理员收到提醒后可点击“确认收到”快捷填入确认指令）
 - `/yinwuchat atalladmin confirm <玩家名>`：重置玩家报告冷却时间（管理员）
 - `/yinwuchat format edit|show`：编辑/查看聊天前后缀
+- `/yinwuchat format <public|private> <prefix|suffix> set <内容>`：设置对应前后缀
+- `/yinwuchat format <public|private> <prefix|suffix> clear`：清除对应前后缀
 - `/yinwuchat mute <玩家> [时长] [原因]`：禁言玩家（别名：`/mute`，管理员）
 - `/yinwuchat unmute <玩家>`：解除禁言（别名：`/unmute`，管理员）
 - `/yinwuchat muteinfo <玩家>`：查看禁言信息（别名：`/muteinfo`，管理员）
@@ -183,7 +185,7 @@ serverName: "lobby"  # 可选：手动指定服务器名称，不设置则自动
 format:
   - message: "&b[ServerName]"    # 服务器名称占位符，自动替换为实际服务器名
     hover: "所在服务器：ServerName"  # 悬停显示，ServerName会被替换
-    click: "/server ServerName"      # 点击事件，ServerName会被替换
+    click: "/server ServerName"      # 点击事件，命令会填入聊天栏而不是自动执行
   - message: "&e{displayName}"   # 玩家名称占位符
     hover: "点击私聊"
     click: "/msg {displayName}"
@@ -267,10 +269,15 @@ format:
 | `list`           | list    | -       | 广播内容列表                                  |
 | `list[].message` | string  | -       | 显示文本，支持 `&` 颜色码（如 `&e` 黄色、`&b` 青色）      |
 | `list[].hover`   | string  | （可选）    | 鼠标悬停提示文本                                |
-| `list[].click`   | string  | （可选）    | 点击后填入聊天栏的命令                             |
+| `list[].click`   | string  | （可选）    | 点击行为：网址自动打开；命令、`[i]`、`[p]`、`[b]` 自动填入聊天栏 |
 
 
 > **注意：** `includeMode` 和 `excludeMode` 都关闭时，所有游戏服务器都接收；两者同时开启时 `includeMode` 优先。
+
+> **点击识别规则：**
+> - 支持自动打开：`http://`、`https://`、`ftp://`、`file://`、`www.xxx.com`
+> - 支持自动填入聊天栏：`/yinwuchat noat`、`/msg 玩家名`、`[i]`、`[i:0]`、`[p]`、`[b]`
+> - `example.com/path` 这类裸域名默认不会自动识别为网址
 
 #### 使用场景示例
 
@@ -286,7 +293,14 @@ tasks:
     excludeMode: false
     excludeServers: []
     list:
-      - message: "&e[公告] &r欢迎来到服务器！"
+      - message: "&e[官网]"
+        hover: "点击打开官网"
+        click: "www.yinwurealm.org"
+      - message: "&r 欢迎来到服务器，输入"
+      - message: "&b[i]"
+        hover: "点击填入物品展示占位符"
+        click: "[i]"
+      - message: "&r 即可展示手持物品"
 ```
 
 **场景二：白名单模式（仅指定服务器接收，Web 端不接收）**
@@ -844,9 +858,10 @@ muteinfo Steve          # 查看禁言状态
     - `/yinwuchat ignore <玩家名>`：忽略/取消忽略玩家消息（需要 `yinwuchat.default.ignore` 权限）
     - `/yinwuchat noat`：禁止/允许自己被@（需要 `yinwuchat.default.noat` 权限）
     - `/yinwuchat muteat`：切换自己被@时有没有声音（需要 `yinwuchat.default.muteat` 权限）
-    - `/yinwuchat format edit`：编辑聊天前后缀
+    - `/yinwuchat format edit`：编辑聊天前后缀（可点击设置或清除）
     - `/yinwuchat format show`：显示当前前后缀
-    - `/yinwuchat atalladmin`：报告突发事件给所有管理员（需要 `yinwuchat.default.atalladmin` 权限，每日限一次）
+    - `/yinwuchat format <public|private> <prefix|suffix> clear`：直接清除前后缀
+    - `/yinwuchat atalladmin`：报告突发事件给所有管理员（需要 `yinwuchat.default.atalladmin` 权限，每日限一次；管理员可点击“确认收到”快捷填入确认指令）
     - `/yinwuchat atalladmin confirm <玩家名>`：重置玩家报告冷却时间（仅管理员）
 
 ### Velocity端权限
